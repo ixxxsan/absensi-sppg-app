@@ -82,7 +82,7 @@ export async function createRelawan(formData: FormData) {
         idRelawan,
         noTelepon,
         statusAktif: status === 'Aktif'
-      }
+      } as any
     });
 
     if (result) {
