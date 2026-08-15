@@ -195,11 +195,6 @@ export default function AdminLoginPage() {
             </button>
           </div>
 
-          <div className="mt-6 p-3 rounded-xl bg-slate-800/60 border border-slate-700">
-            <p className="text-slate-500 text-xs font-semibold mb-1">Demo credentials:</p>
-            <p className="text-slate-400 text-xs font-mono">admin@sppg.id / admin123</p>
-          </div>
-
           <p className="text-slate-600 text-xs text-center mt-8">
             <a href="/login" className="text-slate-500 hover:text-slate-300 transition-colors">
               ← Masuk sebagai Relawan
