@@ -7,18 +7,41 @@ import { eq, desc } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
-// Mock Email Sender Function
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 async function sendPasswordEmail(email: string, password: string, name: string) {
-  // In a real app, you would use Resend, SendGrid, or Nodemailer here.
-  console.log('====================================================');
-  console.log(`[EMAIL MOCK] Mengirim email ke: ${email}`);
-  console.log(`Subjek: Akun Relawan SPPG Anda Telah Dibuat`);
-  console.log(`Halo ${name}, akun Anda berhasil dibuat.`);
-  console.log(`Silakan login menggunakan kredensial berikut:`);
-  console.log(`Email: ${email}`);
-  console.log(`Password: ${password}`);
-  console.log(`Harap segera mengganti password setelah berhasil login.`);
-  console.log('====================================================');
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("RESEND_API_KEY tidak ditemukan, pengiriman email di-skip.");
+    return;
+  }
+
+  try {
+    await resend.emails.send({
+      from: 'SPPG <no-reply@absensi-sppg-teluknaga03.id>',
+      to: email,
+      subject: 'Akun Relawan SPPG Anda Telah Dibuat',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+          <h2 style="color: #1a56db;">Selamat Datang di SPPG!</h2>
+          <p>Halo <strong>${name}</strong>,</p>
+          <p>Akun relawan Anda telah berhasil dibuat. Anda sekarang dapat masuk ke aplikasi absensi SPPG menggunakan detail berikut:</p>
+          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
+          </div>
+          <p>Silakan klik tautan di bawah ini untuk mengakses aplikasi:</p>
+          <a href="https://absensi-sppg-teluknaga03.id/login" style="display: inline-block; padding: 10px 20px; background-color: #1a56db; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">Masuk ke Aplikasi</a>
+          <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">Demi keamanan, kami menyarankan agar Anda segera mengganti password Anda setelah pertama kali berhasil masuk (fitur ganti password sedang dikembangkan).</p>
+          <p style="margin-top: 10px; font-size: 14px; color: #6b7280;">Jika Anda memiliki pertanyaan, silakan hubungi tim administrasi SPPG.</p>
+        </div>
+      `,
+    });
+    console.log(`[RESEND] Email berhasil dikirim ke: ${email}`);
+  } catch (error) {
+    console.error(`[RESEND ERROR] Gagal mengirim email ke: ${email}`, error);
+  }
 }
 
 export async function getRelawans() {
