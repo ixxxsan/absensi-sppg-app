@@ -9,13 +9,12 @@ import { revalidatePath } from 'next/cache';
 
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 async function sendPasswordEmail(email: string, password: string, name: string) {
   if (!process.env.RESEND_API_KEY) {
     console.warn("RESEND_API_KEY tidak ditemukan, pengiriman email di-skip.");
     return;
   }
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
     await resend.emails.send({
