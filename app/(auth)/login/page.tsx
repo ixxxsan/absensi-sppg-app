@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
-import { useAuthStore, useRelawanStore } from '@/lib/stores';
+import { authClient } from '@/lib/auth-client';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email atau ID Relawan wajib diisi'),
@@ -18,7 +18,6 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -36,34 +35,22 @@ export default function LoginPage() {
     setIsLoading(true);
     setLoginError('');
     try {
-      await new Promise((r) => setTimeout(r, 800));
       const emailInput = data.email.trim().toLowerCase();
       
-      // Look up relawan in the store
-      const relawanList = useRelawanStore.getState().relawanList;
-      const foundRelawan = relawanList.find(r => r.email.toLowerCase() === emailInput || r.idRelawan.toLowerCase() === emailInput);
+      const res = await authClient.signIn.email({
+        email: emailInput,
+        password: data.password,
+        rememberMe: data.rememberMe
+      });
 
-      if (foundRelawan && data.password === 'password123') {
-        login({ 
-          id: foundRelawan.id, 
-          idRelawan: foundRelawan.idRelawan, 
-          namaLengkap: foundRelawan.namaLengkap, 
-          email: foundRelawan.email, 
-          role: 'relawan', 
-          token: 'mock-token-xyz',
-          divisi: foundRelawan.divisi
-        });
-        router.replace('/beranda');
-      } else if (emailInput === 'relawan@sppg.id' && data.password === 'password123') {
-        // Fallback for default demo account if deleted from store
-        login({ id: 0, idRelawan: 'SPPG-000', namaLengkap: 'Relawan Demo', email: emailInput, role: 'relawan', token: 'mock-token-xyz' });
-        router.replace('/beranda');
-      } else {
-        setLoginError('Email/ID atau password salah. Silakan coba lagi.');
+      if (res.error) {
+        setLoginError(res.error.message || 'Email/ID atau password salah. Silakan coba lagi.');
         setIsLoading(false);
+      } else {
+        router.replace('/beranda');
       }
-    } catch {
-      setLoginError('Terjadi kesalahan. Periksa koneksi internet Anda.');
+    } catch (e: any) {
+      setLoginError(e?.message || 'Terjadi kesalahan. Periksa koneksi internet Anda.');
       setIsLoading(false);
     }
   };

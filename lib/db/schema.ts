@@ -15,6 +15,9 @@ export const user = pgTable("user", {
   idRelawan: text("id_relawan").unique(),
   noTelepon: text("no_telepon"),
   statusAktif: boolean("status_aktif").default(true),
+  nik: text("nik"),
+  divisi: text("divisi"),
+  status: text("status").default('Aktif'), // 'Aktif' | 'Magang' | 'Cuti'
 });
 
 export const session = pgTable("session", {

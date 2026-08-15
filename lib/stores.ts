@@ -163,14 +163,6 @@ export interface Relawan {
   divisi: Divisi;
 }
 
-const INITIAL_RELAWAN: Relawan[] = [
-  { id: 1, idRelawan: 'SPPG-001', namaLengkap: 'Budi Santoso', email: 'budi@sppg.id', noTelepon: '081234567890', nik: '3603010101900001', status: 'Aktif', divisi: 'ASISTEN LAPANGAN' },
-  { id: 2, idRelawan: 'SPPG-002', namaLengkap: 'Siti Rahayu', email: 'siti@sppg.id', noTelepon: '081234567891', nik: '3603010202910002', status: 'Aktif', divisi: 'PERSIAPAN' },
-  { id: 3, idRelawan: 'SPPG-003', namaLengkap: 'Ahmad Yani', email: 'ahmad@sppg.id', noTelepon: '081234567892', nik: '3603010303920003', status: 'Aktif', divisi: 'PENGOLAHAN' },
-  { id: 4, idRelawan: 'SPPG-004', namaLengkap: 'Dewi Lestari', email: 'dewi@sppg.id', noTelepon: '081234567893', nik: '3603010404930004', status: 'Cuti', divisi: 'PEMORSIAN' },
-  { id: 5, idRelawan: 'SPPG-005', namaLengkap: 'Rizky Pratama', email: 'rizky@sppg.id', noTelepon: '081234567894', nik: '3603010505940005', status: 'Aktif', divisi: 'PENCUCI TRAY' },
-];
-
 interface RelawanState {
   relawanList: Relawan[];
   setRelawanList: (list: Relawan[]) => void;
@@ -183,7 +175,7 @@ interface RelawanState {
 export const useRelawanStore = create<RelawanState>()(
   persist(
     (set) => ({
-      relawanList: INITIAL_RELAWAN,
+      relawanList: [],
       setRelawanList: (list) => set({ relawanList: list }),
       updateRelawanStatus: (idRelawan, status) => set((state) => ({
         relawanList: state.relawanList.map(r => r.idRelawan === idRelawan ? { ...r, status } : r)
