@@ -6,7 +6,7 @@ import { absensi, user } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { nowWIB } from '@/lib/utils';
+import { nowWIB, haversineDistance } from '@/lib/utils';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -89,9 +89,16 @@ export async function submitAbsensi(
 
   const now = nowWIB();
 
+  // Validate distance server-side to prevent bypass
+  if (tipe === 'masuk') {
+    const dist = haversineDistance(latitude, longitude, -6.098751, 106.653180);
+    if (dist > 500) {
+      throw new Error('Anda berada di luar radius tugas (lebih dari 500m). Absensi masuk ditolak.');
+    }
+  }
+
   // 2. Insert into Database
   // Note: We auto-approve based on the frontend logic.
-  // The frontend won't call this if the user is out of range (we'll enforce it there).
   await db.insert(absensi).values({
     userId: session.user.id,
     tanggalAbsen: now.format('YYYY-MM-DD'),

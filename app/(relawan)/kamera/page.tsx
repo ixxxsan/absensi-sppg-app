@@ -65,9 +65,9 @@ export default function KameraPage() {
   const canShoot = gpsStatus === 'found' || gpsStatus === 'out_of_range';
 
   const handleCapture = useCallback(async (watermarkedDataUrl: string) => {
-    // Force GPS validation
+    // Force GPS validation for Absen Masuk
     const dist = haversineDistance(latitude ?? 0, longitude ?? 0, -6.098751, 106.653180);
-    if (dist > 500) {
+    if (tipeAbsen === 'masuk' && dist > 500) {
       alert("Anda berada di luar radius tugas. Absensi ditolak. Silakan pindah mendekat ke lokasi.");
       return;
     }
