@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
+import { goeyToast } from 'goey-toast';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email atau ID Relawan wajib diisi'),
@@ -16,11 +18,21 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+
+  // Tampilkan toast jika baru saja reset password
+  useEffect(() => {
+    if (searchParams.get('reset') === 'success') {
+      goeyToast.success('Kata sandi berhasil diubah. Silakan masuk dengan password baru.');
+      // Bersihkan query parameter
+      window.history.replaceState({}, '', '/login');
+    }
+  }, [searchParams]);
 
   const { register, getValues, trigger, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -162,19 +174,27 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Remember me */}
-          <label htmlFor="remember-me" className="flex items-center gap-3 cursor-pointer group">
-            <input
-              id="remember-me"
-              type="checkbox"
-              {...register('rememberMe')}
-              className="w-4 h-4 rounded"
-              style={{ accentColor: '#b5e0ea' }}
-            />
-            <span className="text-sm" style={{ color: 'rgba(181,224,234,0.65)' }}>
-              Ingat Saya (30 hari)
-            </span>
-          </label>
+          {/* Remember me + Lupa Password */}
+          <div className="flex items-center justify-between">
+            <label htmlFor="remember-me" className="flex items-center gap-3 cursor-pointer group">
+              <input
+                id="remember-me"
+                type="checkbox"
+                {...register('rememberMe')}
+                className="w-4 h-4 rounded"
+                style={{ accentColor: '#b5e0ea' }}
+              />
+              <span className="text-sm" style={{ color: 'rgba(181,224,234,0.65)' }}>
+                Ingat Saya
+              </span>
+            </label>
+            <Link
+              href="/forgot-password"
+              className="text-sm text-gray-300 hover:text-white underline transition-colors"
+            >
+              Lupa Password?
+            </Link>
+          </div>
 
           {/* Error */}
           {loginError && (
@@ -210,5 +230,13 @@ export default function LoginPage() {
         SPPG TANGERANG TELUKNAGA 03 &copy; 2026 &middot; v1.0.0
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }
