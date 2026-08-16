@@ -192,11 +192,13 @@ export default function AbsensiValidasiPage() {
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
-            <div className="bg-slate-100 rounded-xl h-48 flex items-center justify-center mb-4 overflow-hidden relative">
+            <div className="bg-slate-100 rounded-xl flex items-center justify-center mb-4 overflow-hidden relative">
               {previewRow.fotoUrl ? (
-                <img src={previewRow.fotoUrl} alt="Bukti" className="w-full h-full object-cover" />
+                <img src={previewRow.fotoUrl} alt="Bukti" className="w-full max-h-[60vh] object-contain" />
               ) : (
-                <p className="text-slate-400 text-sm">Foto bukti ({previewRow.idRelawan})</p>
+                <div className="h-48 flex items-center justify-center w-full">
+                  <p className="text-slate-400 text-sm">Foto bukti ({previewRow.idRelawan})</p>
+                </div>
               )}
             </div>
             <div className="space-y-2 text-sm">
