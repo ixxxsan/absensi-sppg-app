@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@/lib/auth';
+import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -64,8 +65,7 @@ export async function getRelawans() {
 
 export async function createRelawan(formData: FormData) {
   try {
-    const reqHeaders = await headers();
-    const session = await auth.api.getSession({ headers: reqHeaders });
+    const session = await getServerSession();
     if (!session) {
       return { success: false, error: 'Sesi tidak valid atau telah berakhir (getSession returned null).' };
     }
@@ -86,7 +86,6 @@ export async function createRelawan(formData: FormData) {
 
     // Create user via better-auth signUpEmail
     const result = await auth.api.signUpEmail({
-      headers: reqHeaders,
       body: {
         email,
         name: namaLengkap,
@@ -121,8 +120,7 @@ export async function createRelawan(formData: FormData) {
 
 export async function updateRelawan(id: string, formData: FormData) {
   try {
-    const reqHeaders = await headers();
-    const session = await auth.api.getSession({ headers: reqHeaders });
+    const session = await getServerSession();
     if (!session) {
       return { success: false, error: 'Sesi tidak valid saat memperbarui (getSession returned null).' };
     }

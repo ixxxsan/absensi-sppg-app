@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@/lib/auth';
+import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { absensi, user } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
@@ -14,7 +15,7 @@ const supabase = createClient(
 );
 
 export async function getAbsensiHariIni() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getServerSession();
   if (!session?.user) {
     return { hasMasuk: false, isLengkap: false };
   }
@@ -52,7 +53,7 @@ export async function submitAbsensi(
   longitude: number,
   tipe: 'masuk' | 'pulang'
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getServerSession();
   if (!session) {
     return { success: false, error: 'Sesi tidak valid saat absensi (getSession returned null).' };
   }
