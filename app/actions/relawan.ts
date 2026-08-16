@@ -49,8 +49,7 @@ async function sendPasswordEmail(email: string, password: string, name: string) 
 
 export async function getRelawans() {
   try {
-    const reqHeaders = await headers();
-    const session = await auth.api.getSession({ headers: reqHeaders });
+    const session = await getServerSession();
     if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
       return [];
     }
@@ -155,7 +154,7 @@ export async function updateRelawan(id: string, formData: FormData) {
 
 export async function deleteRelawan(id: string) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
+    const session = await getServerSession();
     if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
       return { success: false, error: 'Unauthorized' };
     }

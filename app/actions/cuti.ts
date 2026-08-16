@@ -1,10 +1,9 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { cuti, user } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { headers } from 'next/headers';
 import { nowWIB } from '@/lib/utils';
 
 export async function submitCuti(
@@ -13,7 +12,7 @@ export async function submitCuti(
   tanggalSelesai: string,
   alasan: string
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getServerSession();
   if (!session?.user) {
     return { success: false, error: 'Unauthorized' };
   }
@@ -37,7 +36,7 @@ export async function submitCuti(
 }
 
 export async function getCutiRelawan() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getServerSession();
   if (!session?.user) {
     return [];
   }
@@ -52,7 +51,7 @@ export async function getCutiRelawan() {
 }
 
 export async function getAllCutiAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getServerSession();
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
     return [];
   }
@@ -78,7 +77,7 @@ export async function getAllCutiAdmin() {
 }
 
 export async function updateCutiStatus(id: string, status: 'Disetujui' | 'Ditolak' | 'Menunggu') {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getServerSession();
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
     return { success: false, error: 'Unauthorized' };
   }

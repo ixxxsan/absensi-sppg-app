@@ -118,7 +118,7 @@ export async function submitAbsensi(
 }
 
 export async function getAllAbsensi() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getServerSession();
   // Verify admin
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
     return [];
@@ -149,7 +149,7 @@ export async function getAllAbsensi() {
 }
 
 export async function updateAbsensiStatus(id: string, status: 'valid' | 'invalid' | 'menunggu') {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getServerSession();
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
     return { success: false, error: 'Unauthorized' };
   }
