@@ -1,0 +1,42 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+// Daftar User Agents bot berbahaya atau scanner otomatis yang sering digunakan untuk serangan
+const BLOCKED_USER_AGENTS = [
+  'sqlmap',
+  'nikto',
+  'nmap',
+  'zgrab',
+  'masscan',
+  'python-requests',
+];
+
+export function middleware(request: NextRequest) {
+  const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
+
+  // 1. Basic WAF: Block malicious user agents
+  for (const bot of BLOCKED_USER_AGENTS) {
+    if (userAgent.includes(bot)) {
+      return new NextResponse('Forbidden: Malicious activity detected', { status: 403 });
+    }
+  }
+
+  // Lanjutkan request jika aman
+  const response = NextResponse.next();
+  
+  return response;
+}
+
+// Hanya jalankan middleware pada route API atau route utama jika diperlukan
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - logo-bgn.png
+     */
+    '/((?!_next/static|_next/image|favicon.ico|logo-bgn.png|api/auth).*)',
+  ],
+};

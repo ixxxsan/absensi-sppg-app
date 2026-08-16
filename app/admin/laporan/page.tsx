@@ -168,7 +168,7 @@ export default function LaporanPage() {
 
     // Build Excel sheet for Aggregate Total Hari Kerja
     const aggregateMap = new Map();
-    MOCK_EXPORT_DATA.forEach(r => {
+    data.forEach(r => {
       if (r.tanggal >= dateFrom && r.tanggal <= dateTo) {
         if (!aggregateMap.has(r.idRelawan)) {
           aggregateMap.set(r.idRelawan, { 'ID Relawan': r.idRelawan, 'Nama Lengkap': r.namaLengkap, 'Total Hari Kerja (Hari)': 0 });
@@ -201,7 +201,7 @@ export default function LaporanPage() {
   };
 
   // Preview table
-  const filtered = MOCK_EXPORT_DATA.filter(
+  const filtered = data.filter(
     (r) => r.tanggal >= dateFrom && r.tanggal <= dateTo
   );
 

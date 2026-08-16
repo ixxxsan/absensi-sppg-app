@@ -43,7 +43,7 @@ export async function getCutiRelawan() {
     .select()
     .from(cuti)
     .where(eq(cuti.userId, session.user.id))
-    .orderBy(desc(cuti.createdAt));
+    .orderBy(desc(cuti.tanggalPengajuan));
 
   return records;
 }
@@ -64,13 +64,12 @@ export async function getAllCutiAdmin() {
       alasan: cuti.alasan,
       status: cuti.status,
       tanggalPengajuan: cuti.tanggalPengajuan,
-      createdAt: cuti.createdAt,
       namaLengkap: user.name,
       idRelawan: user.idRelawan,
     })
     .from(cuti)
     .leftJoin(user, eq(cuti.userId, user.id))
-    .orderBy(desc(cuti.createdAt));
+    .orderBy(desc(cuti.tanggalPengajuan));
 
   return records;
 }
