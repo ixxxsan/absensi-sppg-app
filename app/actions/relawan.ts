@@ -51,7 +51,7 @@ export async function getRelawans() {
   try {
     const reqHeaders = await headers();
     const session = await auth.api.getSession({ headers: reqHeaders });
-    if (!session?.user || session.user.role !== 'admin') {
+    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
       return [];
     }
 
@@ -69,7 +69,7 @@ export async function createRelawan(formData: FormData) {
     if (!session) {
       return { success: false, error: 'Sesi tidak valid atau telah berakhir (Silakan login ulang).' };
     }
-    if (!session.user || session.user.role !== 'admin') {
+    if (!session.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
       return { success: false, error: 'Akses ditolak: Anda bukan admin.' };
     }
 
@@ -124,7 +124,7 @@ export async function updateRelawan(id: string, formData: FormData) {
     if (!session) {
       return { success: false, error: 'Sesi tidak valid saat memperbarui (getSession returned null).' };
     }
-    if (!session.user || session.user.role !== 'admin') {
+    if (!session.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
       return { success: false, error: 'Akses ditolak: Anda bukan admin.' };
     }
 
@@ -156,7 +156,7 @@ export async function updateRelawan(id: string, formData: FormData) {
 export async function deleteRelawan(id: string) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user || session.user.role !== 'admin') {
+    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
       return { success: false, error: 'Unauthorized' };
     }
 

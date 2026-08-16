@@ -53,7 +53,7 @@ export async function getCutiRelawan() {
 
 export async function getAllCutiAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user || session.user.role !== 'admin') {
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
     return [];
   }
 
@@ -79,7 +79,7 @@ export async function getAllCutiAdmin() {
 
 export async function updateCutiStatus(id: string, status: 'Disetujui' | 'Ditolak' | 'Menunggu') {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user || session.user.role !== 'admin') {
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
     return { success: false, error: 'Unauthorized' };
   }
 
