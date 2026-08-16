@@ -178,16 +178,16 @@ export async function deleteRelawan(id: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Delete dependent records first to avoid foreign key constraint violations
+    // Use transaction to ensure all-or-nothing delete
     const { absensi, cuti, session: sessionTable, account } = await import('@/lib/db/schema');
     
-    await db.delete(cuti).where(eq(cuti.userId, id));
-    await db.delete(absensi).where(eq(absensi.userId, id));
-    await db.delete(sessionTable).where(eq(sessionTable.userId, id));
-    await db.delete(account).where(eq(account.userId, id));
-    
-    // Finally delete the user
-    await db.delete(user).where(eq(user.id, id));
+    await db.transaction(async (tx) => {
+      await tx.delete(cuti).where(eq(cuti.userId, id));
+      await tx.delete(absensi).where(eq(absensi.userId, id));
+      await tx.delete(sessionTable).where(eq(sessionTable.userId, id));
+      await tx.delete(account).where(eq(account.userId, id));
+      await tx.delete(user).where(eq(user.id, id));
+    });
     
     revalidatePath('/admin/relawan');
     return { success: true };

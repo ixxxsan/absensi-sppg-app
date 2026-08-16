@@ -3,9 +3,10 @@
 import { useEffect, useRef } from 'react';
 import { useCameraStore } from '@/lib/stores';
 import { haversineDistance } from '@/lib/utils';
+import { GEOFENCE } from '@/lib/config';
 
-const TASK_LOCATION = { lat: -6.098715809561847, lon: 106.65337852609656 };
-const GEOFENCE_RADIUS = 500;
+const TASK_LOCATION = { lat: GEOFENCE.lat, lon: GEOFENCE.lon };
+const GEOFENCE_RADIUS = GEOFENCE.radiusMeters;
 
 interface GPSIndicatorProps {
   onLocationFound?: (lat: number, lon: number) => void;

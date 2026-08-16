@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { absensi, user } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { nowWIB, haversineDistance } from '@/lib/utils';
+import { GEOFENCE } from '@/lib/config';
 
 export async function getAbsensiHariIni() {
   const session = await getServerSession();
@@ -55,9 +56,24 @@ export async function submitAbsensi(
   }
 
   const now = nowWIB();
+  const todayStr = now.format('YYYY-MM-DD');
   const serverTimestamp = Date.now();
   let statusValidasi = 'valid'; // Auto-approved as requested
   let catatanSistem: string | null = null;
+
+  // Prevent duplicate absensi for same type on same day
+  const existing = await db.select({ id: absensi.id })
+    .from(absensi)
+    .where(and(
+      eq(absensi.userId, session.user.id),
+      eq(absensi.tanggalAbsen, todayStr),
+      eq(absensi.tipe, tipe)
+    ))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return { success: false, error: `Anda sudah absen ${tipe} hari ini.` };
+  }
 
   // Anti-Spoofing Time Validation
   const timeDelta = Math.abs(serverTimestamp - clientTimestamp);
@@ -68,8 +84,8 @@ export async function submitAbsensi(
 
   // Validate distance server-side to prevent bypass
   if (tipe === 'masuk') {
-    const dist = haversineDistance(latitude, longitude, -6.098715809561847, 106.65337852609656);
-    if (dist > 500) {
+    const dist = haversineDistance(latitude, longitude, GEOFENCE.lat, GEOFENCE.lon);
+    if (dist > GEOFENCE.radiusMeters) {
       return { success: false, error: 'Anda berada di luar radius tugas (lebih dari 500m). Absensi masuk ditolak.' };
     }
   }

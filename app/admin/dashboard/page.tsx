@@ -4,6 +4,8 @@ import { nowWIB } from '@/lib/utils';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
 import { eq, count } from 'drizzle-orm';
+import { getServerSession } from '@/lib/auth-server';
+import { redirect } from 'next/navigation';
 
 import { desc } from 'drizzle-orm';
 import { absensi } from '@/lib/db/schema';
@@ -48,6 +50,12 @@ const statusLabel = {
 };
 
 export default async function AdminDashboard() {
+  // Server-side auth guard
+  const session = await getServerSession();
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
+    redirect('/admin/login');
+  }
+
   const today = formatDateLong(nowWIB());
 
   // Fetch real count from DB

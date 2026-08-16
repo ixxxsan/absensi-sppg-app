@@ -58,20 +58,21 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
   const handleDelete = async (id: string) => {
     if (confirm('Hapus relawan ini dari sistem?')) {
       setLoadingAction(true);
-      const res = await deleteRelawan(id);
-      if (res.success) {
+      try {
+        const res = await deleteRelawan(id);
+        if (res?.error) {
+          goeyToast.error(res.error || 'Gagal menghapus relawan');
+          return;
+        }
+        goeyToast.success('Relawan berhasil dihapus');
         startTransition(() => {
           router.refresh();
         });
-      }
-      if (res?.error) {
-        goeyToast.error(res.error || 'Gagal menghapus relawan');
+      } catch {
+        goeyToast.error('Terjadi kesalahan saat menghapus');
+      } finally {
         setLoadingAction(false);
-        return;
       }
-      goeyToast.success('Relawan berhasil dihapus');
-      router.refresh();
-      setLoadingAction(false);
     }
   };
 

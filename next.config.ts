@@ -28,8 +28,10 @@ const nextConfig: NextConfig = {
 
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '**' },
-      { protocol: 'http', hostname: '**' },
+      // Supabase storage only — restrict to known domains
+      { protocol: 'https', hostname: '*.supabase.co' },
+      { protocol: 'https', hostname: '*.supabase.in' },
+      { protocol: 'https', hostname: 'absensi-sppg-teluknaga03.id' },
     ],
   },
   experimental: {

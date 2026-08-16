@@ -7,6 +7,7 @@ import CameraView from '@/components/CameraView';
 import GPSIndicator from '@/components/GPSIndicator';
 import { useCameraStore } from '@/lib/stores';
 import { nowWIB, haversineDistance, formatDateLong, formatCoords } from '@/lib/utils';
+import { GEOFENCE } from '@/lib/config';
 import { authClient } from '@/lib/auth-client';
 import { getLatestUser } from '@/app/actions/user';
 import { goeyToast } from 'goey-toast';
@@ -72,8 +73,8 @@ export default function KameraPage() {
 
   const handleCapture = useCallback(async (blob: Blob) => {
     // Force GPS validation for Absen Masuk
-    const dist = haversineDistance(latitude ?? 0, longitude ?? 0, -6.098715809561847, 106.65337852609656);
-    if (tipeAbsen === 'masuk' && dist > 500) {
+    const dist = haversineDistance(latitude ?? 0, longitude ?? 0, GEOFENCE.lat, GEOFENCE.lon);
+    if (tipeAbsen === 'masuk' && dist > GEOFENCE.radiusMeters) {
       goeyToast.error("Anda berada di luar radius tugas. Absensi ditolak. Silakan pindah mendekat ke lokasi.");
       return;
     }

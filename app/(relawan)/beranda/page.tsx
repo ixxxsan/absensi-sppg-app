@@ -36,6 +36,13 @@ export default function BerandaPage() {
       }
     }
     fetchAbsensi();
+
+    // Re-fetch when user returns to this tab (e.g., after absensi or navigation)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchAbsensi();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
   const firstName = user?.name?.split(' ')[0] ?? 'Relawan';

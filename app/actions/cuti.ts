@@ -31,7 +31,7 @@ export async function submitCuti(
     alasan: safeAlasan,
     urlBukti: urlBukti || null,
     status: 'Menunggu',
-    tanggalPengajuan: now.format('YYYY-MM-DD HH:mm:ss'),
+    tanggalPengajuan: now.format('YYYY-MM-DD'),
   });
 
   return { success: true };
