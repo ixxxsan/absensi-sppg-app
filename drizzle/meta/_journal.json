@@ -15,6 +15,20 @@
       "when": 1786838863462,
       "tag": "0001_ambitious_wolfsbane",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786876095900,
+      "tag": "0002_moaning_spyke",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786877403878,
+      "tag": "0003_eminent_carnage",
+      "breakpoints": true
     }
   ]
 }

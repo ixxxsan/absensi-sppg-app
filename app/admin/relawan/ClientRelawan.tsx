@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Search, Plus, Edit2, Trash2, ChevronDown, CheckCircle, Clock, AlertCircle, Loader2, Users } from 'lucide-react';
-import { createRelawan, updateRelawan, deleteRelawan } from '@/app/actions/relawan';
+import { useState, useTransition, useRef } from 'react';
+import { Search, Plus, Edit2, Trash2, ChevronDown, CheckCircle, Clock, AlertCircle, Loader2, Users, Upload } from 'lucide-react';
+import { createRelawan, updateRelawan, deleteRelawan, bulkImportRelawan, BulkImportRow } from '@/app/actions/relawan';
 import { useRouter } from 'next/navigation';
+import * as XLSX from 'xlsx';
 
 export type Divisi = 'ASISTEN LAPANGAN' | 'ADMIN' | 'STOCKIST' | 'SECURITY' | 'DRIVER' | 'CLEANING SERVICE' | 'PERSIAPAN' | 'PENGOLAHAN' | 'PEMORSIAN' | 'PENCUCI TRAY';
 export type StatusRelawan = 'Aktif' | 'Magang' | 'Cuti';
@@ -32,6 +33,11 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<RelawanItem | null>(null);
   const [loadingAction, setLoadingAction] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importReport, setImportReport] = useState<{ success: number, failed: number, details: any[] } | null>(null);
 
   const filtered = initialData.filter((r) => {
     const matchesSearch = r.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -103,6 +109,91 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
     setLoadingAction(false);
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportProgress(0);
+    setImportReport(null);
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rawRows: any[] = XLSX.utils.sheet_to_json(firstSheet);
+
+      if (!rawRows || rawRows.length === 0) {
+        alert('File Excel kosong atau format tidak sesuai.');
+        setIsImporting(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      // Map rows
+      const mappedRows: BulkImportRow[] = rawRows.map(row => ({
+        namaLengkap: String(row['Nama Lengkap'] || row['Nama'] || ''),
+        nik: String(row['NIK'] || ''),
+        email: String(row['Email'] || ''),
+        noTelepon: String(row['No. Telepon'] || row['No Telepon'] || row['No HP'] || ''),
+        divisi: String(row['Divisi'] || 'ASISTEN LAPANGAN'),
+        status: String(row['Status'] || 'Aktif')
+      })).filter(r => r.namaLengkap && r.nik && r.email); // Basic validation
+
+      if (mappedRows.length === 0) {
+        alert('Tidak ada baris yang valid. Pastikan ada kolom Nama Lengkap, NIK, dan Email.');
+        setIsImporting(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      // Batch processing (e.g. 50 items per batch)
+      const batchSize = 50;
+      let totalSuccess = 0;
+      let totalFailed = 0;
+      const failedDetails: any[] = [];
+
+      for (let i = 0; i < mappedRows.length; i += batchSize) {
+        const batch = mappedRows.slice(i, i + batchSize);
+        const res = await bulkImportRelawan(batch);
+        
+        if (res.success && res.results) {
+          res.results.forEach((r: any) => {
+            if (r.success) {
+              totalSuccess++;
+            } else {
+              totalFailed++;
+              failedDetails.push(r);
+            }
+          });
+        } else {
+          totalFailed += batch.length;
+          failedDetails.push({ email: 'Batch Failed', error: res.error });
+        }
+
+        const currentProgress = Math.min(100, Math.round(((i + batchSize) / mappedRows.length) * 100));
+        setImportProgress(currentProgress);
+      }
+
+      setImportReport({
+        success: totalSuccess,
+        failed: totalFailed,
+        details: failedDetails
+      });
+
+      startTransition(() => {
+        router.refresh();
+      });
+
+    } catch (error) {
+      console.error('Import error:', error);
+      alert('Terjadi kesalahan saat memproses file Excel.');
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="p-6 space-y-5">
       {/* Header */}
@@ -111,17 +202,35 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
           <h1 className="text-slate-800 text-2xl font-bold">Manajemen Relawan</h1>
           <p className="text-slate-500 text-sm mt-0.5">{initialData.length} relawan terdaftar</p>
         </div>
-        <button
-          id="btn-tambah-relawan"
-          onClick={() => { setEditTarget(null); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white
-                     font-semibold text-sm hover:bg-emerald-600 transition-colors shadow-sm
-                     shadow-emerald-500/30 disabled:opacity-50"
-          disabled={loadingAction || isPending}
-        >
-          {loadingAction || isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          Tambah Relawan
-        </button>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            accept=".xlsx, .xls"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600
+                       font-semibold text-sm hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50"
+            disabled={loadingAction || isPending || isImporting}
+          >
+            <Upload className="w-4 h-4" />
+            Import Excel
+          </button>
+          <button
+            id="btn-tambah-relawan"
+            onClick={() => { setEditTarget(null); setShowModal(true); }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white
+                       font-semibold text-sm hover:bg-emerald-600 transition-colors shadow-sm
+                       shadow-emerald-500/30 disabled:opacity-50"
+            disabled={loadingAction || isPending || isImporting}
+          >
+            {loadingAction || isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            Tambah Relawan
+          </button>
+        </div>
       </div>
 
       {/* Search + Filter */}
@@ -374,6 +483,61 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal — Progress Import */}
+      {isImporting && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center">
+            <Loader2 className="w-10 h-10 animate-spin text-emerald-500 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Mengimpor Data...</h3>
+            <div className="w-full bg-slate-100 rounded-full h-2.5 mb-2 overflow-hidden">
+              <div className="bg-emerald-500 h-2.5 rounded-full transition-all duration-300" style={{ width: `${importProgress}%` }}></div>
+            </div>
+            <p className="text-sm text-slate-500">{importProgress}% Selesai</p>
+          </div>
+        </div>
+      )}
+
+      {/* Modal — Laporan Import */}
+      {importReport && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in">
+            <h2 className="text-slate-800 text-lg font-bold mb-5">Laporan Import Excel</h2>
+            
+            <div className="flex gap-4 mb-6">
+              <div className="flex-1 bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-center">
+                <p className="text-emerald-600 text-2xl font-bold">{importReport.success}</p>
+                <p className="text-emerald-800 text-xs font-semibold uppercase">Berhasil</p>
+              </div>
+              <div className="flex-1 bg-red-50 p-4 rounded-xl border border-red-100 text-center">
+                <p className="text-red-600 text-2xl font-bold">{importReport.failed}</p>
+                <p className="text-red-800 text-xs font-semibold uppercase">Gagal</p>
+              </div>
+            </div>
+
+            {importReport.failed > 0 && importReport.details.length > 0 && (
+              <div className="mb-6 max-h-40 overflow-y-auto border border-slate-100 rounded-xl p-3 bg-slate-50">
+                <p className="text-xs font-semibold text-slate-600 mb-2">Detail Kegagalan:</p>
+                <ul className="space-y-2 text-xs text-slate-500">
+                  {importReport.details.map((d, i) => (
+                    <li key={i} className="flex flex-col gap-0.5">
+                      <span className="font-semibold text-slate-700">{d.email}</span>
+                      <span className="text-red-500">{d.error}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <button
+              onClick={() => setImportReport(null)}
+              className="w-full py-2.5 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900 transition-colors"
+            >
+              Tutup Laporan
+            </button>
           </div>
         </div>
       )}

@@ -4,13 +4,7 @@ import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { absensi, user } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { createClient } from '@supabase/supabase-js';
 import { nowWIB, haversineDistance } from '@/lib/utils';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export async function getAbsensiHariIni() {
   const session = await getServerSession();
@@ -46,10 +40,11 @@ export async function getAbsensiHariIni() {
 }
 
 export async function submitAbsensi(
-  base64Image: string,
+  fotoUrl: string,
   latitude: number,
   longitude: number,
-  tipe: 'masuk' | 'pulang'
+  tipe: 'masuk' | 'pulang',
+  clientTimestamp: number
 ) {
   const session = await getServerSession();
   if (!session) {
@@ -59,37 +54,17 @@ export async function submitAbsensi(
     return { success: false, error: 'Akses ditolak: User tidak ditemukan dalam sesi.' };
   }
 
-  // 1. Upload Base64 Image to Supabase Storage
-  // Limit base64 payload to ~5MB (approx 7,000,000 characters)
-  if (base64Image.length > 7000000) {
-    return { success: false, error: 'Ukuran foto terlalu besar. Maksimal 5MB.' };
-  }
-
-  // Extract base64 payload (remove data:image/jpeg;base64,)
-  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
-  const buffer = Buffer.from(base64Data, 'base64');
-  
-  const fileName = `${session.user.id}-${nowWIB().format('YYYYMMDD-HHmmss')}-${tipe}.jpg`;
-
-  const { error: uploadError } = await supabase.storage
-    .from('absensi_fotos')
-    .upload(fileName, buffer, {
-      contentType: 'image/jpeg',
-      upsert: true
-    });
-
-  if (uploadError) {
-    console.error("Storage upload error:", uploadError);
-    return { success: false, error: 'Gagal mengunggah foto' };
-  }
-
-  const { data: publicUrlData } = supabase.storage
-    .from('absensi_fotos')
-    .getPublicUrl(fileName);
-
-  const fotoUrl = publicUrlData.publicUrl;
-
   const now = nowWIB();
+  const serverTimestamp = Date.now();
+  let statusValidasi = 'valid'; // Auto-approved as requested
+  let catatanSistem: string | null = null;
+
+  // Anti-Spoofing Time Validation
+  const timeDelta = Math.abs(serverTimestamp - clientTimestamp);
+  if (timeDelta > 300000) { // > 5 menit
+    statusValidasi = 'flagged';
+    catatanSistem = `Indikasi Time Spoofing: Selisih ${Math.round(timeDelta / 60000)} menit`;
+  }
 
   // Validate distance server-side to prevent bypass
   if (tipe === 'masuk') {
@@ -109,7 +84,8 @@ export async function submitAbsensi(
     fotoUrl,
     latitude: latitude.toString(),
     longitude: longitude.toString(),
-    statusValidasi: 'valid', // Auto-approved as requested
+    statusValidasi,
+    catatanSistem,
   });
 
   return { success: true, fotoUrl };

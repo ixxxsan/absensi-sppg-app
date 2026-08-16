@@ -10,7 +10,8 @@ export async function submitCuti(
   jenisCuti: string,
   tanggalMulai: string,
   tanggalSelesai: string,
-  alasan: string
+  alasan: string,
+  urlBukti?: string
 ) {
   const session = await getServerSession();
   if (!session?.user) {
@@ -28,6 +29,7 @@ export async function submitCuti(
     tanggalMulai,
     tanggalSelesai,
     alasan: safeAlasan,
+    urlBukti: urlBukti || null,
     status: 'Menunggu',
     tanggalPengajuan: now.format('YYYY-MM-DD HH:mm:ss'),
   });
@@ -66,6 +68,7 @@ export async function getAllCutiAdmin() {
       alasan: cuti.alasan,
       status: cuti.status,
       tanggalPengajuan: cuti.tanggalPengajuan,
+      urlBukti: cuti.urlBukti,
       namaLengkap: user.name,
       idRelawan: user.idRelawan,
     })

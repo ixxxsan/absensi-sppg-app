@@ -7,7 +7,7 @@ import { authClient } from '@/lib/auth-client';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
 
 interface CameraViewProps {
-  onCapture: (watermarkedDataUrl: string) => void;
+  onCapture: (blob: Blob) => void;
   canShoot: boolean;
   tipeAbsen: 'masuk' | 'pulang';
   userOverride?: { idRelawan?: string, namaLengkap?: string, divisi?: string } | null;
@@ -75,7 +75,7 @@ export default function CameraView({ onCapture, canShoot, tipeAbsen, userOverrid
     };
   }, []);
 
-  const handleCapture = useCallback(() => {
+  const handleCapture = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !canShoot) return;
     if (latitude === null || longitude === null) return;
 
@@ -95,20 +95,25 @@ export default function CameraView({ onCapture, canShoot, tipeAbsen, userOverrid
     const { addressName } = useCameraStore.getState();
 
     // Apply watermark
-    const watermarked = applyWatermark(canvas, {
-      latitude,
-      longitude,
-      addressName,
-      namaRelawan: userOverride?.namaLengkap ?? user?.namaLengkap ?? user?.name ?? 'Relawan SPPG',
-      idRelawan: userOverride?.idRelawan ?? user?.idRelawan ?? 'SPPG-000',
-      divisi: userOverride?.divisi ?? user?.divisi ?? 'Relawan',
-      tipeAbsen,
-    });
+    try {
+      const watermarkedBlob = await applyWatermark(canvas, {
+        latitude,
+        longitude,
+        addressName,
+        namaRelawan: userOverride?.namaLengkap ?? user?.namaLengkap ?? user?.name ?? 'Relawan SPPG',
+        idRelawan: userOverride?.idRelawan ?? user?.idRelawan ?? 'SPPG-000',
+        divisi: userOverride?.divisi ?? user?.divisi ?? 'Relawan',
+        tipeAbsen,
+      });
 
-    // Haptic feedback (if supported)
-    if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+      // Haptic feedback (if supported)
+      if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
 
-    onCapture(watermarked);
+      onCapture(watermarkedBlob);
+    } catch (err) {
+      console.error('Failed to apply watermark:', err);
+      alert('Gagal memproses gambar. Silakan coba lagi.');
+    }
   }, [canShoot, latitude, longitude, tipeAbsen, user, userOverride, onCapture]);
 
   return (

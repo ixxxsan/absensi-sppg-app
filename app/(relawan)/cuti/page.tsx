@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ChevronLeft, CalendarIcon, FileText, Send, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, CalendarIcon, FileText, Send, Clock, CheckCircle2, XCircle, UploadCloud } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { submitCuti, getCutiRelawan } from '@/app/actions/cuti';
+import { supabase } from '@/lib/supabase';
+import { compressImage } from '@/lib/utils';
 
 export default function PengajuanCutiPage() {
   const router = useRouter();
@@ -12,6 +14,8 @@ export default function PengajuanCutiPage() {
   const [tanggalMulai, setTanggalMulai] = useState('');
   const [tanggalSelesai, setTanggalSelesai] = useState('');
   const [alasan, setAlasan] = useState('');
+  const [fileBukti, setFileBukti] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   type CutiRecord = Awaited<ReturnType<typeof getCutiRelawan>>[number];
   const [riwayat, setRiwayat] = useState<CutiRecord[]>([]);
@@ -47,9 +51,48 @@ export default function PengajuanCutiPage() {
       return;
     }
 
+    if (jenisCuti === 'Sakit' && !fileBukti) {
+      setToastMessage('Harap unggah surat keterangan dokter untuk cuti Sakit!');
+      setTimeout(() => setToastMessage(''), 3000);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const result = await submitCuti(jenisCuti, tanggalMulai, tanggalSelesai, alasan);
+      let urlBukti = '';
+
+      if (fileBukti) {
+        setToastMessage('Mengunggah dokumen...');
+        
+        let fileToUpload: Blob = fileBukti;
+        let fileName = `${Date.now()}_${fileBukti.name}`;
+        
+        // Kompres jika berupa gambar, skip kompresi jika PDF
+        if (fileBukti.type.startsWith('image/')) {
+           fileToUpload = await compressImage(fileBukti, 0.7);
+           fileName = `${Date.now()}_bukti.webp`;
+        }
+
+        const { data, error } = await supabase.storage
+          .from('bukti-cuti')
+          .upload(fileName, fileToUpload, {
+            contentType: fileBukti.type.startsWith('image/') ? 'image/webp' : fileBukti.type,
+            upsert: false
+          });
+
+        if (error) {
+          throw new Error('Gagal mengunggah bukti: ' + error.message);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('bukti-cuti')
+          .getPublicUrl(data.path);
+          
+        urlBukti = publicUrlData.publicUrl;
+      }
+
+      setToastMessage('Mengirim pengajuan...');
+      const result = await submitCuti(jenisCuti, tanggalMulai, tanggalSelesai, alasan, urlBukti);
       if (result && !result.success) {
         throw new Error(result.error || 'Gagal mengirim pengajuan cuti.');
       }
@@ -58,6 +101,7 @@ export default function PengajuanCutiPage() {
       setTanggalMulai('');
       setTanggalSelesai('');
       setAlasan('');
+      setFileBukti(null);
       await loadRiwayat();
     } catch (err: unknown) {
       setToastMessage(err instanceof Error ? err.message : 'Terjadi kesalahan.');
@@ -145,6 +189,50 @@ export default function PengajuanCutiPage() {
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-[#071e49] focus:ring-1 focus:ring-[#071e49] resize-none"
               />
             </div>
+
+            {jenisCuti === 'Sakit' && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">Unggah Surat Dokter (Wajib)</label>
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`w-full px-4 py-6 border-2 border-dashed rounded-xl text-center cursor-pointer transition-colors ${
+                    fileBukti ? 'border-[#071e49] bg-[#071e49]/5' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".jpg,.jpeg,.png,.webp,.pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.type === 'application/pdf' && file.size > 2 * 1024 * 1024) {
+                          setToastMessage('Ukuran PDF maksimal 2 MB!');
+                          setTimeout(() => setToastMessage(''), 3000);
+                          e.target.value = '';
+                          return;
+                        }
+                        setFileBukti(file);
+                      }
+                    }}
+                  />
+                  {fileBukti ? (
+                    <div className="flex flex-col items-center justify-center">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-2" />
+                      <p className="text-sm font-medium text-slate-800 line-clamp-1 break-all px-4">{fileBukti.name}</p>
+                      <p className="text-xs text-slate-500 mt-1">{(fileBukti.size / 1024).toFixed(1)} KB • Klik untuk mengganti</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center">
+                      <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
+                      <p className="text-sm font-medium text-slate-700">Tekan untuk unggah berkas</p>
+                      <p className="text-xs text-slate-500 mt-1">JPG, PNG, WEBP, atau PDF (Max 2MB)</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <button 
               type="submit"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, CheckCircle, XCircle, Clock, CalendarIcon } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Clock, CalendarIcon, Paperclip, X } from 'lucide-react';
 import { getAllCutiAdmin, updateCutiStatus as updateCutiStatusAction } from '@/app/actions/cuti';
 
 type StatusCuti = 'Semua' | 'Menunggu' | 'Disetujui' | 'Ditolak';
@@ -13,6 +13,7 @@ export default function AdminCutiPage() {
   
   const [filterStatus, setFilterStatus] = useState<StatusCuti>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
   const [toastMessage, setToastMessage] = useState('');
 
@@ -172,6 +173,26 @@ export default function AdminCutiPage() {
                   <p className="text-xs text-slate-500 mb-1 font-medium">Keterangan / Alasan</p>
                   <p className="text-sm text-slate-700 line-clamp-3">{req.alasan}</p>
                 </div>
+
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center justify-between">
+                  <p className="text-xs text-slate-500 font-medium">Lampiran Bukti</p>
+                  {req.urlBukti ? (
+                    <button
+                      onClick={() => {
+                        if (req.urlBukti?.toLowerCase().includes('.pdf')) {
+                          window.open(req.urlBukti, '_blank');
+                        } else {
+                          setSelectedImage(req.urlBukti || null);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-bold text-[#071e49] bg-[#071e49]/10 px-3 py-1.5 rounded-lg hover:bg-[#071e49]/20 transition-colors"
+                    >
+                      <Paperclip className="w-3.5 h-3.5" /> Lihat
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-400 font-medium italic">Tidak ada</span>
+                  )}
+                </div>
               </div>
 
               {/* Actions */}
@@ -195,7 +216,24 @@ export default function AdminCutiPage() {
           ))
         )}
       </div>
-
+      
+      {/* Lightbox Modal */}
+      {selectedImage && (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center animate-fade-in">
+          <button 
+            onClick={() => setSelectedImage(null)}
+            className="absolute top-6 right-6 p-2 text-white/70 hover:text-white bg-black/50 hover:bg-black/70 rounded-full transition-all"
+          >
+            <X className="w-8 h-8" />
+          </button>
+          
+          <img 
+            src={selectedImage} 
+            alt="Bukti Lampiran" 
+            className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg shadow-2xl"
+          />
+        </div>
+      )}
     </div>
   );
 }

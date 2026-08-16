@@ -71,7 +71,8 @@ export const absensi = pgTable("absensi", {
   longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
-  statusValidasi: text("status_validasi").default('menunggu').notNull(), // 'menunggu' | 'valid' | 'invalid'
+  statusValidasi: text("status_validasi").default('menunggu').notNull(), // 'menunggu' | 'valid' | 'invalid' | 'flagged'
+  catatanSistem: text("catatan_sistem"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -83,5 +84,6 @@ export const cuti = pgTable("cuti", {
   tanggalSelesai: date("tanggal_selesai").notNull(),
   alasan: text("alasan").notNull(),
   status: text("status").default('Menunggu').notNull(), // 'Menunggu' | 'Disetujui' | 'Ditolak'
+  urlBukti: text("url_bukti"),
   tanggalPengajuan: date("tanggal_pengajuan").defaultNow().notNull(),
 });

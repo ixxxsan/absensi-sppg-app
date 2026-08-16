@@ -1,0 +1,1 @@
+ALTER TABLE "cuti" ADD COLUMN "url_bukti" text;

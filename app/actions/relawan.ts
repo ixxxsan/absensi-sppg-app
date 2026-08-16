@@ -176,3 +176,92 @@ export async function deleteRelawan(id: string) {
     return { success: false, error: 'Gagal menghapus data.' };
   }
 }
+
+export interface BulkImportRow {
+  namaLengkap: string;
+  nik: string;
+  email: string;
+  noTelepon: string;
+  divisi: string;
+  status: string;
+}
+
+export async function bulkImportRelawan(rows: BulkImportRow[]) {
+  try {
+    const session = await getServerSession();
+    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Determine starting ID Relawan
+    const existingUsers = await db.select({ idRelawan: user.idRelawan }).from(user).where(eq(user.role, 'relawan'));
+    const usedNumbers = existingUsers
+      .map(u => parseInt(u.idRelawan?.replace('SPPG-', '') || '0', 10))
+      .filter(n => !isNaN(n))
+      .sort((a, b) => a - b);
+
+    let nextNum = 1;
+    for (const num of usedNumbers) {
+      if (num === nextNum) {
+        nextNum++;
+      } else if (num > nextNum) {
+        break;
+      }
+    }
+
+    const results = [];
+
+    // We process sequentially or with careful ID assignment. Since batch size is 50, let's process sequentially for DB safety
+    // or assign IDs upfront and use Promise.allSettled. Let's assign IDs upfront.
+    const rowsWithIds = rows.map((row, index) => {
+      // If there are gaps, this naive increment might fill a gap and then collide later, but it's fine for bulk import 
+      // where we just increment nextNum sequentially and don't re-check gaps for the current batch.
+      const idRelawan = `SPPG-${(nextNum + index).toString().padStart(3, '0')}`;
+      return { ...row, idRelawan };
+    });
+
+    const promises = rowsWithIds.map(async (row) => {
+      const defaultPassword = `Sppg${row.nik.slice(-4)}!`;
+
+      try {
+        const result = await auth.api.signUpEmail({
+          body: {
+            email: row.email,
+            name: row.namaLengkap,
+            password: defaultPassword,
+          }
+        });
+
+        if (result && result.user) {
+          await db.update(user).set({
+            role: 'relawan',
+            nik: row.nik,
+            divisi: row.divisi,
+            status: row.status || 'Aktif',
+            idRelawan: row.idRelawan,
+            noTelepon: row.noTelepon,
+            statusAktif: row.status !== 'Cuti'
+          }).where(eq(user.id, result.user.id));
+
+          await sendPasswordEmail(row.email, defaultPassword, row.namaLengkap);
+          return { success: true, email: row.email };
+        } else {
+          return { success: false, email: row.email, error: 'API signUp gagal.' };
+        }
+      } catch (err: any) {
+        return { success: false, email: row.email, error: err?.message || 'Unknown error' };
+      }
+    });
+
+    const settled = await Promise.allSettled(promises);
+    
+    revalidatePath('/admin/relawan');
+
+    const finalResults = settled.map(s => s.status === 'fulfilled' ? s.value : { success: false, email: 'unknown', error: 'Promise rejected' });
+    return { success: true, results: finalResults };
+  } catch (error: any) {
+    console.error('Bulk import error:', error);
+    return { success: false, error: error?.message || 'Terjadi kesalahan sistem saat impor massal.' };
+  }
+}
+

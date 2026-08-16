@@ -64,7 +64,7 @@ export default function KameraPage() {
 
   const canShoot = gpsStatus === 'found' || gpsStatus === 'out_of_range';
 
-  const handleCapture = useCallback(async (watermarkedDataUrl: string) => {
+  const handleCapture = useCallback(async (blob: Blob) => {
     // Force GPS validation for Absen Masuk
     const dist = haversineDistance(latitude ?? 0, longitude ?? 0, -6.098751, 106.653180);
     if (tipeAbsen === 'masuk' && dist > 500) {
@@ -75,10 +75,32 @@ export default function KameraPage() {
     setUiState('processing');
 
     try {
-      setUploadText('Mengunggah dan menyimpan...');
+      setUploadText('Mengunggah foto...');
+      
+      const userId = session?.user?.id || 'unknown';
+      const fileName = `${userId}-${nowWIB().format('YYYYMMDD-HHmmss')}-${tipeAbsen}.webp`;
+
+      const { supabase } = await import('@/lib/supabase');
+      const { error: uploadError } = await supabase.storage
+        .from('absensi_fotos')
+        .upload(fileName, blob, {
+          contentType: 'image/webp',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw new Error('Gagal mengunggah foto ke penyimpanan.');
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('absensi_fotos')
+        .getPublicUrl(fileName);
+
+      setUploadText('Menyimpan data absensi...');
       
       const { submitAbsensi } = await import('@/app/actions/absensi');
-      const res = await submitAbsensi(watermarkedDataUrl, latitude ?? 0, longitude ?? 0, tipeAbsen);
+      const res = await submitAbsensi(publicUrlData.publicUrl, latitude ?? 0, longitude ?? 0, tipeAbsen, Date.now());
       if (!res || !res.success) {
         throw new Error(res?.error || 'Gagal mengirim absensi.');
       }
@@ -90,7 +112,7 @@ export default function KameraPage() {
       alert(err instanceof Error ? err.message : "Terjadi kesalahan saat mengunggah.");
       setUiState('preview'); // Return to camera on error
     }
-  }, [tipeAbsen, latitude, longitude, reset, router]);
+  }, [tipeAbsen, latitude, longitude, reset, router, session?.user?.id]);
 
   const handleBack = () => {
     reset();
