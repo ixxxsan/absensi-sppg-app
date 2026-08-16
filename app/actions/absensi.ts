@@ -52,11 +52,7 @@ export async function submitAbsensi(
   longitude: number,
   tipe: 'masuk' | 'pulang'
 ) {
-  const cookieStore = await cookies();
-  const mockHeaders = new Headers();
-  mockHeaders.set('cookie', cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; '));
-
-  const session = await auth.api.getSession({ headers: mockHeaders });
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return { success: false, error: 'Sesi tidak valid saat absensi (getSession returned null).' };
   }
