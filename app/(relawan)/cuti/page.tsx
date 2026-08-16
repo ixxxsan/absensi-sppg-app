@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { submitCuti, getCutiRelawan } from '@/app/actions/cuti';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/lib/utils';
+import { goeyToast } from 'goey-toast';
 
 export default function PengajuanCutiPage() {
   const router = useRouter();
@@ -20,8 +21,6 @@ export default function PengajuanCutiPage() {
   type CutiRecord = Awaited<ReturnType<typeof getCutiRelawan>>[number];
   const [riwayat, setRiwayat] = useState<CutiRecord[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-
   const loadRiwayat = async () => {
     try {
       const records = await getCutiRelawan();
@@ -46,14 +45,12 @@ export default function PengajuanCutiPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tanggalMulai || !tanggalSelesai || !alasan) {
-      setToastMessage('Harap lengkapi semua field!');
-      setTimeout(() => setToastMessage(''), 3000);
+      goeyToast.error('Harap lengkapi semua field!');
       return;
     }
 
     if (jenisCuti === 'Sakit' && !fileBukti) {
-      setToastMessage('Harap unggah surat keterangan dokter untuk cuti Sakit!');
-      setTimeout(() => setToastMessage(''), 3000);
+      goeyToast.error('Harap unggah surat keterangan dokter untuk cuti Sakit!');
       return;
     }
 
@@ -62,7 +59,7 @@ export default function PengajuanCutiPage() {
       let urlBukti = '';
 
       if (fileBukti) {
-        setToastMessage('Mengunggah dokumen...');
+        goeyToast.info('Mengunggah dokumen...');
         
         let fileToUpload: Blob = fileBukti;
         let fileName = `${Date.now()}_${fileBukti.name}`;
@@ -91,12 +88,12 @@ export default function PengajuanCutiPage() {
         urlBukti = publicUrlData.publicUrl;
       }
 
-      setToastMessage('Mengirim pengajuan...');
+      goeyToast.info('Mengirim pengajuan...');
       const result = await submitCuti(jenisCuti, tanggalMulai, tanggalSelesai, alasan, urlBukti);
       if (result && !result.success) {
         throw new Error(result.error || 'Gagal mengirim pengajuan cuti.');
       }
-      setToastMessage('Pengajuan berhasil dikirim!');
+      goeyToast.success('Pengajuan berhasil dikirim!');
       setJenisCuti('Sakit');
       setTanggalMulai('');
       setTanggalSelesai('');
@@ -104,21 +101,14 @@ export default function PengajuanCutiPage() {
       setFileBukti(null);
       await loadRiwayat();
     } catch (err: unknown) {
-      setToastMessage(err instanceof Error ? err.message : 'Terjadi kesalahan.');
+      goeyToast.error(err instanceof Error ? err.message : 'Terjadi kesalahan.');
     } finally {
       setIsSubmitting(false);
-      setTimeout(() => setToastMessage(''), 3000);
     }
   };
 
   return (
     <div className="min-h-dvh flex flex-col bg-slate-50">
-      
-      {toastMessage && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg z-50 animate-fade-in-up whitespace-nowrap">
-          {toastMessage}
-        </div>
-      )}
 
       {/* Header */}
       <header className="px-5 pt-safe pt-6 pb-4 bg-white shadow-sm border-b border-slate-100 flex items-center justify-between sticky top-0 z-30">
@@ -208,8 +198,7 @@ export default function PengajuanCutiPage() {
                       const file = e.target.files?.[0];
                       if (file) {
                         if (file.type === 'application/pdf' && file.size > 2 * 1024 * 1024) {
-                          setToastMessage('Ukuran PDF maksimal 2 MB!');
-                          setTimeout(() => setToastMessage(''), 3000);
+                          goeyToast.error('Ukuran PDF maksimal 2 MB!');
                           e.target.value = '';
                           return;
                         }

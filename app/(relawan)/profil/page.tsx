@@ -2,8 +2,9 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, Settings, Key, FileText, HelpCircle, ChevronRight, X, Camera } from 'lucide-react';
+import { LogOut, Settings, Key, HelpCircle, ChevronRight, X, Camera } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
+import { goeyToast } from 'goey-toast';
 
 export default function ProfilPage() {
   const router = useRouter();
@@ -12,8 +13,6 @@ export default function ProfilPage() {
   const user = session?.user as NonNullable<typeof session>['user'] & { idRelawan?: string, divisi?: string, status?: string } | undefined;
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordToast, setPasswordToast] = useState('');
-  
   // Password state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -56,14 +55,12 @@ export default function ProfilPage() {
     // Validasi kompleksitas password
     const passwordPattern = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
     if (!passwordPattern.test(newPassword)) {
-      setPasswordToast('Gagal: Password minimal 8 karakter, wajib mengandung minimal 1 huruf kapital dan angka.');
-      setTimeout(() => setPasswordToast(''), 4000);
+      goeyToast.error('Gagal: Password minimal 8 karakter, wajib mengandung minimal 1 huruf kapital dan angka.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordToast('Gagal: Konfirmasi password baru tidak cocok.');
-      setTimeout(() => setPasswordToast(''), 3000);
+      goeyToast.error('Gagal: Konfirmasi password baru tidak cocok.');
       return;
     }
 
@@ -80,15 +77,13 @@ export default function ProfilPage() {
       }
 
       setShowPasswordModal(false);
-      setPasswordToast('Password berhasil diubah.');
+      goeyToast.success('Password berhasil diubah.');
       // clear inputs
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setTimeout(() => setPasswordToast(''), 3000);
     } catch (error: unknown) {
-      setPasswordToast(error instanceof Error ? error.message : 'Gagal mengubah password.');
-      setTimeout(() => setPasswordToast(''), 3000);
+      goeyToast.error(error instanceof Error ? error.message : 'Gagal mengubah password.');
     } finally {
       setIsChangingPassword(false);
     }
@@ -99,13 +94,6 @@ export default function ProfilPage() {
   return (
     <div className="min-h-dvh flex flex-col pt-safe pb-24 relative"
          style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}>
-      
-      {/* ── Toasts ── */}
-      {passwordToast && (
-        <div className={`absolute top-4 left-1/2 -translate-x-1/2 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg z-50 animate-fade-in-up ${passwordToast.includes('Gagal') ? 'bg-red-500' : 'bg-emerald-500'}`}>
-          {passwordToast}
-        </div>
-      )}
 
       {/* ── Header ── */}
       <header className="px-5 pt-8 pb-6 flex flex-col items-center justify-center text-center">

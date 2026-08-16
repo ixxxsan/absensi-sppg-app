@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, CheckCircle, XCircle, Clock, CalendarIcon, Paperclip, X } from 'lucide-react';
 import { getAllCutiAdmin, updateCutiStatus as updateCutiStatusAction } from '@/app/actions/cuti';
+import { goeyToast } from 'goey-toast';
 
 type StatusCuti = 'Semua' | 'Menunggu' | 'Disetujui' | 'Ditolak';
 
@@ -14,8 +15,6 @@ export default function AdminCutiPage() {
   const [filterStatus, setFilterStatus] = useState<StatusCuti>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  
-  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     async function fetchData() {
@@ -44,10 +43,10 @@ export default function AdminCutiPage() {
           throw new Error(result.error || 'Gagal menyetujui');
         }
         setCutiRequests(d => d.map(r => r.id === id ? { ...r, status: 'Disetujui' } : r));
-        setToastMessage('Pengajuan cuti disetujui.');
-        setTimeout(() => setToastMessage(''), 3000);
+        goeyToast.success('Pengajuan cuti disetujui.');
       } catch (e) {
         console.error(e);
+        goeyToast.error('Gagal menyetujui');
       }
     }
   };
@@ -60,22 +59,16 @@ export default function AdminCutiPage() {
           throw new Error(result.error || 'Gagal menolak');
         }
         setCutiRequests(d => d.map(r => r.id === id ? { ...r, status: 'Ditolak' } : r));
-        setToastMessage('Pengajuan cuti ditolak.');
-        setTimeout(() => setToastMessage(''), 3000);
+        goeyToast.success('Pengajuan cuti ditolak.');
       } catch (e) {
         console.error(e);
+        goeyToast.error('Gagal menolak');
       }
     }
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      
-      {toastMessage && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg z-50 animate-fade-in-up">
-          {toastMessage}
-        </div>
-      )}
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

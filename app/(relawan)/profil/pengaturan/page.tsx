@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, User, Phone, Mail, Bell } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
+import { goeyToast } from 'goey-toast';
 
 export default function PengaturanAkunPage() {
   const router = useRouter();
@@ -20,7 +21,6 @@ export default function PengaturanAkunPage() {
   const [notifAbsensi, setNotifAbsensi] = useState(true);
   const [notifPengumuman, setNotifPengumuman] = useState(true);
 
-  const [toastMessage, setToastMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -48,12 +48,10 @@ export default function PengaturanAkunPage() {
         noTelepon: noTelepon,
       });
 
-      setToastMessage('Pengaturan berhasil disimpan.');
-      setTimeout(() => setToastMessage(''), 3000);
+      goeyToast.success('Pengaturan berhasil disimpan.');
     } catch (error) {
       console.error(error);
-      setToastMessage('Gagal menyimpan pengaturan.');
-      setTimeout(() => setToastMessage(''), 3000);
+      goeyToast.error('Gagal menyimpan pengaturan.');
     } finally {
       setIsSaving(false);
     }
@@ -62,12 +60,6 @@ export default function PengaturanAkunPage() {
   return (
     <div className="min-h-dvh flex flex-col pt-safe pb-24 relative"
       style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}>
-
-      {toastMessage && (
-        <div className={`absolute top-4 left-1/2 -translate-x-1/2 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg z-50 animate-fade-in-up ${toastMessage.includes('Gagal') ? 'bg-red-500' : 'bg-emerald-500'}`}>
-          {toastMessage}
-        </div>
-      )}
 
       {/* Header */}
       <header className="px-5 pt-6 pb-4 flex items-center gap-4">
