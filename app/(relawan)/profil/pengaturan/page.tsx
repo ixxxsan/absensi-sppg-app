@@ -7,7 +7,7 @@ import { authClient } from '@/lib/auth-client';
 
 export default function PengaturanAkunPage() {
   const router = useRouter();
-  
+
   // Use Better Auth's real-time session
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
@@ -16,7 +16,7 @@ export default function PengaturanAkunPage() {
   const [email, setEmail] = useState('');
   const [noTelepon, setNoTelepon] = useState('');
   const [divisi, setDivisi] = useState('');
-  
+
   const [notifAbsensi, setNotifAbsensi] = useState(true);
   const [notifPengumuman, setNotifPengumuman] = useState(true);
 
@@ -37,7 +37,7 @@ export default function PengaturanAkunPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
+
     setIsSaving(true);
     try {
       await authClient.updateUser({
@@ -47,7 +47,7 @@ export default function PengaturanAkunPage() {
         // @ts-expect-error: custom user property
         noTelepon: noTelepon,
       });
-      
+
       setToastMessage('Pengaturan berhasil disimpan.');
       setTimeout(() => setToastMessage(''), 3000);
     } catch (error) {
@@ -61,8 +61,8 @@ export default function PengaturanAkunPage() {
 
   return (
     <div className="min-h-dvh flex flex-col pt-safe pb-24 relative"
-         style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}>
-      
+      style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}>
+
       {toastMessage && (
         <div className={`absolute top-4 left-1/2 -translate-x-1/2 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg z-50 animate-fade-in-up ${toastMessage.includes('Gagal') ? 'bg-red-500' : 'bg-emerald-500'}`}>
           {toastMessage}
@@ -78,18 +78,18 @@ export default function PengaturanAkunPage() {
       </header>
 
       <div className="flex-1 px-5 mt-4 overflow-y-auto space-y-6">
-        
+
         {/* Data Diri Form */}
         <section>
           <h2 className="text-slate-300 text-sm font-bold mb-3 uppercase tracking-wider">Data Diri</h2>
           <form onSubmit={handleSave} className="card p-5 space-y-4">
-            
+
             <div>
               <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Nama Lengkap</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={namaLengkap}
                   onChange={(e) => setNamaLengkap(e.target.value)}
                   className="w-full bg-slate-800/80 border border-slate-700/50 text-white rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea]"
@@ -102,8 +102,8 @@ export default function PengaturanAkunPage() {
               <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={email}
                   disabled
                   className="w-full bg-slate-800/80 border border-slate-700/50 text-slate-400 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea] cursor-not-allowed opacity-70"
@@ -111,13 +111,13 @@ export default function PengaturanAkunPage() {
               </div>
               <p className="text-[10px] text-slate-500 mt-1">Email tidak dapat diubah dari profil.</p>
             </div>
-            
+
             <div>
               <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Divisi</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={divisi}
                   disabled
                   className="w-full bg-slate-800/80 border border-slate-700/50 text-slate-400 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea] cursor-not-allowed opacity-70"
@@ -130,8 +130,8 @@ export default function PengaturanAkunPage() {
               <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">No. Telepon</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input 
-                  type="tel" 
+                <input
+                  type="tel"
                   value={noTelepon}
                   onChange={(e) => setNoTelepon(e.target.value)}
                   className="w-full bg-slate-800/80 border border-slate-700/50 text-white rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea]"
@@ -140,8 +140,8 @@ export default function PengaturanAkunPage() {
               </div>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isSaving || isPending}
               className="w-full py-3.5 rounded-xl font-bold text-white text-sm tracking-wide transition-all active:scale-[0.98] shadow-lg mt-2 flex justify-center disabled:opacity-50"
               style={{
@@ -158,7 +158,7 @@ export default function PengaturanAkunPage() {
         <section>
           <h2 className="text-slate-300 text-sm font-bold mb-3 uppercase tracking-wider">Preferensi Notifikasi</h2>
           <div className="card p-2">
-            
+
             <div className="flex items-center justify-between p-3 border-b border-white/5">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-800">
@@ -169,7 +169,7 @@ export default function PengaturanAkunPage() {
                   <p className="text-slate-400 text-[10px]">Notifikasi saat tiba waktu absen</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setNotifAbsensi(!notifAbsensi)}
                 className={`w-11 h-6 rounded-full transition-colors relative ${notifAbsensi ? 'bg-emerald-500' : 'bg-slate-700'}`}
               >
@@ -187,7 +187,7 @@ export default function PengaturanAkunPage() {
                   <p className="text-slate-400 text-[10px]">Info terbaru dari pengurus</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setNotifPengumuman(!notifPengumuman)}
                 className={`w-11 h-6 rounded-full transition-colors relative ${notifPengumuman ? 'bg-emerald-500' : 'bg-slate-700'}`}
               >
