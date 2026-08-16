@@ -67,24 +67,28 @@ export async function createRelawan(formData: FormData) {
     // Generate random password (Sppg + last 4 digits of NIK)
     const defaultPassword = `Sppg${nik.slice(-4)}!`;
 
-    // Admin creates user via better-auth API (to hash password correctly without logging them in)
-    const result = await auth.api.createUser({
+    // Create user via better-auth signUpEmail
+    const result = await auth.api.signUpEmail({
       headers: reqHeaders,
       body: {
         email,
         name: namaLengkap,
         password: defaultPassword,
-        role: 'relawan' as any,
+      }
+    });
+
+    if (result && result.user) {
+      // Update additional fields via Drizzle
+      await db.update(user).set({
+        role: 'relawan',
         nik,
         divisi,
         status,
         idRelawan,
         noTelepon,
         statusAktif: status === 'Aktif'
-      } as any
-    });
+      }).where(eq(user.id, result.user.id));
 
-    if (result) {
       // Simulate sending email
       await sendPasswordEmail(email, defaultPassword, namaLengkap);
       revalidatePath('/admin/relawan');
