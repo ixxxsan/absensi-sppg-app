@@ -56,6 +56,15 @@ export default function ProfilPage() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validasi kompleksitas password
+    const passwordPattern = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordPattern.test(newPassword)) {
+      setPasswordToast('Gagal: Password minimal 8 karakter, wajib mengandung minimal 1 huruf kapital dan angka.');
+      setTimeout(() => setPasswordToast(''), 4000);
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setPasswordToast('Gagal: Konfirmasi password baru tidak cocok.');
       setTimeout(() => setPasswordToast(''), 3000);
@@ -258,6 +267,7 @@ export default function ProfilPage() {
                   required 
                   className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500" 
                 />
+                <p className="text-slate-400 text-[10px] mt-1.5">Min. 8 karakter, kombinasi angka dan minimal 1 huruf kapital.</p>
               </div>
               <div>
                 <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Konfirmasi Password Baru</label>
