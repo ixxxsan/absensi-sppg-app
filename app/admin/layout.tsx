@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (!mounted) return;
-    const isAdmin = user && user.role === 'super_admin';
+    const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
     if (!isAdmin && pathname !== '/admin/login') {
       router.replace('/admin/login');
     } else if (isAdmin && pathname === '/admin/login') {
