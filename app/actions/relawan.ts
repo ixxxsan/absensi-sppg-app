@@ -67,9 +67,7 @@ export async function createRelawan(formData: FormData) {
   try {
     const session = await getServerSession();
     if (!session) {
-      const cookieStore = await cookies();
-      const allCookies = cookieStore.getAll().map(c => c.name).join(', ');
-      return { success: false, error: `Sesi tidak valid (Cookies: ${allCookies}).` };
+      return { success: false, error: 'Sesi tidak valid atau telah berakhir (Silakan login ulang).' };
     }
     if (!session.user || session.user.role !== 'admin') {
       return { success: false, error: 'Akses ditolak: Anda bukan admin.' };

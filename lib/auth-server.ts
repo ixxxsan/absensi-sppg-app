@@ -1,27 +1,24 @@
+import { auth } from './auth';
 import { cookies } from 'next/headers';
-import { db } from './db';
-import { session as sessionTable, user as userTable } from './db/schema';
-import { eq } from 'drizzle-orm';
 
 export async function getServerSession() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('better-auth.session_token')?.value 
-             || cookieStore.get('__Secure-better-auth.session_token')?.value;
-  
-  if (!token) return null;
-  
-  const sess = await db.select().from(sessionTable).where(eq(sessionTable.token, token)).limit(1);
-  if (!sess || sess.length === 0) return null;
-  
-  if (sess[0].expiresAt < new Date()) {
-    return null; // Expired
+  try {
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+    const cookieString = allCookies.map(c => `${c.name}=${c.value}`).join('; ');
+    
+    const mockHeaders = new Headers();
+    if (cookieString) {
+      mockHeaders.set('cookie', cookieString);
+    }
+    
+    // We only pass the cookie header. 
+    // By omitting origin, host, and referer, we avoid triggering Better Auth's CSRF
+    // protection which incorrectly blocks Server Actions on some Vercel deployments.
+    const session = await auth.api.getSession({ headers: mockHeaders });
+    return session;
+  } catch (error) {
+    console.error('getServerSession error:', error);
+    return null;
   }
-  
-  const usr = await db.select().from(userTable).where(eq(userTable.id, sess[0].userId)).limit(1);
-  if (!usr || usr.length === 0) return null;
-  
-  return {
-    session: sess[0],
-    user: usr[0]
-  };
 }
