@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
-import { eq, desc, asc } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 import { Resend } from 'resend';
@@ -110,9 +110,9 @@ export async function createRelawan(formData: FormData) {
     }
     
     return { success: false, error: 'Gagal membuat relawan (result API kosong).' };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating relawan:', error);
-    return { success: false, error: `Gagal menyimpan: ${error?.message || 'Unknown error'}` };
+    return { success: false, error: `Gagal menyimpan: ${error instanceof Error ? error.message : 'Unknown error'}` };
   }
 }
 
@@ -209,8 +209,6 @@ export async function bulkImportRelawan(rows: BulkImportRow[]) {
       }
     }
 
-    const results = [];
-
     // We process sequentially or with careful ID assignment. Since batch size is 50, let's process sequentially for DB safety
     // or assign IDs upfront and use Promise.allSettled. Let's assign IDs upfront.
     const rowsWithIds = rows.map((row, index) => {
@@ -248,8 +246,8 @@ export async function bulkImportRelawan(rows: BulkImportRow[]) {
         } else {
           return { success: false, email: row.email, error: 'API signUp gagal.' };
         }
-      } catch (err: any) {
-        return { success: false, email: row.email, error: err?.message || 'Unknown error' };
+      } catch (err: unknown) {
+        return { success: false, email: row.email, error: err instanceof Error ? err.message : 'Unknown error' };
       }
     });
 
@@ -259,9 +257,9 @@ export async function bulkImportRelawan(rows: BulkImportRow[]) {
 
     const finalResults = settled.map(s => s.status === 'fulfilled' ? s.value : { success: false, email: 'unknown', error: 'Promise rejected' });
     return { success: true, results: finalResults };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Bulk import error:', error);
-    return { success: false, error: error?.message || 'Terjadi kesalahan sistem saat impor massal.' };
+    return { success: false, error: error instanceof Error ? error.message : 'Terjadi kesalahan sistem saat impor massal.' };
   }
 }
 

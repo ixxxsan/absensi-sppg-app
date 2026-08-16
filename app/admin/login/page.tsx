@@ -60,7 +60,7 @@ export default function AdminLoginPage() {
           id: 99,
           namaLengkap: signInData.user.name,
           email: signInData.user.email,
-          role: signInData.user.role as any,
+          role: signInData.user.role as "admin" | "super_admin",
           token: 'admin-token-xyz', // Dummy for zustand compatibility
         });
         router.replace('/admin/dashboard');

@@ -26,6 +26,7 @@ export default function PengaturanAkunPage() {
   useEffect(() => {
     if (user) {
       const u = user as typeof user & { noTelepon?: string; divisi?: string };
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNamaLengkap(u.name || '');
       setEmail(u.email || '');
       setNoTelepon(u.noTelepon || '');

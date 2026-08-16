@@ -22,6 +22,7 @@ export default function KameraPage() {
   useEffect(() => {
     const seen = localStorage.getItem('sppg_has_seen_permission');
     if (seen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUiState('preview');
     }
 
@@ -112,7 +113,7 @@ export default function KameraPage() {
       alert(err instanceof Error ? err.message : "Terjadi kesalahan saat mengunggah.");
       setUiState('preview'); // Return to camera on error
     }
-  }, [tipeAbsen, latitude, longitude, reset, router, session?.user?.id]);
+  }, [tipeAbsen, latitude, longitude, reset, router, session]);
 
   const handleBack = () => {
     reset();
