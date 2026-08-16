@@ -10,19 +10,18 @@ export async function getServerSession() {
   
   if (!token) return null;
   
-  const sess = await db.query.session.findFirst({
-    where: eq(sessionTable.token, token),
-    with: { user: true }
-  });
+  const sess = await db.select().from(sessionTable).where(eq(sessionTable.token, token)).limit(1);
+  if (!sess || sess.length === 0) return null;
   
-  if (!sess) return null;
-  
-  if (sess.expiresAt < new Date()) {
+  if (sess[0].expiresAt < new Date()) {
     return null; // Expired
   }
   
+  const usr = await db.select().from(userTable).where(eq(userTable.id, sess[0].userId)).limit(1);
+  if (!usr || usr.length === 0) return null;
+  
   return {
-    session: sess,
-    user: sess.user
+    session: sess[0],
+    user: usr[0]
   };
 }
