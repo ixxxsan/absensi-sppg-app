@@ -5,7 +5,7 @@ import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
 import { Resend } from 'resend';
@@ -67,7 +67,9 @@ export async function createRelawan(formData: FormData) {
   try {
     const session = await getServerSession();
     if (!session) {
-      return { success: false, error: 'Sesi tidak valid atau telah berakhir (getSession returned null).' };
+      const cookieStore = await cookies();
+      const allCookies = cookieStore.getAll().map(c => c.name).join(', ');
+      return { success: false, error: `Sesi tidak valid (Cookies: ${allCookies}).` };
     }
     if (!session.user || session.user.role !== 'admin') {
       return { success: false, error: 'Akses ditolak: Anda bukan admin.' };
