@@ -66,8 +66,11 @@ export async function createRelawan(formData: FormData) {
   try {
     const reqHeaders = await headers();
     const session = await auth.api.getSession({ headers: reqHeaders });
-    if (!session?.user || session.user.role !== 'admin') {
-      return { success: false, error: 'Unauthorized' };
+    if (!session) {
+      return { success: false, error: 'Sesi tidak valid atau telah berakhir (getSession returned null).' };
+    }
+    if (!session.user || session.user.role !== 'admin') {
+      return { success: false, error: 'Akses ditolak: Anda bukan admin.' };
     }
 
     const namaLengkap = (formData.get('namaLengkap') as string || '').trim();
@@ -109,18 +112,22 @@ export async function createRelawan(formData: FormData) {
       return { success: true };
     }
     
-    return { success: false, error: 'Gagal membuat relawan.' };
-  } catch (error: unknown) {
+    return { success: false, error: 'Gagal membuat relawan (result API kosong).' };
+  } catch (error: any) {
     console.error('Error creating relawan:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Terjadi kesalahan saat menyimpan data.' };
+    return { success: false, error: `Gagal menyimpan: ${error?.message || 'Unknown error'}` };
   }
 }
 
 export async function updateRelawan(id: string, formData: FormData) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user || session.user.role !== 'admin') {
-      return { success: false, error: 'Unauthorized' };
+    const reqHeaders = await headers();
+    const session = await auth.api.getSession({ headers: reqHeaders });
+    if (!session) {
+      return { success: false, error: 'Sesi tidak valid saat memperbarui (getSession returned null).' };
+    }
+    if (!session.user || session.user.role !== 'admin') {
+      return { success: false, error: 'Akses ditolak: Anda bukan admin.' };
     }
 
     const namaLengkap = (formData.get('namaLengkap') as string || '').trim();

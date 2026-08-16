@@ -53,8 +53,11 @@ export async function submitAbsensi(
   tipe: 'masuk' | 'pulang'
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { success: false, error: 'Unauthorized' };
+  if (!session) {
+    return { success: false, error: 'Sesi tidak valid saat absensi (getSession returned null).' };
+  }
+  if (!session.user) {
+    return { success: false, error: 'Akses ditolak: User tidak ditemukan dalam sesi.' };
   }
 
   // 1. Upload Base64 Image to Supabase Storage
