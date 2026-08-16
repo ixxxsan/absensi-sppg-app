@@ -18,8 +18,8 @@ export default function PWAInstallBanner() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     if (isStandalone) return;
 
-    // Check if dismissed before
-    const dismissed = localStorage.getItem('pwa-banner-dismissed');
+    // Check if dismissed before in this session
+    const dismissed = sessionStorage.getItem('pwa-banner-dismissed');
     if (dismissed) return;
 
     // Detect iOS
@@ -52,7 +52,7 @@ export default function PWAInstallBanner() {
 
   const handleDismiss = () => {
     setShowBanner(false);
-    localStorage.setItem('pwa-banner-dismissed', '1');
+    sessionStorage.setItem('pwa-banner-dismissed', '1');
   };
 
   if (!showBanner) return null;
