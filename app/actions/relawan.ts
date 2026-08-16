@@ -131,9 +131,16 @@ export async function updateRelawan(id: string, formData: FormData) {
 
 export async function deleteRelawan(id: string) {
   try {
-    // Note: If you want to use better-auth, auth.api.adminDeleteUser({ body: { userId: id } })
-    // But direct DB delete is simpler
+    // Delete dependent records first to avoid foreign key constraint violations
+    const { absensi, session, account } = await import('@/lib/db/schema');
+    
+    await db.delete(absensi).where(eq(absensi.userId, id));
+    await db.delete(session).where(eq(session.userId, id));
+    await db.delete(account).where(eq(account.userId, id));
+    
+    // Finally delete the user
     await db.delete(user).where(eq(user.id, id));
+    
     revalidatePath('/admin/relawan');
     return { success: true };
   } catch (error: any) {
