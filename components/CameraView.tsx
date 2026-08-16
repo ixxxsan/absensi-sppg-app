@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useCameraStore } from '@/lib/stores';
 import { applyWatermark } from '@/lib/utils';
-import { useAuthStore } from '@/lib/stores';
+import { authClient } from '@/lib/auth-client';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
 
 interface CameraViewProps {
@@ -17,7 +17,8 @@ export default function CameraView({ onCapture, canShoot, tipeAbsen }: CameraVie
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const { latitude, longitude } = useCameraStore();
-  const { user } = useAuthStore();
+  const { data: session } = authClient.useSession();
+  const user = session?.user as any;
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   // Start front camera stream (locked, no switching)

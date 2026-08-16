@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Info, Circle, AlertTriangle, Camera } from 'lucide-react';
 import CameraView from '@/components/CameraView';
 import GPSIndicator from '@/components/GPSIndicator';
-import { useCameraStore, useAbsensiStore, useAuthStore, AbsenRecord } from '@/lib/stores';
+import { useCameraStore, useAbsensiStore, AbsenRecord } from '@/lib/stores';
 import { nowWIB, haversineDistance, formatDateLong, formatCoords } from '@/lib/utils';
+import { authClient } from '@/lib/auth-client';
 
 type CameraState = 'preview' | 'processing' | 'uploading' | 'onboarding';
 
@@ -37,7 +38,8 @@ export default function KameraPage() {
   };
 
   const { gpsStatus, tipeAbsen, latitude, longitude, reset } = useCameraStore();
-  const { user } = useAuthStore();
+  const { data: session } = authClient.useSession();
+  const user = session?.user as any;
 
   const canShoot = gpsStatus === 'found' || gpsStatus === 'out_of_range';
 

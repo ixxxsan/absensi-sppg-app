@@ -214,6 +214,10 @@ export default function AbsensiValidasiPage() {
                 <span className="text-slate-500">GPS</span>
                 <span className="font-mono text-slate-700">{Number(previewRow.latitude).toFixed(4)}, {Number(previewRow.longitude).toFixed(4)}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Divisi</span>
+                <span className="font-semibold text-slate-700">{previewRow.divisi || 'Relawan'}</span>
+              </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button

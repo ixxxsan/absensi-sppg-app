@@ -120,6 +120,7 @@ export async function getAllAbsensi() {
       createdAt: absensi.createdAt,
       namaLengkap: user.name,
       idRelawan: user.idRelawan,
+      divisi: user.divisi,
     })
     .from(absensi)
     .leftJoin(user, eq(absensi.userId, user.id))
