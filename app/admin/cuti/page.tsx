@@ -6,8 +6,10 @@ import { getAllCutiAdmin, updateCutiStatus as updateCutiStatusAction } from '@/a
 
 type StatusCuti = 'Semua' | 'Menunggu' | 'Disetujui' | 'Ditolak';
 
+type CutiItem = Awaited<ReturnType<typeof getAllCutiAdmin>>[number];
+
 export default function AdminCutiPage() {
-  const [cutiRequests, setCutiRequests] = useState<any[]>([]);
+  const [cutiRequests, setCutiRequests] = useState<CutiItem[]>([]);
   
   const [filterStatus, setFilterStatus] = useState<StatusCuti>('Semua');
   const [searchQuery, setSearchQuery] = useState('');

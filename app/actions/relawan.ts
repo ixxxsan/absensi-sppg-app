@@ -48,6 +48,12 @@ async function sendPasswordEmail(email: string, password: string, name: string) 
 
 export async function getRelawans() {
   try {
+    const reqHeaders = await headers();
+    const session = await auth.api.getSession({ headers: reqHeaders });
+    if (!session?.user || session.user.role !== 'admin') {
+      throw new Error('Unauthorized');
+    }
+
     const relawans = await db.select().from(user).where(eq(user.role, 'relawan')).orderBy(desc(user.createdAt));
     return relawans;
   } catch (error) {
@@ -59,13 +65,18 @@ export async function getRelawans() {
 export async function createRelawan(formData: FormData) {
   try {
     const reqHeaders = await headers();
-    const namaLengkap = formData.get('namaLengkap') as string;
-    const email = formData.get('email') as string;
-    const nik = formData.get('nik') as string;
-    const noTelepon = formData.get('noTelepon') as string;
-    const divisi = formData.get('divisi') as string;
-    const status = formData.get('status') as string;
-    const idRelawan = formData.get('idRelawan') as string;
+    const session = await auth.api.getSession({ headers: reqHeaders });
+    if (!session?.user || session.user.role !== 'admin') {
+      throw new Error('Unauthorized');
+    }
+
+    const namaLengkap = (formData.get('namaLengkap') as string || '').trim();
+    const email = (formData.get('email') as string || '').trim();
+    const nik = (formData.get('nik') as string || '').trim();
+    const noTelepon = (formData.get('noTelepon') as string || '').trim();
+    const divisi = (formData.get('divisi') as string || '').trim();
+    const status = (formData.get('status') as string || '').trim();
+    const idRelawan = (formData.get('idRelawan') as string || '').trim();
 
     // Generate random password (Sppg + last 4 digits of NIK)
     const defaultPassword = `Sppg${nik.slice(-4)}!`;
@@ -99,20 +110,25 @@ export async function createRelawan(formData: FormData) {
     }
     
     return { success: false, error: 'Gagal membuat relawan.' };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating relawan:', error);
-    return { success: false, error: error?.message || 'Terjadi kesalahan saat menyimpan data.' };
+    return { success: false, error: error instanceof Error ? error.message : 'Terjadi kesalahan saat menyimpan data.' };
   }
 }
 
 export async function updateRelawan(id: string, formData: FormData) {
   try {
-    const namaLengkap = formData.get('namaLengkap') as string;
-    const nik = formData.get('nik') as string;
-    const email = formData.get('email') as string; // changing email might require special handling, assuming just update DB here
-    const noTelepon = formData.get('noTelepon') as string;
-    const divisi = formData.get('divisi') as string;
-    const status = formData.get('status') as string;
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user || session.user.role !== 'admin') {
+      throw new Error('Unauthorized');
+    }
+
+    const namaLengkap = (formData.get('namaLengkap') as string || '').trim();
+    const nik = (formData.get('nik') as string || '').trim();
+    const email = (formData.get('email') as string || '').trim(); // changing email might require special handling, assuming just update DB here
+    const noTelepon = (formData.get('noTelepon') as string || '').trim();
+    const divisi = (formData.get('divisi') as string || '').trim();
+    const status = (formData.get('status') as string || '').trim();
 
     await db.update(user).set({
       name: namaLengkap,
@@ -126,20 +142,25 @@ export async function updateRelawan(id: string, formData: FormData) {
 
     revalidatePath('/admin/relawan');
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating relawan:', error);
-    return { success: false, error: error?.message || 'Terjadi kesalahan saat memperbarui data.' };
+    return { success: false, error: error instanceof Error ? error.message : 'Terjadi kesalahan saat memperbarui data.' };
   }
 }
 
 export async function deleteRelawan(id: string) {
   try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user || session.user.role !== 'admin') {
+      throw new Error('Unauthorized');
+    }
+
     // Delete dependent records first to avoid foreign key constraint violations
-    const { absensi, cuti, session, account } = await import('@/lib/db/schema');
+    const { absensi, cuti, session: sessionTable, account } = await import('@/lib/db/schema');
     
     await db.delete(cuti).where(eq(cuti.userId, id));
     await db.delete(absensi).where(eq(absensi.userId, id));
-    await db.delete(session).where(eq(session.userId, id));
+    await db.delete(sessionTable).where(eq(sessionTable.userId, id));
     await db.delete(account).where(eq(account.userId, id));
     
     // Finally delete the user
@@ -147,7 +168,7 @@ export async function deleteRelawan(id: string) {
     
     revalidatePath('/admin/relawan');
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting relawan:', error);
     return { success: false, error: 'Gagal menghapus data.' };
   }

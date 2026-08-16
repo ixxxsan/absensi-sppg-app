@@ -24,7 +24,6 @@ export default function PWAInstallBanner() {
 
     // Detect iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (iOS) setIsIOS(true);
 
     if (iOS) {

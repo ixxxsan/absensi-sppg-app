@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, User, Phone, Mail, MapPin, Bell } from 'lucide-react';
+import { ChevronLeft, User, Phone, Mail, Bell } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 
 export default function PengaturanAkunPage() {
@@ -16,7 +16,6 @@ export default function PengaturanAkunPage() {
   const [email, setEmail] = useState('');
   const [noTelepon, setNoTelepon] = useState('');
   const [divisi, setDivisi] = useState('');
-  const [alamat, setAlamat] = useState('');
   
   const [notifAbsensi, setNotifAbsensi] = useState(true);
   const [notifPengumuman, setNotifPengumuman] = useState(true);
@@ -24,15 +23,13 @@ export default function PengaturanAkunPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sync state when user data loads
   useEffect(() => {
     if (user) {
-      setNamaLengkap(user.name || '');
-      setEmail(user.email || '');
-      // @ts-ignore - custom fields
-      setNoTelepon(user.noTelepon || '');
-      // @ts-ignore
-      setDivisi(user.divisi || '');
+      const u = user as typeof user & { noTelepon?: string; divisi?: string };
+      setNamaLengkap(u.name || '');
+      setEmail(u.email || '');
+      setNoTelepon(u.noTelepon || '');
+      setDivisi(u.divisi || '');
       // We don't have alamat in db yet, keep local state
     }
   }, [user]);
@@ -47,7 +44,7 @@ export default function PengaturanAkunPage() {
         name: namaLengkap,
         // email change requires specific email change flow in better-auth, so we might skip it or handle it 
         // We'll update the custom fields via a server action if needed, or if better-auth supports it via updateUser
-        // @ts-ignore
+        // @ts-expect-error: custom user property
         noTelepon: noTelepon,
       });
       

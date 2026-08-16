@@ -3,7 +3,7 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { absensi, user } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { nowWIB } from '@/lib/utils';
@@ -34,11 +34,15 @@ export async function getAbsensiHariIni() {
   const masuk = records.find(r => r.tipe === 'masuk');
   const pulang = records.find(r => r.tipe === 'pulang');
 
+  // get latest user info
+  const latestUser = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1);
+
   return {
     hasMasuk: !!masuk,
     isLengkap: !!masuk && !!pulang,
     masuk,
-    pulang
+    pulang,
+    user: latestUser[0] || null
   };
 }
 
@@ -54,13 +58,18 @@ export async function submitAbsensi(
   }
 
   // 1. Upload Base64 Image to Supabase Storage
+  // Limit base64 payload to ~5MB (approx 7,000,000 characters)
+  if (base64Image.length > 7000000) {
+    throw new Error('Ukuran foto terlalu besar. Maksimal 5MB.');
+  }
+
   // Extract base64 payload (remove data:image/jpeg;base64,)
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
   const buffer = Buffer.from(base64Data, 'base64');
   
   const fileName = `${session.user.id}-${nowWIB().format('YYYYMMDD-HHmmss')}-${tipe}.jpg`;
 
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from('absensi_fotos')
     .upload(fileName, buffer, {
       contentType: 'image/jpeg',
@@ -99,10 +108,9 @@ export async function submitAbsensi(
 
 export async function getAllAbsensi() {
   const session = await auth.api.getSession({ headers: await headers() });
-  // Verify admin - skip for now or we can check role
+  // Verify admin
   if (!session?.user || session.user.role !== 'admin') {
-    // Only throw if strictly necessary, otherwise return empty array
-    // throw new Error('Unauthorized');
+    throw new Error('Unauthorized');
   }
 
   // Get all absensi joined with user to get names
@@ -124,7 +132,7 @@ export async function getAllAbsensi() {
     })
     .from(absensi)
     .leftJoin(user, eq(absensi.userId, user.id))
-    .orderBy(absensi.createdAt);
+    .orderBy(desc(absensi.createdAt));
 
   return records;
 }

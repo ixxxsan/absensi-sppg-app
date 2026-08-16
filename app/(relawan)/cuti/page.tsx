@@ -13,7 +13,8 @@ export default function PengajuanCutiPage() {
   const [tanggalSelesai, setTanggalSelesai] = useState('');
   const [alasan, setAlasan] = useState('');
   
-  const [riwayat, setRiwayat] = useState<any[]>([]);
+  type CutiRecord = Awaited<ReturnType<typeof getCutiRelawan>>[number];
+  const [riwayat, setRiwayat] = useState<CutiRecord[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -27,7 +28,15 @@ export default function PengajuanCutiPage() {
   };
 
   useEffect(() => {
-    loadRiwayat();
+    async function fetchData() {
+      try {
+        const records = await getCutiRelawan();
+        setRiwayat(records || []);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    fetchData();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,8 +56,8 @@ export default function PengajuanCutiPage() {
       setTanggalSelesai('');
       setAlasan('');
       await loadRiwayat();
-    } catch (err: any) {
-      setToastMessage(err.message || 'Terjadi kesalahan.');
+    } catch (err: unknown) {
+      setToastMessage(err instanceof Error ? err.message : 'Terjadi kesalahan.');
     } finally {
       setIsSubmitting(false);
       setTimeout(() => setToastMessage(''), 3000);

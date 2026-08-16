@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  const { register, handleSubmit, getValues, trigger, formState: { errors } } = useForm<LoginForm>({
+  const { register, getValues, trigger, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
@@ -49,8 +49,8 @@ export default function LoginPage() {
       } else {
         router.replace('/beranda');
       }
-    } catch (e: any) {
-      setLoginError(e?.message || 'Terjadi kesalahan. Periksa koneksi internet Anda.');
+    } catch (e: unknown) {
+      setLoginError(e instanceof Error ? e.message : 'Terjadi kesalahan. Periksa koneksi internet Anda.');
       setIsLoading(false);
     }
   };
@@ -69,7 +69,6 @@ export default function LoginPage() {
                  style={{ background: '#b5e0ea', transform: 'scale(1.1)' }} />
             <div className="relative w-24 h-24 rounded-3xl overflow-hidden shadow-2xl bg-transparent"
                  style={{ border: 'none' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/icons/icon-192.png"
                 alt="Logo SPPG"

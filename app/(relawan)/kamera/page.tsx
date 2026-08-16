@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Info, Circle, AlertTriangle, Camera } from 'lucide-react';
 import CameraView from '@/components/CameraView';
 import GPSIndicator from '@/components/GPSIndicator';
-import { useCameraStore, useAbsensiStore, AbsenRecord } from '@/lib/stores';
+import { useCameraStore } from '@/lib/stores';
 import { nowWIB, haversineDistance, formatDateLong, formatCoords } from '@/lib/utils';
 import { authClient } from '@/lib/auth-client';
+import { getLatestUser } from '@/app/actions/user';
 
 type CameraState = 'preview' | 'processing' | 'uploading' | 'onboarding';
 
@@ -21,7 +22,6 @@ export default function KameraPage() {
   useEffect(() => {
     const seen = localStorage.getItem('sppg_has_seen_permission');
     if (seen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUiState('preview');
     }
 
@@ -39,7 +39,28 @@ export default function KameraPage() {
 
   const { gpsStatus, tipeAbsen, latitude, longitude, reset } = useCameraStore();
   const { data: session } = authClient.useSession();
-  const user = session?.user as any;
+  
+  const [dbUser, setDbUser] = useState<{ idRelawan?: string, namaLengkap?: string, divisi?: string } | null>(null);
+
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const u = await getLatestUser();
+        if (u) {
+          setDbUser({
+            idRelawan: u.idRelawan || undefined,
+            namaLengkap: u.name || undefined,
+            divisi: u.divisi || undefined
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  const user = dbUser || (session?.user as { name?: string, idRelawan?: string, divisi?: string } | undefined);
 
   const canShoot = gpsStatus === 'found' || gpsStatus === 'out_of_range';
 
@@ -61,9 +82,9 @@ export default function KameraPage() {
 
       reset(); // Clear camera state
       router.push('/sukses');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload error:', err);
-      alert(err.message || "Terjadi kesalahan saat mengunggah.");
+      alert(err instanceof Error ? err.message : "Terjadi kesalahan saat mengunggah.");
       setUiState('preview'); // Return to camera on error
     }
   }, [tipeAbsen, latitude, longitude, reset, router]);
@@ -105,6 +126,7 @@ export default function KameraPage() {
               onCapture={handleCapture}
               canShoot={canShoot}
               tipeAbsen={tipeAbsen}
+              userOverride={dbUser}
             />
 
             {/* Back button */}
@@ -231,4 +253,3 @@ export default function KameraPage() {
   );
 }
 
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));

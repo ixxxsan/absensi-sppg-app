@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Radio, Loader2, MapPin, AlertTriangle, XCircle } from 'lucide-react';
 import { useCameraStore } from '@/lib/stores';
 import { haversineDistance } from '@/lib/utils';
 
@@ -13,7 +12,7 @@ interface GPSIndicatorProps {
 }
 
 export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
-  const { gpsStatus, latitude, longitude, gpsAccuracy, distanceFromTask, tipeAbsen,
+  const { gpsStatus, latitude, longitude, tipeAbsen,
           setGPS, setGpsStatus, setDistanceFromTask } = useCameraStore();
   const watchIdRef = useRef<number | null>(null);
   const lastFetchedCoords = useRef<{lat: number, lon: number} | null>(null);
@@ -84,35 +83,6 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
     }
   }, [latitude, longitude, gpsStatus]);
 
-  type Status = typeof gpsStatus;
-  const { addressName } = useCameraStore();
-
-  const statusUI: Record<Status, { icon: React.ReactNode; text: string; bg: string; border: string; textColor: string }> = {
-    idle: {
-      icon: <Radio className="w-4 h-4" />, text: 'GPS belum aktif',
-      bg: 'rgba(7,30,73,0.6)', border: 'rgba(181,224,234,0.15)', textColor: 'rgba(181,224,234,0.6)',
-    },
-    searching: {
-      icon: <Loader2 className="w-4 h-4 animate-spin" />, text: 'Mencari lokasi GPS...',
-      bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.3)', textColor: '#fde68a',
-    },
-    found: {
-      icon: <MapPin className="w-4 h-4" />,
-      text: addressName ? addressName : (latitude ? `${latitude.toFixed(4)}, ${longitude?.toFixed(4)}` : 'Lokasi ditemukan'),
-      bg: 'rgba(181,224,234,0.1)', border: 'rgba(181,224,234,0.35)', textColor: '#b5e0ea',
-    },
-    out_of_range: {
-      icon: <AlertTriangle className="w-4 h-4" />,
-      text: distanceFromTask ? `Di luar area (${Math.round(distanceFromTask)}m)` : 'Di luar area tugas',
-      bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.3)', textColor: '#f87171',
-    },
-    error: {
-      icon: <XCircle className="w-4 h-4" />, text: 'Izin GPS ditolak',
-      bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.3)', textColor: '#f87171',
-    },
-  };
-
-  const ui = statusUI[gpsStatus];
 
   // Hide UI as requested, keep only the GPS logic
   return null;

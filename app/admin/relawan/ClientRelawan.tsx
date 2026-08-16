@@ -8,18 +8,29 @@ import { useRouter } from 'next/navigation';
 export type Divisi = 'ASISTEN LAPANGAN' | 'ADMIN' | 'STOCKIST' | 'SECURITY' | 'DRIVER' | 'CLEANING SERVICE' | 'PERSIAPAN' | 'PENGOLAHAN' | 'PEMORSIAN' | 'PENCUCI TRAY';
 export type StatusRelawan = 'Aktif' | 'Magang' | 'Cuti';
 
+export interface RelawanItem {
+  id: string;
+  name: string;
+  email: string;
+  idRelawan?: string | null;
+  nik?: string | null;
+  noTelepon?: string | null;
+  divisi?: string | null;
+  status?: string | null;
+}
+
 const DIVISI_OPTIONS: Divisi[] = [
   'ASISTEN LAPANGAN', 'ADMIN', 'STOCKIST', 'SECURITY', 'DRIVER', 
   'CLEANING SERVICE', 'PERSIAPAN', 'PENGOLAHAN', 'PEMORSIAN', 'PENCUCI TRAY'
 ];
 
-export default function ClientRelawan({ initialData }: { initialData: any[] }) {
+export default function ClientRelawan({ initialData }: { initialData: RelawanItem[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editTarget, setEditTarget] = useState<any | null>(null);
+  const [editTarget, setEditTarget] = useState<RelawanItem | null>(null);
   const [loadingAction, setLoadingAction] = useState(false);
 
   const filtered = initialData.filter((r) => {
@@ -31,7 +42,7 @@ export default function ClientRelawan({ initialData }: { initialData: any[] }) {
     return matchesSearch && matchesStatus;
   });
 
-  const handleEdit = (r: any) => {
+  const handleEdit = (r: RelawanItem) => {
     setEditTarget(r);
     setShowModal(true);
   };
@@ -272,7 +283,7 @@ export default function ClientRelawan({ initialData }: { initialData: any[] }) {
                   type="text"
                   required
                   placeholder="16 digit NIK"
-                  defaultValue={editTarget?.nik}
+                  defaultValue={editTarget?.nik || ''}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
                 />
               </div>
@@ -296,7 +307,7 @@ export default function ClientRelawan({ initialData }: { initialData: any[] }) {
                     type="text"
                     required
                     placeholder="0812..."
-                    defaultValue={editTarget?.noTelepon}
+                    defaultValue={editTarget?.noTelepon || ''}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>

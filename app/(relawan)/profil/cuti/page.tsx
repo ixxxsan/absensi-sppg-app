@@ -1,52 +1,67 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Calendar, FileText, CheckCircle2, Clock, XCircle } from 'lucide-react';
-import { useAuthStore, useCutiStore, JenisCuti } from '@/lib/stores';
+
+import { getCutiRelawan, submitCuti } from '@/app/actions/cuti';
+import { authClient } from '@/lib/auth-client';
 
 export default function CutiPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const { cutiRequests, addCutiRequest } = useCutiStore();
+  const { data: session } = authClient.useSession();
+  const user = session?.user as { idRelawan?: string } | undefined;
+  
+  type CutiRecord = Awaited<ReturnType<typeof getCutiRelawan>>[number];
+  const [cutiRequests, setCutiRequests] = useState<CutiRecord[]>([]);
+
+  useEffect(() => {
+    async function fetchCuti() {
+      try {
+        const data = await getCutiRelawan();
+        setCutiRequests(data || []);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchCuti();
+  }, []);
 
   const [activeTab, setActiveTab] = useState<'form' | 'riwayat'>('form');
   
   // Form State
-  const [jenisCuti, setJenisCuti] = useState<JenisCuti>('Cuti Tahunan');
+  const [jenisCuti, setJenisCuti] = useState<string>('Cuti Tahunan');
   const [tanggalMulai, setTanggalMulai] = useState('');
   const [tanggalSelesai, setTanggalSelesai] = useState('');
   const [alasan, setAlasan] = useState('');
   
   const [toastMessage, setToastMessage] = useState('');
 
-  const myRequests = cutiRequests.filter(r => r.idRelawan === user?.idRelawan);
+  const myRequests = cutiRequests;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !user.idRelawan) return;
 
-    addCutiRequest({
-      id: Date.now().toString(),
-      idRelawan: user.idRelawan,
-      namaLengkap: user.namaLengkap,
-      jenisCuti,
-      tanggalMulai,
-      tanggalSelesai,
-      alasan,
-      status: 'Menunggu',
-      tanggalPengajuan: new Date().toISOString().split('T')[0]
-    });
+    try {
+      await submitCuti(jenisCuti, tanggalMulai, tanggalSelesai, alasan);
+      
+      // Refresh list
+      const data = await getCutiRelawan();
+      setCutiRequests(data || []);
 
-    setToastMessage('Pengajuan cuti berhasil dikirim.');
-    setTimeout(() => setToastMessage(''), 3000);
-    
-    // Reset form and switch to history tab
-    setJenisCuti('Cuti Tahunan');
-    setTanggalMulai('');
-    setTanggalSelesai('');
-    setAlasan('');
-    setActiveTab('riwayat');
+      setToastMessage('Pengajuan cuti berhasil dikirim.');
+      setTimeout(() => setToastMessage(''), 3000);
+      
+      // Reset form and switch to history tab
+      setJenisCuti('Cuti Tahunan');
+      setTanggalMulai('');
+      setTanggalSelesai('');
+      setAlasan('');
+      setActiveTab('riwayat');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Terjadi kesalahan saat mengajukan cuti.");
+    }
   };
 
   return (
@@ -94,7 +109,7 @@ export default function CutiPage() {
                 <div className="relative">
                   <select 
                     value={jenisCuti}
-                    onChange={(e) => setJenisCuti(e.target.value as JenisCuti)}
+                    onChange={(e) => setJenisCuti(e.target.value)}
                     className="w-full bg-slate-800/80 border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea] appearance-none"
                   >
                     <option value="Cuti Tahunan">Cuti Tahunan</option>

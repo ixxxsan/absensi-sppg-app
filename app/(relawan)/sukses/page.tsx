@@ -133,7 +133,6 @@ export default function SuksesPage() {
             {/* Photo thumbnail */}
             {lastRecord.fotoUrl && (
               <div className="mt-2 rounded-xl overflow-hidden h-24">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={lastRecord.fotoUrl}
                   alt="Foto absensi"

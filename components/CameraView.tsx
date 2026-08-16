@@ -10,15 +10,16 @@ interface CameraViewProps {
   onCapture: (watermarkedDataUrl: string) => void;
   canShoot: boolean;
   tipeAbsen: 'masuk' | 'pulang';
+  userOverride?: { idRelawan?: string, namaLengkap?: string, divisi?: string } | null;
 }
 
-export default function CameraView({ onCapture, canShoot, tipeAbsen }: CameraViewProps) {
+export default function CameraView({ onCapture, canShoot, tipeAbsen, userOverride }: CameraViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const { latitude, longitude } = useCameraStore();
   const { data: session } = authClient.useSession();
-  const user = session?.user as any;
+  const user = session?.user as { name?: string, namaLengkap?: string, idRelawan?: string, divisi?: string } | undefined;
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   // Start front camera stream (locked, no switching)
@@ -50,16 +51,17 @@ export default function CameraView({ onCapture, canShoot, tipeAbsen }: CameraVie
             videoRef.current.srcObject = fallbackStream;
             videoRef.current.play();
           }
-          } catch (err: any) {
-          console.error('Camera access denied:', err);
-          if (err.name === 'NotAllowedError') {
+          } catch (err: unknown) {
+          const error = err as Error;
+          console.error('Camera access denied:', error);
+          if (error.name === 'NotAllowedError') {
             setCameraError('Izin kamera ditolak. Silakan izinkan akses kamera di pengaturan browser Anda.');
-          } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
             setCameraError('Kamera tidak ditemukan di perangkat ini.');
-          } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
             setCameraError('Kamera sedang digunakan oleh aplikasi lain. Tutup aplikasi tersebut dan muat ulang.');
           } else {
-            setCameraError('Gagal mengakses kamera: ' + (err.message || 'Error tidak diketahui'));
+            setCameraError('Gagal mengakses kamera: ' + (error.message || 'Error tidak diketahui'));
           }
         }
       }
@@ -97,9 +99,9 @@ export default function CameraView({ onCapture, canShoot, tipeAbsen }: CameraVie
       latitude,
       longitude,
       addressName,
-      namaRelawan: user?.namaLengkap ?? 'Relawan SPPG',
-      idRelawan: user?.idRelawan ?? 'SPPG-000',
-      divisi: user?.divisi ?? 'Relawan',
+      namaRelawan: userOverride?.namaLengkap ?? user?.namaLengkap ?? user?.name ?? 'Relawan SPPG',
+      idRelawan: userOverride?.idRelawan ?? user?.idRelawan ?? 'SPPG-000',
+      divisi: userOverride?.divisi ?? user?.divisi ?? 'Relawan',
       tipeAbsen,
     });
 
@@ -107,7 +109,7 @@ export default function CameraView({ onCapture, canShoot, tipeAbsen }: CameraVie
     if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
 
     onCapture(watermarked);
-  }, [canShoot, latitude, longitude, tipeAbsen, user, onCapture]);
+  }, [canShoot, latitude, longitude, tipeAbsen, user, userOverride, onCapture]);
 
   return (
     <div className="relative w-full h-full bg-black">

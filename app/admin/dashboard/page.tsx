@@ -1,15 +1,12 @@
-import { Users, UserCheck, UserX, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
+import { Users, UserCheck, UserX, TrendingUp, Clock, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { formatDateLong } from '@/lib/utils';
 import { nowWIB } from '@/lib/utils';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
 import { eq, count } from 'drizzle-orm';
 
-import { desc, and } from 'drizzle-orm';
+import { desc } from 'drizzle-orm';
 import { absensi } from '@/lib/db/schema';
-
-const CHART_DAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Hari ini'];
-const MOCK_CHART = [0, 0, 0, 0, 0, 0, 0];
 
 interface KPICardProps {
   title: string;
@@ -50,7 +47,6 @@ const statusLabel = {
 
 export default async function AdminDashboard() {
   const today = formatDateLong(nowWIB());
-  const maxBar = Math.max(...MOCK_CHART) || 1; // prevent divide by zero
 
   // Fetch real count from DB
   const result = await db.select({ value: count() }).from(user).where(eq(user.role, 'relawan'));
@@ -79,6 +75,25 @@ export default async function AdminDashboard() {
   const persentase = totalRelawan === 0 ? 0 : Math.round((uniqueUsersToday / totalRelawan) * 100);
 
   const recentAbsensi = todayAbsensi.slice(0, 5);
+
+  const daysIndo = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+  const chartDaysStr: string[] = [];
+  const chartData: number[] = [];
+  
+  for (let i = 6; i >= 0; i--) {
+    const d = nowWIB().subtract(i, 'day');
+    chartDaysStr.push(i === 0 ? 'Hari ini' : daysIndo[d.day()]);
+    
+    const dateStr = d.format('YYYY-MM-DD');
+    const dayAbsensi = await db.select({ userId: absensi.userId })
+      .from(absensi)
+      .where(eq(absensi.tanggalAbsen, dateStr));
+    
+    const uniqueUsersDay = new Set(dayAbsensi.map(a => a.userId)).size;
+    const persentaseDay = totalRelawan === 0 ? 0 : Math.round((uniqueUsersDay / totalRelawan) * 100);
+    chartData.push(persentaseDay);
+  }
+  const maxBar = Math.max(...chartData) || 1;
 
   return (
     <div className="p-6 space-y-6">
@@ -137,15 +152,15 @@ export default async function AdminDashboard() {
             <span className="text-slate-400 text-xs">% hadir</span>
           </div>
           <div className="flex items-end gap-2 h-32">
-            {MOCK_CHART.map((val, i) => (
+            {chartData.map((val, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
                 <span className="text-[9px] text-slate-400">{val}%</span>
                 <div
                   className={`w-full rounded-t-lg transition-all duration-500
-                    ${i === MOCK_CHART.length - 1 ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                    ${i === chartData.length - 1 ? 'bg-emerald-500' : 'bg-slate-200'}`}
                   style={{ height: `${(val / maxBar) * 100}%`, minHeight: 4 }}
                 />
-                <span className="text-[9px] text-slate-400">{CHART_DAYS[i]}</span>
+                <span className="text-[9px] text-slate-400">{chartDaysStr[i]}</span>
               </div>
             ))}
           </div>

@@ -12,11 +12,14 @@ const statusBadge: Record<ValidationStatus, string> = {
   menunggu: 'text-slate-700 bg-slate-100 border border-slate-200',
 };
 
+type AbsensiItem = Awaited<ReturnType<typeof getAllAbsensi>>[number];
+
 export default function AbsensiValidasiPage() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<AbsensiItem[]>([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'' | ValidationStatus>('');
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -43,6 +46,7 @@ export default function AbsensiValidasiPage() {
       console.error(e);
     }
     setPreviewId(null);
+    setIsFullscreen(false);
   };
 
   const previewRow = data.find((r) => r.id === previewId);
@@ -175,17 +179,29 @@ export default function AbsensiValidasiPage() {
       {previewRow && (
         <div
           className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
-          onClick={() => setPreviewId(null)}
+          onClick={() => { setPreviewId(null); setIsFullscreen(false); }}
         >
+          {isFullscreen ? (
+            <div className="absolute inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setIsFullscreen(false)}
+                className="absolute top-4 right-4 p-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors"
+                aria-label="Tutup Layar Penuh"
+              >
+                <XCircle className="w-8 h-8" />
+              </button>
+              <img src={previewRow.fotoUrl} alt="Bukti Full" className="max-w-full max-h-full object-contain" />
+            </div>
+          ) : null}
           <div
-            className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl animate-scale-in"
+            className={`bg-white rounded-2xl p-6 w-full shadow-2xl animate-scale-in ${isFullscreen ? 'hidden' : 'max-w-2xl'}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-slate-800 font-bold">Detail Absensi</h3>
               <button
                 id="close-preview-btn"
-                onClick={() => setPreviewId(null)}
+                onClick={() => { setPreviewId(null); setIsFullscreen(false); }}
                 className="text-slate-400 hover:text-slate-600"
                 aria-label="Tutup"
               >
@@ -194,7 +210,12 @@ export default function AbsensiValidasiPage() {
             </div>
             <div className="bg-slate-100 rounded-xl flex items-center justify-center mb-4 overflow-hidden relative">
               {previewRow.fotoUrl ? (
-                <img src={previewRow.fotoUrl} alt="Bukti" className="w-full max-h-[60vh] object-contain" />
+                <div className="relative group cursor-pointer w-full" onClick={() => setIsFullscreen(true)}>
+                  <img src={previewRow.fotoUrl} alt="Bukti" className="w-full max-h-[70vh] object-contain" />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white font-semibold bg-black/50 px-4 py-2 rounded-lg">Klik untuk perbesar</span>
+                  </div>
+                </div>
               ) : (
                 <div className="h-48 flex items-center justify-center w-full">
                   <p className="text-slate-400 text-sm">Foto bukti ({previewRow.idRelawan})</p>

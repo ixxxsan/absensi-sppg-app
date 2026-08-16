@@ -17,7 +17,8 @@ async function main() {
       CREATE POLICY "Anon Insert" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'absensi');
     `);
     console.log("Storage policies applied!");
-  } catch (error: any) {
+  } catch (err: unknown) {
+    const error = err as Error;
     // Ignore error if policy already exists
     if (error.message && error.message.includes("already exists")) {
        console.log("Policies already exist.");

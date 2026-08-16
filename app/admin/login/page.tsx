@@ -10,7 +10,7 @@ import { Mail, Lock, AlertCircle, Eye, EyeOff, Shield } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores';
 
 const adminLoginSchema = z.object({
-  email: z.string().email('Format email tidak valid'),
+  email: z.string().min(1, 'Username / Email tidak boleh kosong'),
   password: z.string().min(6, 'Password minimal 6 karakter'),
 });
 
@@ -23,7 +23,7 @@ export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  const { register, handleSubmit, getValues, trigger, formState: { errors } } = useForm<AdminLoginForm>({
+  const { register, getValues, trigger, formState: { errors } } = useForm<AdminLoginForm>({
     resolver: zodResolver(adminLoginSchema),
     defaultValues: {
       email: '',
@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
     try {
       await new Promise((r) => setTimeout(r, 800));
       const emailInput = data.email.trim().toLowerCase();
-      if (emailInput === 'admin@sppg.com' && data.password === 'admin123') {
+      if ((emailInput === 'admin' || emailInput === 'admin@sppg.com') && data.password === 'Teluknagahebat123') {
         login({
           id: 99,
           namaLengkap: 'Admin SPPG',
@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
         });
         router.replace('/admin/dashboard');
       } else {
-        setLoginError('Email atau password salah.');
+        setLoginError('Email/Username atau password salah.');
         setIsLoading(false);
       }
     } catch {
@@ -100,15 +100,15 @@ export default function AdminLoginPage() {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label htmlFor="admin-email" className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                Email Admin
+                Username / Email
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
                   id="admin-email"
-                  type="email"
+                  type="text"
                   autoComplete="username"
-                  placeholder="admin@sppg.id"
+                  placeholder="Admin"
                   {...register('email')}
                   onKeyDown={async (e) => { 
                     if (e.key === 'Enter') { 

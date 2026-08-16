@@ -20,12 +20,15 @@ export async function submitCuti(
 
   const now = nowWIB();
 
+  const safeJenisCuti = (jenisCuti || '').trim().substring(0, 100);
+  const safeAlasan = (alasan || '').trim().substring(0, 500);
+
   await db.insert(cuti).values({
     userId: session.user.id,
-    jenisCuti,
+    jenisCuti: safeJenisCuti,
     tanggalMulai,
     tanggalSelesai,
-    alasan,
+    alasan: safeAlasan,
     status: 'Menunggu',
     tanggalPengajuan: now.format('YYYY-MM-DD HH:mm:ss'),
   });

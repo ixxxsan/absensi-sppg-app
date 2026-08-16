@@ -9,7 +9,7 @@ export default function ProfilPage() {
   const router = useRouter();
   
   const { data: session, isPending } = authClient.useSession();
-  const user = session?.user;
+  const user = session?.user as NonNullable<typeof session>['user'] & { idRelawan?: string, divisi?: string, status?: string } | undefined;
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordToast, setPasswordToast] = useState('');
@@ -64,11 +64,15 @@ export default function ProfilPage() {
 
     setIsChangingPassword(true);
     try {
-      await authClient.changePassword({
+      const res = await authClient.changePassword({
         newPassword: newPassword,
         currentPassword: currentPassword,
         revokeOtherSessions: true,
       });
+      
+      if (res.error) {
+        throw new Error(res.error.message || 'Gagal mengubah password');
+      }
 
       setShowPasswordModal(false);
       setPasswordToast('Password berhasil diubah.');
@@ -77,8 +81,8 @@ export default function ProfilPage() {
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => setPasswordToast(''), 3000);
-    } catch (error: any) {
-      setPasswordToast(error.message || 'Gagal mengubah password.');
+    } catch (error: unknown) {
+      setPasswordToast(error instanceof Error ? error.message : 'Gagal mengubah password.');
       setTimeout(() => setPasswordToast(''), 3000);
     } finally {
       setIsChangingPassword(false);
@@ -135,12 +139,9 @@ export default function ProfilPage() {
         <h2 className="text-white text-2xl font-bold">{user?.name ?? (isPending ? 'Loading...' : 'Relawan SPPG')}</h2>
         <div className="flex flex-col items-center gap-1 mt-1">
           <p className="text-sm font-semibold" style={{ color: '#b5e0ea' }}>
-            {/* @ts-ignore */}
             {user?.idRelawan ?? 'SPPG-000'}
-            {/* @ts-ignore */}
             {user?.divisi && ` • ${user.divisi}`}
           </p>
-          {/* @ts-ignore */}
           {user?.status === 'Cuti' && (
             <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30">
               Cuti

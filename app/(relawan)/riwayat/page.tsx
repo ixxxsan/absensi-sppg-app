@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, MapPin, Clock, Camera, CheckCircle, XCircle, AlertCircle, ClipboardList } from 'lucide-react';
+import { ChevronDown, MapPin, Clock, Camera, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
 import { useAbsensiStore } from '@/lib/stores';
 import type { AbsenRecord } from '@/lib/stores';
 
@@ -72,7 +72,6 @@ function AttendanceCard({ record }: AttendanceCardProps) {
 
       {showPhoto && record.fotoUrl && (
         <div className="rounded-xl overflow-hidden mt-1">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={record.fotoUrl}
             alt="Foto absensi dengan watermark"

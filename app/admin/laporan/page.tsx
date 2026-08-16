@@ -6,13 +6,25 @@ import * as XLSX from 'xlsx-js-style';
 import { nowWIB } from '@/lib/utils';
 import { getAllAbsensi } from '@/app/actions/absensi';
 
+interface LaporanItem {
+  idRelawan: string;
+  namaLengkap: string;
+  tanggal: string;
+  jamMasuk: string;
+  jamPulang: string;
+  statusMasuk: string;
+  statusPulang: string;
+  koordinatMasuk: string;
+  koordinatPulang: string;
+}
+
 export default function LaporanPage() {
   const [dateFrom, setDateFrom] = useState(nowWIB().startOf('month').format('YYYY-MM-DD'));
   const [dateTo, setDateTo] = useState(nowWIB().format('YYYY-MM-DD'));
   const [isExporting, setIsExporting] = useState(false);
   const [lastExport, setLastExport] = useState<string | null>(null);
   
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<LaporanItem[]>([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -22,7 +34,7 @@ export default function LaporanPage() {
       // In this DB schema, we have separate rows for 'masuk' and 'pulang' per user/date.
       // We need to merge them for the report table.
       
-      const grouped: Record<string, any> = {};
+      const grouped: Record<string, LaporanItem> = {};
       
       records.forEach((r) => {
         const key = `${r.userId}-${r.tanggalAbsen}`;

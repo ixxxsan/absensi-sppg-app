@@ -13,15 +13,15 @@ import { authClient } from '@/lib/auth-client';
 
 export default function BerandaPage() {
   const router = useRouter();
-  const { data: session, isPending } = authClient.useSession();
-  const user = session?.user;
+  const { data: session } = authClient.useSession();
+  const user = session?.user as NonNullable<typeof session>['user'] & { idRelawan?: string } | undefined;
   const { setTipeAbsen } = useCameraStore();
 
   const [hasMasuk, setHasMasuk] = useState(false);
   const [isLengkap, setIsLengkap] = useState(false);
-  const [masukData, setMasukData] = useState<any>(null);
-  const [pulangData, setPulangData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  type AbsensiData = Awaited<ReturnType<typeof getAbsensiHariIni>>;
+  const [masukData, setMasukData] = useState<AbsensiData['masuk'] | null>(null);
+  const [pulangData, setPulangData] = useState<AbsensiData['pulang'] | null>(null);
 
   useEffect(() => {
     async function fetchAbsensi() {
@@ -33,8 +33,6 @@ export default function BerandaPage() {
         setPulangData(data.pulang);
       } catch (err) {
         console.error(err);
-      } finally {
-        setIsLoading(false);
       }
     }
     fetchAbsensi();
@@ -77,7 +75,6 @@ export default function BerandaPage() {
           </div>
         </div>
         <p className="mt-1 text-xs font-mono" style={{ color: 'rgba(181,224,234,0.4)' }}>
-          {/* @ts-ignore */}
           {user?.idRelawan ?? 'SPPG-000'}
         </p>
       </header>

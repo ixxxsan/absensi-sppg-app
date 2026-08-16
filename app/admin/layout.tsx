@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -28,7 +29,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   /* ── Auth guard ── */
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -101,10 +101,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             overflow: 'hidden',
             flexShrink: 0,
             border: 'none',
+            position: 'relative',
           }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/icon-192.png" alt="Logo"
-                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <Image src="/icons/icon-192.png" alt="Logo" fill
+                 style={{ objectFit: 'cover' }} />
           </div>
 
           {!collapsed && (
