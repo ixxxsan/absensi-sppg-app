@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Search, Plus, Edit2, Trash2, ChevronDown, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, ChevronDown, CheckCircle, Clock, AlertCircle, Loader2, Users } from 'lucide-react';
 import { createRelawan, updateRelawan, deleteRelawan } from '@/app/actions/relawan';
 import { useRouter } from 'next/navigation';
 
@@ -238,8 +238,17 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
 
         {filtered.length === 0 && (
           <div className="py-16 text-center text-slate-400 flex flex-col items-center">
-            <Search className="w-10 h-10 mb-3 text-slate-300" />
-            <p className="text-sm">Tidak ditemukan relawan dengan kata kunci tersebut</p>
+            {initialData.length === 0 ? (
+              <>
+                <Users className="w-10 h-10 mb-3 text-slate-300" />
+                <p className="text-sm">Belum ada data relawan</p>
+              </>
+            ) : (
+              <>
+                <Search className="w-10 h-10 mb-3 text-slate-300" />
+                <p className="text-sm">Tidak ditemukan relawan dengan kata kunci tersebut</p>
+              </>
+            )}
           </div>
         )}
       </div>
