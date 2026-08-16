@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useCameraStore } from '@/lib/stores';
 import { haversineDistance } from '@/lib/utils';
 
-const TASK_LOCATION = { lat: -6.098751, lon: 106.653180 };
+const TASK_LOCATION = { lat: -6.098715809561847, lon: 106.65337852609656 };
 const GEOFENCE_RADIUS = 500;
 
 interface GPSIndicatorProps {

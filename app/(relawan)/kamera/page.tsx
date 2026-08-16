@@ -64,11 +64,15 @@ export default function KameraPage() {
 
   const user = dbUser || (session?.user as { name?: string, idRelawan?: string, divisi?: string } | undefined);
 
-  const canShoot = gpsStatus === 'found' || gpsStatus === 'out_of_range';
+  // For absen masuk: ONLY allow shooting when inside geofence radius (gpsStatus === 'found')
+  // For absen pulang: allow shooting from anywhere with GPS lock
+  const canShoot = tipeAbsen === 'masuk'
+    ? gpsStatus === 'found'
+    : (gpsStatus === 'found' || gpsStatus === 'out_of_range');
 
   const handleCapture = useCallback(async (blob: Blob) => {
     // Force GPS validation for Absen Masuk
-    const dist = haversineDistance(latitude ?? 0, longitude ?? 0, -6.098751, 106.653180);
+    const dist = haversineDistance(latitude ?? 0, longitude ?? 0, -6.098715809561847, 106.65337852609656);
     if (tipeAbsen === 'masuk' && dist > 500) {
       goeyToast.error("Anda berada di luar radius tugas. Absensi ditolak. Silakan pindah mendekat ke lokasi.");
       return;
@@ -232,7 +236,9 @@ export default function KameraPage() {
                               justify-center gap-2 rounded-xl px-4 py-3 bg-red-500/20 border border-red-500/30">
                 <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
                 <p className="text-red-300 text-sm text-center">
-                  Anda berada di luar radius tugas. Absensi akan DITOLAK. Pindah mendekat untuk valid.
+                  {tipeAbsen === 'masuk'
+                    ? 'Anda berada di luar radius tugas (>500m). Foto tidak dapat diambil. Pindah mendekat ke lokasi tugas.'
+                    : 'Anda berada di luar radius tugas.'}
                 </p>
               </div>
             )}

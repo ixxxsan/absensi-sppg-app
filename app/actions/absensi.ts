@@ -68,7 +68,7 @@ export async function submitAbsensi(
 
   // Validate distance server-side to prevent bypass
   if (tipe === 'masuk') {
-    const dist = haversineDistance(latitude, longitude, -6.098751, 106.653180);
+    const dist = haversineDistance(latitude, longitude, -6.098715809561847, 106.65337852609656);
     if (dist > 500) {
       return { success: false, error: 'Anda berada di luar radius tugas (lebih dari 500m). Absensi masuk ditolak.' };
     }
