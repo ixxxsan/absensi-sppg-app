@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Eye, CheckCircle, XCircle } from 'lucide-react';
 import { getAllAbsensi, updateAbsensiStatus } from '@/app/actions/absensi';
+import { goeyToast } from 'goey-toast';
 
 type ValidationStatus = 'valid' | 'invalid' | 'menunggu';
 
@@ -42,10 +43,10 @@ export default function AbsensiValidasiPage() {
     try {
       const result = await updateAbsensiStatus(id, status);
       if (result && !result.success) {
-        console.error(result.error);
-        alert(result.error || 'Gagal mengubah status');
+        goeyToast.error(result.error || 'Gagal mengubah status');
         return;
       }
+      goeyToast.success(`Status berhasil diubah menjadi ${status}`);
       setData((d) => d.map((r) => r.id === id ? { ...r, statusValidasi: status } : r));
     } catch (e) {
       console.error(e);

@@ -5,6 +5,7 @@ import { useCameraStore } from '@/lib/stores';
 import { applyWatermark } from '@/lib/utils';
 import { authClient } from '@/lib/auth-client';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import { goeyToast } from 'goey-toast';
 
 interface CameraViewProps {
   onCapture: (blob: Blob) => void;
@@ -112,7 +113,7 @@ export default function CameraView({ onCapture, canShoot, tipeAbsen, userOverrid
       onCapture(watermarkedBlob);
     } catch (err) {
       console.error('Failed to apply watermark:', err);
-      alert('Gagal memproses gambar. Silakan coba lagi.');
+      goeyToast.error('Gagal memproses gambar. Silakan coba lagi.');
     }
   }, [canShoot, latitude, longitude, tipeAbsen, user, userOverride, onCapture]);
 

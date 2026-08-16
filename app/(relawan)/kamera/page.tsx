@@ -9,6 +9,7 @@ import { useCameraStore } from '@/lib/stores';
 import { nowWIB, haversineDistance, formatDateLong, formatCoords } from '@/lib/utils';
 import { authClient } from '@/lib/auth-client';
 import { getLatestUser } from '@/app/actions/user';
+import { goeyToast } from 'goey-toast';
 
 type CameraState = 'preview' | 'processing' | 'uploading' | 'onboarding';
 
@@ -69,7 +70,7 @@ export default function KameraPage() {
     // Force GPS validation for Absen Masuk
     const dist = haversineDistance(latitude ?? 0, longitude ?? 0, -6.098751, 106.653180);
     if (tipeAbsen === 'masuk' && dist > 500) {
-      alert("Anda berada di luar radius tugas. Absensi ditolak. Silakan pindah mendekat ke lokasi.");
+      goeyToast.error("Anda berada di luar radius tugas. Absensi ditolak. Silakan pindah mendekat ke lokasi.");
       return;
     }
 
@@ -110,7 +111,7 @@ export default function KameraPage() {
       router.push('/sukses');
     } catch (err: unknown) {
       console.error('Upload error:', err);
-      alert(err instanceof Error ? err.message : "Terjadi kesalahan saat mengunggah.");
+      goeyToast.error(err instanceof Error ? err.message : "Terjadi kesalahan saat mengunggah.");
       setUiState('preview'); // Return to camera on error
     }
   }, [tipeAbsen, latitude, longitude, reset, router, session]);

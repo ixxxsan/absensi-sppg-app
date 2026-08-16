@@ -5,6 +5,7 @@ import { Search, Plus, Edit2, Trash2, ChevronDown, CheckCircle, Clock, AlertCirc
 import { createRelawan, updateRelawan, deleteRelawan, bulkImportRelawan, BulkImportRow } from '@/app/actions/relawan';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
+import { goeyToast } from 'goey-toast';
 
 export type Divisi = 'ASISTEN LAPANGAN' | 'ADMIN' | 'STOCKIST' | 'SECURITY' | 'DRIVER' | 'CLEANING SERVICE' | 'PERSIAPAN' | 'PENGOLAHAN' | 'PEMORSIAN' | 'PENCUCI TRAY';
 export type StatusRelawan = 'Aktif' | 'Magang' | 'Cuti';
@@ -62,9 +63,14 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
         startTransition(() => {
           router.refresh();
         });
-      } else {
-        alert(res.error || 'Gagal menghapus');
       }
+      if (res?.error) {
+        goeyToast.error(res.error || 'Gagal menghapus relawan');
+        setLoadingAction(false);
+        return;
+      }
+      goeyToast.success('Relawan berhasil dihapus');
+      router.refresh();
       setLoadingAction(false);
     }
   };
@@ -92,20 +98,26 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
     setLoadingAction(true);
     const fd = new FormData(e.currentTarget);
     
-    let res;
-    if (editTarget) {
-      res = await updateRelawan(editTarget.id, fd);
-    } else {
-      res = await createRelawan(fd);
-    }
+    try {
+      let res;
+      if (editTarget) {
+        res = await updateRelawan(editTarget.id, fd);
+      } else {
+        res = await createRelawan(fd);
+      }
 
-    if (res?.success) {
-      setShowModal(false);
-      startTransition(() => {
-        router.refresh();
-      });
-    } else {
-      alert(res?.error || 'Gagal menyimpan data');
+      if (res?.success) {
+        setShowModal(false);
+        startTransition(() => {
+          router.refresh();
+        });
+        goeyToast.success('Data berhasil disimpan');
+      } else {
+        goeyToast.error(res?.error || 'Gagal menyimpan data');
+      }
+    } catch (error) {
+      console.error(error);
+      goeyToast.error('Gagal menyimpan data relawan');
     }
     setLoadingAction(false);
   };
@@ -126,7 +138,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
       const rawRows: any[] = XLSX.utils.sheet_to_json(firstSheet);
 
       if (!rawRows || rawRows.length === 0) {
-        alert('File Excel kosong atau format tidak sesuai.');
+        goeyToast.error('File Excel kosong atau format tidak sesuai.');
         setIsImporting(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
@@ -143,7 +155,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
       })).filter(r => r.namaLengkap && r.nik && r.email); // Basic validation
 
       if (mappedRows.length === 0) {
-        alert('Tidak ada baris yang valid. Pastikan ada kolom Nama Lengkap, NIK, dan Email.');
+        goeyToast.error('Tidak ada baris yang valid. Pastikan ada kolom Nama Lengkap, NIK, dan Email.');
         setIsImporting(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
@@ -185,13 +197,15 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
         details: failedDetails
       });
 
+      goeyToast.success(`Import selesai: ${totalSuccess} berhasil, ${totalFailed} gagal.`);
+
       startTransition(() => {
         router.refresh();
       });
 
     } catch (error) {
-      console.error('Import error:', error);
-      alert('Terjadi kesalahan saat memproses file Excel.');
+      console.error('Excel Import Error:', error);
+      goeyToast.error('Terjadi kesalahan saat memproses file Excel.');
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
