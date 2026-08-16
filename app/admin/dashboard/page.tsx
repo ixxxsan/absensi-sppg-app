@@ -8,6 +8,8 @@ import { eq, count } from 'drizzle-orm';
 import { desc } from 'drizzle-orm';
 import { absensi } from '@/lib/db/schema';
 
+export const dynamic = 'force-dynamic';
+
 interface KPICardProps {
   title: string;
   value: string | number;
@@ -44,7 +46,6 @@ const statusLabel = {
   valid: 'text-emerald-700 bg-emerald-50',
   invalid: 'text-red-700 bg-red-50',
 };
-export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
   const today = formatDateLong(nowWIB());
