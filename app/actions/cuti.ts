@@ -15,7 +15,7 @@ export async function submitCuti(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
-    throw new Error('Unauthorized');
+    return { success: false, error: 'Unauthorized' };
   }
 
   const now = nowWIB();
@@ -39,7 +39,7 @@ export async function submitCuti(
 export async function getCutiRelawan() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
-    throw new Error('Unauthorized');
+    return [];
   }
 
   const records = await db
@@ -54,7 +54,7 @@ export async function getCutiRelawan() {
 export async function getAllCutiAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user || session.user.role !== 'admin') {
-    throw new Error('Unauthorized');
+    return [];
   }
 
   const records = await db
@@ -80,7 +80,7 @@ export async function getAllCutiAdmin() {
 export async function updateCutiStatus(id: string, status: 'Disetujui' | 'Ditolak' | 'Menunggu') {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user || session.user.role !== 'admin') {
-    throw new Error('Unauthorized');
+    return { success: false, error: 'Unauthorized' };
   }
 
   await db.update(cuti)

@@ -78,7 +78,10 @@ export default function KameraPage() {
       setUploadText('Mengunggah dan menyimpan...');
       
       const { submitAbsensi } = await import('@/app/actions/absensi');
-      await submitAbsensi(watermarkedDataUrl, latitude ?? 0, longitude ?? 0, tipeAbsen);
+      const res = await submitAbsensi(watermarkedDataUrl, latitude ?? 0, longitude ?? 0, tipeAbsen);
+      if (!res || !res.success) {
+        throw new Error(res?.error || 'Gagal mengirim absensi.');
+      }
 
       reset(); // Clear camera state
       router.push('/sukses');

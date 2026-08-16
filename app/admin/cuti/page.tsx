@@ -38,7 +38,10 @@ export default function AdminCutiPage() {
   const handleApprove = async (id: string) => {
     if (confirm('Setujui pengajuan cuti ini?')) {
       try {
-        await updateCutiStatusAction(id, 'Disetujui');
+        const result = await updateCutiStatusAction(id, 'Disetujui');
+        if (result && !result.success) {
+          throw new Error(result.error || 'Gagal menyetujui');
+        }
         setCutiRequests(d => d.map(r => r.id === id ? { ...r, status: 'Disetujui' } : r));
         setToastMessage('Pengajuan cuti disetujui.');
         setTimeout(() => setToastMessage(''), 3000);
@@ -51,7 +54,10 @@ export default function AdminCutiPage() {
   const handleReject = async (id: string) => {
     if (confirm('Tolak pengajuan cuti ini?')) {
       try {
-        await updateCutiStatusAction(id, 'Ditolak');
+        const result = await updateCutiStatusAction(id, 'Ditolak');
+        if (result && !result.success) {
+          throw new Error(result.error || 'Gagal menolak');
+        }
         setCutiRequests(d => d.map(r => r.id === id ? { ...r, status: 'Ditolak' } : r));
         setToastMessage('Pengajuan cuti ditolak.');
         setTimeout(() => setToastMessage(''), 3000);

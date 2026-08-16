@@ -54,13 +54,13 @@ export async function submitAbsensi(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
-    throw new Error('Unauthorized');
+    return { success: false, error: 'Unauthorized' };
   }
 
   // 1. Upload Base64 Image to Supabase Storage
   // Limit base64 payload to ~5MB (approx 7,000,000 characters)
   if (base64Image.length > 7000000) {
-    throw new Error('Ukuran foto terlalu besar. Maksimal 5MB.');
+    return { success: false, error: 'Ukuran foto terlalu besar. Maksimal 5MB.' };
   }
 
   // Extract base64 payload (remove data:image/jpeg;base64,)
@@ -78,7 +78,7 @@ export async function submitAbsensi(
 
   if (uploadError) {
     console.error("Storage upload error:", uploadError);
-    throw new Error('Gagal mengunggah foto');
+    return { success: false, error: 'Gagal mengunggah foto' };
   }
 
   const { data: publicUrlData } = supabase.storage
@@ -93,7 +93,7 @@ export async function submitAbsensi(
   if (tipe === 'masuk') {
     const dist = haversineDistance(latitude, longitude, -6.098751, 106.653180);
     if (dist > 500) {
-      throw new Error('Anda berada di luar radius tugas (lebih dari 500m). Absensi masuk ditolak.');
+      return { success: false, error: 'Anda berada di luar radius tugas (lebih dari 500m). Absensi masuk ditolak.' };
     }
   }
 
@@ -117,7 +117,7 @@ export async function getAllAbsensi() {
   const session = await auth.api.getSession({ headers: await headers() });
   // Verify admin
   if (!session?.user || session.user.role !== 'admin') {
-    throw new Error('Unauthorized');
+    return [];
   }
 
   // Get all absensi joined with user to get names
@@ -147,7 +147,7 @@ export async function getAllAbsensi() {
 export async function updateAbsensiStatus(id: string, status: 'valid' | 'invalid' | 'menunggu') {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user || session.user.role !== 'admin') {
-    throw new Error('Unauthorized');
+    return { success: false, error: 'Unauthorized' };
   }
 
   await db.update(absensi)

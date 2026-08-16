@@ -44,7 +44,10 @@ export default function CutiPage() {
     if (!user || !user.idRelawan) return;
 
     try {
-      await submitCuti(jenisCuti, tanggalMulai, tanggalSelesai, alasan);
+      const result = await submitCuti(jenisCuti, tanggalMulai, tanggalSelesai, alasan);
+      if (result && !result.success) {
+        throw new Error(result.error || 'Gagal mengirim pengajuan cuti.');
+      }
       
       // Refresh list
       const data = await getCutiRelawan();

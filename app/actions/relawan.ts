@@ -51,7 +51,7 @@ export async function getRelawans() {
     const reqHeaders = await headers();
     const session = await auth.api.getSession({ headers: reqHeaders });
     if (!session?.user || session.user.role !== 'admin') {
-      throw new Error('Unauthorized');
+      return [];
     }
 
     const relawans = await db.select().from(user).where(eq(user.role, 'relawan')).orderBy(desc(user.createdAt));
@@ -67,7 +67,7 @@ export async function createRelawan(formData: FormData) {
     const reqHeaders = await headers();
     const session = await auth.api.getSession({ headers: reqHeaders });
     if (!session?.user || session.user.role !== 'admin') {
-      throw new Error('Unauthorized');
+      return { success: false, error: 'Unauthorized' };
     }
 
     const namaLengkap = (formData.get('namaLengkap') as string || '').trim();
@@ -120,7 +120,7 @@ export async function updateRelawan(id: string, formData: FormData) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user || session.user.role !== 'admin') {
-      throw new Error('Unauthorized');
+      return { success: false, error: 'Unauthorized' };
     }
 
     const namaLengkap = (formData.get('namaLengkap') as string || '').trim();
@@ -152,7 +152,7 @@ export async function deleteRelawan(id: string) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user || session.user.role !== 'admin') {
-      throw new Error('Unauthorized');
+      return { success: false, error: 'Unauthorized' };
     }
 
     // Delete dependent records first to avoid foreign key constraint violations

@@ -40,7 +40,12 @@ export default function AbsensiValidasiPage() {
 
   const updateStatus = async (id: string, status: ValidationStatus) => {
     try {
-      await updateAbsensiStatus(id, status);
+      const result = await updateAbsensiStatus(id, status);
+      if (result && !result.success) {
+        console.error(result.error);
+        alert(result.error || 'Gagal mengubah status');
+        return;
+      }
       setData((d) => d.map((r) => r.id === id ? { ...r, statusValidasi: status } : r));
     } catch (e) {
       console.error(e);
