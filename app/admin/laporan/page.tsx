@@ -1,30 +1,68 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileSpreadsheet, Download, Calendar, Info, CheckCircle2 } from 'lucide-react';
 import * as XLSX from 'xlsx-js-style';
 import { nowWIB } from '@/lib/utils';
-
-const MOCK_EXPORT_DATA = [
-  { idRelawan: 'SPPG-001', namaLengkap: 'Budi Santoso', tanggal: '2025-08-01', jamMasuk: '08:15', jamPulang: '17:05', statusMasuk: 'valid', statusPulang: 'valid', koordinatMasuk: '-6.2088, 106.8456', koordinatPulang: '-6.2088, 106.8456' },
-  { idRelawan: 'SPPG-002', namaLengkap: 'Siti Rahayu', tanggal: '2025-08-01', jamMasuk: '08:22', jamPulang: '', statusMasuk: 'valid', statusPulang: '-', koordinatMasuk: '-6.2090, 106.8460', koordinatPulang: '' },
-  { idRelawan: 'SPPG-001', namaLengkap: 'Budi Santoso', tanggal: '2025-08-02', jamMasuk: '08:10', jamPulang: '17:00', statusMasuk: 'valid', statusPulang: 'valid', koordinatMasuk: '-6.2088, 106.8456', koordinatPulang: '-6.2088, 106.8456' },
-  { idRelawan: 'SPPG-003', namaLengkap: 'Ahmad Yani', tanggal: '2025-08-01', jamMasuk: '08:30', jamPulang: '17:10', statusMasuk: 'valid', statusPulang: 'valid', koordinatMasuk: '-6.2085, 106.8450', koordinatPulang: '-6.2085, 106.8450' },
-];
+import { getAllAbsensi } from '@/app/actions/absensi';
 
 export default function LaporanPage() {
-  const [dateFrom, setDateFrom] = useState('2025-08-01');
-  const [dateTo, setDateTo] = useState('2025-08-14');
+  const [dateFrom, setDateFrom] = useState(nowWIB().startOf('month').format('YYYY-MM-DD'));
+  const [dateTo, setDateTo] = useState(nowWIB().format('YYYY-MM-DD'));
   const [isExporting, setIsExporting] = useState(false);
   const [lastExport, setLastExport] = useState<string | null>(null);
+  
+  const [data, setData] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      const records = await getAllAbsensi();
+      
+      // Transform records into a flatter format suitable for export, grouping by user/date
+      // In this DB schema, we have separate rows for 'masuk' and 'pulang' per user/date.
+      // We need to merge them for the report table.
+      
+      const grouped: Record<string, any> = {};
+      
+      records.forEach((r) => {
+        const key = `${r.userId}-${r.tanggalAbsen}`;
+        if (!grouped[key]) {
+          grouped[key] = {
+            idRelawan: r.idRelawan || 'SPPG-000',
+            namaLengkap: r.namaLengkap || 'Unknown',
+            tanggal: r.tanggalAbsen,
+            jamMasuk: '',
+            jamPulang: '',
+            statusMasuk: '-',
+            statusPulang: '-',
+            koordinatMasuk: '',
+            koordinatPulang: ''
+          };
+        }
+        
+        if (r.tipe === 'masuk') {
+          grouped[key].jamMasuk = r.waktuAbsen;
+          grouped[key].statusMasuk = r.statusValidasi;
+          grouped[key].koordinatMasuk = `${Number(r.latitude).toFixed(4)}, ${Number(r.longitude).toFixed(4)}`;
+        } else if (r.tipe === 'pulang') {
+          grouped[key].jamPulang = r.waktuAbsen;
+          grouped[key].statusPulang = r.statusValidasi;
+          grouped[key].koordinatPulang = `${Number(r.latitude).toFixed(4)}, ${Number(r.longitude).toFixed(4)}`;
+        }
+      });
+      
+      setData(Object.values(grouped));
+    }
+    fetchData();
+  }, []);
 
   const handleExport = async () => {
     setIsExporting(true);
-    await new Promise((r) => setTimeout(r, 800)); // Simulate API fetch
+    await new Promise((r) => setTimeout(r, 800)); // Simulate UI loading feel
 
     // Calculate Total Hari Kerja per Volunteer
     const hariKerjaMap: Record<string, number> = {};
-    MOCK_EXPORT_DATA.forEach(r => {
+    data.forEach(r => {
       if (r.tanggal >= dateFrom && r.tanggal <= dateTo) {
         if (r.statusMasuk === 'valid') {
           if (!hariKerjaMap[r.idRelawan]) hariKerjaMap[r.idRelawan] = 0;
@@ -40,7 +78,7 @@ export default function LaporanPage() {
       'Koordinat Masuk', 'Koordinat Pulang', 'Total Hari Kerja'
     ];
 
-    const dataRows = MOCK_EXPORT_DATA
+    const dataRows = data
       .filter((r) => r.tanggal >= dateFrom && r.tanggal <= dateTo)
       .map((r) => [
         r.idRelawan,

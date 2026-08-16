@@ -1,40 +1,61 @@
 'use client';
 
-import { useState } from 'react';
-import { useCutiStore, useRelawanStore, StatusCuti } from '@/lib/stores';
+import { useState, useEffect } from 'react';
 import { Search, CheckCircle, XCircle, Clock, CalendarIcon } from 'lucide-react';
+import { getAllCutiAdmin, updateCutiStatus as updateCutiStatusAction } from '@/app/actions/cuti';
+
+type StatusCuti = 'Semua' | 'Menunggu' | 'Disetujui' | 'Ditolak';
 
 export default function AdminCutiPage() {
-  const { cutiRequests, updateCutiStatus } = useCutiStore();
-  const { updateRelawanStatus } = useRelawanStore();
+  const [cutiRequests, setCutiRequests] = useState<any[]>([]);
   
-  const [filterStatus, setFilterStatus] = useState<StatusCuti | 'Semua'>('Semua');
+  const [filterStatus, setFilterStatus] = useState<StatusCuti>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
   
   const [toastMessage, setToastMessage] = useState('');
 
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await getAllCutiAdmin();
+        setCutiRequests(data || []);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    fetchData();
+  }, []);
+
   const filteredRequests = cutiRequests.filter(req => {
     const matchStatus = filterStatus === 'Semua' || req.status === filterStatus;
-    const matchSearch = req.namaLengkap.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        req.idRelawan.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch = (req.namaLengkap || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        (req.idRelawan || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchStatus && matchSearch;
-  }).sort((a, b) => new Date(b.tanggalPengajuan).getTime() - new Date(a.tanggalPengajuan).getTime());
+  });
 
-  const handleApprove = (id: string, idRelawan: string) => {
+  const handleApprove = async (id: string) => {
     if (confirm('Setujui pengajuan cuti ini?')) {
-      updateCutiStatus(id, 'Disetujui');
-      updateRelawanStatus(idRelawan, 'Cuti');
-      setToastMessage('Pengajuan cuti disetujui.');
-      setTimeout(() => setToastMessage(''), 3000);
+      try {
+        await updateCutiStatusAction(id, 'Disetujui');
+        setCutiRequests(d => d.map(r => r.id === id ? { ...r, status: 'Disetujui' } : r));
+        setToastMessage('Pengajuan cuti disetujui.');
+        setTimeout(() => setToastMessage(''), 3000);
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
-  const handleReject = (id: string, idRelawan: string) => {
+  const handleReject = async (id: string) => {
     if (confirm('Tolak pengajuan cuti ini?')) {
-      updateCutiStatus(id, 'Ditolak');
-      updateRelawanStatus(idRelawan, 'Aktif'); // Ensure they remain active
-      setToastMessage('Pengajuan cuti ditolak.');
-      setTimeout(() => setToastMessage(''), 3000);
+      try {
+        await updateCutiStatusAction(id, 'Ditolak');
+        setCutiRequests(d => d.map(r => r.id === id ? { ...r, status: 'Ditolak' } : r));
+        setToastMessage('Pengajuan cuti ditolak.');
+        setTimeout(() => setToastMessage(''), 3000);
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
@@ -149,13 +170,13 @@ export default function AdminCutiPage() {
               {req.status === 'Menunggu' && (
                 <div className="flex gap-2 mt-5 pt-4 border-t border-slate-100">
                   <button 
-                    onClick={() => handleReject(req.id, req.idRelawan)}
+                    onClick={() => handleReject(req.id)}
                     className="flex-1 py-2 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 font-bold text-sm transition-colors"
                   >
                     Tolak
                   </button>
                   <button 
-                    onClick={() => handleApprove(req.id, req.idRelawan)}
+                    onClick={() => handleApprove(req.id)}
                     className="flex-1 py-2 rounded-xl text-white bg-emerald-500 hover:bg-emerald-600 font-bold text-sm transition-colors shadow-md shadow-emerald-500/20"
                   >
                     Setujui

@@ -1,36 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Eye, CheckCircle, XCircle } from 'lucide-react';
+import { getAllAbsensi, updateAbsensiStatus } from '@/app/actions/absensi';
 
-const MOCK_DATA = [
-  { id: 1, idRelawan: 'SPPG-001', nama: 'Budi Santoso', tanggal: '2025-08-14', waktu: '08:15 WIB', tipe: 'masuk' as const, status: 'valid' as const, lat: -6.208, lon: 106.845, foto: '' },
-  { id: 2, idRelawan: 'SPPG-002', nama: 'Siti Rahayu', tanggal: '2025-08-14', waktu: '08:22 WIB', tipe: 'masuk' as const, status: 'valid' as const, lat: -6.209, lon: 106.846, foto: '' },
-  { id: 3, idRelawan: 'SPPG-004', nama: 'Dewi Lestari', tanggal: '2025-08-14', waktu: '08:45 WIB', tipe: 'masuk' as const, status: 'invalid' as const, lat: -6.300, lon: 106.900, foto: '' },
-];
-
-type ValidationStatus = 'valid' | 'invalid';
+type ValidationStatus = 'valid' | 'invalid' | 'menunggu';
 
 const statusBadge: Record<ValidationStatus, string> = {
   valid: 'text-emerald-700 bg-emerald-50 border border-emerald-200',
   invalid: 'text-red-700 bg-red-50 border border-red-200',
+  menunggu: 'text-slate-700 bg-slate-100 border border-slate-200',
 };
 
 export default function AbsensiValidasiPage() {
-  const [data, setData] = useState(MOCK_DATA);
+  const [data, setData] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'' | ValidationStatus>('');
-  const [previewId, setPreviewId] = useState<number | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      const records = await getAllAbsensi();
+      setData(records || []);
+    }
+    fetchData();
+  }, []);
 
   const filtered = data.filter((row) => {
-    const matchSearch = row.nama.toLowerCase().includes(search.toLowerCase()) ||
-                        row.idRelawan.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus ? row.status === filterStatus : true;
+    const nama = row.namaLengkap || 'Unknown';
+    const idRelawan = row.idRelawan || 'SPPG-000';
+    const matchSearch = nama.toLowerCase().includes(search.toLowerCase()) ||
+                        idRelawan.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = filterStatus ? row.statusValidasi === filterStatus : true;
     return matchSearch && matchStatus;
   });
 
-  const updateStatus = (id: number, status: ValidationStatus) => {
-    setData((d) => d.map((r) => r.id === id ? { ...r, status } : r));
+  const updateStatus = async (id: string, status: ValidationStatus) => {
+    try {
+      await updateAbsensiStatus(id, status);
+      setData((d) => d.map((r) => r.id === id ? { ...r, statusValidasi: status } : r));
+    } catch (e) {
+      console.error(e);
+    }
     setPreviewId(null);
   };
 
@@ -81,8 +92,8 @@ export default function AbsensiValidasiPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: 'Valid', count: data.filter(r => r.status === 'valid').length, color: 'text-emerald-600 bg-emerald-50' },
-          { label: 'Ditolak', count: data.filter(r => r.status === 'invalid').length, color: 'text-red-600 bg-red-50' },
+          { label: 'Valid', count: data.filter(r => r.statusValidasi === 'valid').length, color: 'text-emerald-600 bg-emerald-50' },
+          { label: 'Ditolak', count: data.filter(r => r.statusValidasi === 'invalid').length, color: 'text-red-600 bg-red-50' },
         ].map(({ label, count, color }) => (
           <div key={label} className={`rounded-xl p-3 text-center ${color}`}>
             <p className="text-2xl font-bold">{count}</p>
@@ -105,9 +116,9 @@ export default function AbsensiValidasiPage() {
             {filtered.map((row) => (
               <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-4 py-3.5 font-mono text-xs font-semibold text-emerald-600">{row.idRelawan}</td>
-                <td className="px-4 py-3.5 text-slate-700 font-medium">{row.nama}</td>
-                <td className="px-4 py-3.5 text-slate-500 text-xs">{row.tanggal}</td>
-                <td className="px-4 py-3.5 font-mono text-xs text-slate-600">{row.waktu}</td>
+                <td className="px-4 py-3.5 text-slate-700 font-medium">{row.namaLengkap || 'Unknown'}</td>
+                <td className="px-4 py-3.5 text-slate-500 text-xs">{row.tanggalAbsen}</td>
+                <td className="px-4 py-3.5 font-mono text-xs text-slate-600">{row.waktuAbsen}</td>
                 <td className="px-4 py-3.5">
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
                     ${row.tipe === 'masuk' ? 'text-blue-700 bg-blue-50' : 'text-amber-700 bg-amber-50'}`}>
@@ -115,11 +126,11 @@ export default function AbsensiValidasiPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3.5 font-mono text-xs text-slate-400">
-                  {row.lat.toFixed(3)}, {row.lon.toFixed(3)}
+                  {Number(row.latitude).toFixed(3)}, {Number(row.longitude).toFixed(3)}
                 </td>
                 <td className="px-4 py-3.5">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge[row.status]}`}>
-                    {row.status === 'valid' ? 'Valid' : 'Ditolak'}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge[row.statusValidasi as ValidationStatus] || statusBadge.menunggu}`}>
+                    {row.statusValidasi === 'valid' ? 'Valid' : row.statusValidasi === 'invalid' ? 'Ditolak' : 'Menunggu'}
                   </span>
                 </td>
                 <td className="px-4 py-3.5">
@@ -135,7 +146,7 @@ export default function AbsensiValidasiPage() {
                     <button
                       id={`approve-${row.id}`}
                       onClick={() => updateStatus(row.id, 'valid')}
-                      disabled={row.status === 'valid'}
+                      disabled={row.statusValidasi === 'valid'}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50
                                  transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       aria-label="Setujui absensi"
@@ -145,7 +156,7 @@ export default function AbsensiValidasiPage() {
                     <button
                       id={`reject-${row.id}`}
                       onClick={() => updateStatus(row.id, 'invalid')}
-                      disabled={row.status === 'invalid'}
+                      disabled={row.statusValidasi === 'invalid'}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50
                                  transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       aria-label="Tolak absensi"
@@ -181,21 +192,25 @@ export default function AbsensiValidasiPage() {
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
-            <div className="bg-slate-100 rounded-xl h-48 flex items-center justify-center mb-4">
-              <p className="text-slate-400 text-sm">Foto bukti ({previewRow.idRelawan})</p>
+            <div className="bg-slate-100 rounded-xl h-48 flex items-center justify-center mb-4 overflow-hidden relative">
+              {previewRow.fotoUrl ? (
+                <img src={previewRow.fotoUrl} alt="Bukti" className="w-full h-full object-cover" />
+              ) : (
+                <p className="text-slate-400 text-sm">Foto bukti ({previewRow.idRelawan})</p>
+              )}
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">Nama</span>
-                <span className="font-semibold text-slate-700">{previewRow.nama}</span>
+                <span className="font-semibold text-slate-700">{previewRow.namaLengkap}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Waktu</span>
-                <span className="font-mono text-slate-700">{previewRow.waktu}</span>
+                <span className="font-mono text-slate-700">{previewRow.waktuAbsen}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">GPS</span>
-                <span className="font-mono text-slate-700">{previewRow.lat.toFixed(4)}, {previewRow.lon.toFixed(4)}</span>
+                <span className="font-mono text-slate-700">{Number(previewRow.latitude).toFixed(4)}, {Number(previewRow.longitude).toFixed(4)}</span>
               </div>
             </div>
             <div className="flex gap-3 mt-5">

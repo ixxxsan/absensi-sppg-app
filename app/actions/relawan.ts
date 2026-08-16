@@ -18,14 +18,17 @@ async function sendPasswordEmail(email: string, password: string, name: string) 
 
   try {
     await resend.emails.send({
-      from: 'SPPG <no-reply@absensi-sppg-teluknaga03.id>',
+      from: 'SPPG Teluknaga 03 <no-reply@absensi-sppg-teluknaga03.id>',
       to: email,
-      subject: 'Akun Relawan SPPG Anda Telah Dibuat',
+      subject: 'Akun Relawan SPPG Teluknaga 03 Anda Telah Dibuat',
       html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; text-align: center;">
+          <img src="https://absensi-sppg-teluknaga03.id/logo-bgn.png" alt="Logo SPPG Teluknaga 03" style="width: 80px; height: auto; margin-bottom: 15px;" />
+          <h2 style="color: #1a56db; margin-top: 0;">Selamat Datang di SPPG Teluknaga 03!</h2>
+        </div>
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-          <h2 style="color: #1a56db;">Selamat Datang di SPPG!</h2>
           <p>Halo <strong>${name}</strong>,</p>
-          <p>Akun relawan Anda telah berhasil dibuat. Anda sekarang dapat masuk ke aplikasi absensi SPPG menggunakan detail berikut:</p>
+          <p>Akun relawan Anda telah berhasil dibuat. Anda sekarang dapat masuk ke aplikasi absensi SPPG Teluknaga 03 menggunakan detail berikut:</p>
           <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
             <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
@@ -33,7 +36,7 @@ async function sendPasswordEmail(email: string, password: string, name: string) 
           <p>Silakan klik tautan di bawah ini untuk mengakses aplikasi:</p>
           <a href="https://absensi-sppg-teluknaga03.id/login" style="display: inline-block; padding: 10px 20px; background-color: #1a56db; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">Masuk ke Aplikasi</a>
           <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">Demi keamanan, kami menyarankan agar Anda segera mengganti password Anda setelah pertama kali berhasil masuk (fitur ganti password sedang dikembangkan).</p>
-          <p style="margin-top: 10px; font-size: 14px; color: #6b7280;">Jika Anda memiliki pertanyaan, silakan hubungi tim administrasi SPPG.</p>
+          <p style="margin-top: 10px; font-size: 14px; color: #6b7280;">Jika Anda memiliki pertanyaan, silakan hubungi tim administrasi SPPG Teluknaga 03.</p>
         </div>
       `,
     });
@@ -132,8 +135,9 @@ export async function updateRelawan(id: string, formData: FormData) {
 export async function deleteRelawan(id: string) {
   try {
     // Delete dependent records first to avoid foreign key constraint violations
-    const { absensi, session, account } = await import('@/lib/db/schema');
+    const { absensi, cuti, session, account } = await import('@/lib/db/schema');
     
+    await db.delete(cuti).where(eq(cuti.userId, id));
     await db.delete(absensi).where(eq(absensi.userId, id));
     await db.delete(session).where(eq(session.userId, id));
     await db.delete(account).where(eq(account.userId, id));

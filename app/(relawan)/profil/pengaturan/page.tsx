@@ -1,31 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, User, Phone, Mail, MapPin, Bell } from 'lucide-react';
-import { useAuthStore } from '@/lib/stores';
+import { authClient } from '@/lib/auth-client';
 
 export default function PengaturanAkunPage() {
   const router = useRouter();
-  const { user, login } = useAuthStore();
+  
+  // Use Better Auth's real-time session
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
 
-  const [namaLengkap, setNamaLengkap] = useState(user?.namaLengkap || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [noTelepon, setNoTelepon] = useState('081234567890'); // Dummy data since noTelepon isn't in AuthUser by default
+  const [namaLengkap, setNamaLengkap] = useState('');
+  const [email, setEmail] = useState('');
+  const [noTelepon, setNoTelepon] = useState('');
+  const [divisi, setDivisi] = useState('');
   const [alamat, setAlamat] = useState('');
   
   const [notifAbsensi, setNotifAbsensi] = useState(true);
   const [notifPengumuman, setNotifPengumuman] = useState(true);
 
   const [toastMessage, setToastMessage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Sync state when user data loads
+  useEffect(() => {
     if (user) {
-      // Update store user
-      login({ ...user, namaLengkap, email });
+      setNamaLengkap(user.name || '');
+      setEmail(user.email || '');
+      // @ts-ignore - custom fields
+      setNoTelepon(user.noTelepon || '');
+      // @ts-ignore
+      setDivisi(user.divisi || '');
+      // We don't have alamat in db yet, keep local state
+    }
+  }, [user]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      await authClient.updateUser({
+        name: namaLengkap,
+        // email change requires specific email change flow in better-auth, so we might skip it or handle it 
+        // We'll update the custom fields via a server action if needed, or if better-auth supports it via updateUser
+        // @ts-ignore
+        noTelepon: noTelepon,
+      });
+      
       setToastMessage('Pengaturan berhasil disimpan.');
       setTimeout(() => setToastMessage(''), 3000);
+    } catch (error) {
+      console.error(error);
+      setToastMessage('Gagal menyimpan pengaturan.');
+      setTimeout(() => setToastMessage(''), 3000);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -34,7 +67,7 @@ export default function PengaturanAkunPage() {
          style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}>
       
       {toastMessage && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg z-50 animate-fade-in-up">
+        <div className={`absolute top-4 left-1/2 -translate-x-1/2 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg z-50 animate-fade-in-up ${toastMessage.includes('Gagal') ? 'bg-red-500' : 'bg-emerald-500'}`}>
           {toastMessage}
         </div>
       )}
@@ -63,6 +96,7 @@ export default function PengaturanAkunPage() {
                   value={namaLengkap}
                   onChange={(e) => setNamaLengkap(e.target.value)}
                   className="w-full bg-slate-800/80 border border-slate-700/50 text-white rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea]"
+                  disabled={isPending}
                 />
               </div>
             </div>
@@ -74,10 +108,25 @@ export default function PengaturanAkunPage() {
                 <input 
                   type="email" 
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-800/80 border border-slate-700/50 text-white rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea]"
+                  disabled
+                  className="w-full bg-slate-800/80 border border-slate-700/50 text-slate-400 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea] cursor-not-allowed opacity-70"
                 />
               </div>
+              <p className="text-[10px] text-slate-500 mt-1">Email tidak dapat diubah dari profil.</p>
+            </div>
+            
+            <div>
+              <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Divisi</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                  type="text" 
+                  value={divisi}
+                  disabled
+                  className="w-full bg-slate-800/80 border border-slate-700/50 text-slate-400 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea] cursor-not-allowed opacity-70"
+                />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1">Divisi hanya dapat diubah oleh admin.</p>
             </div>
 
             <div>
@@ -89,32 +138,21 @@ export default function PengaturanAkunPage() {
                   value={noTelepon}
                   onChange={(e) => setNoTelepon(e.target.value)}
                   className="w-full bg-slate-800/80 border border-slate-700/50 text-white rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea]"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Alamat Domisili</label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                <textarea 
-                  value={alamat}
-                  onChange={(e) => setAlamat(e.target.value)}
-                  rows={2}
-                  className="w-full bg-slate-800/80 border border-slate-700/50 text-white rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-[#b5e0ea] resize-none"
+                  disabled={isPending}
                 />
               </div>
             </div>
 
             <button 
               type="submit" 
-              className="w-full py-3.5 rounded-xl font-bold text-white text-sm tracking-wide transition-all active:scale-[0.98] shadow-lg mt-2"
+              disabled={isSaving || isPending}
+              className="w-full py-3.5 rounded-xl font-bold text-white text-sm tracking-wide transition-all active:scale-[0.98] shadow-lg mt-2 flex justify-center disabled:opacity-50"
               style={{
                 background: 'rgba(181,224,234,0.15)',
                 border: '1px solid rgba(181,224,234,0.3)',
               }}
             >
-              SIMPAN PERUBAHAN
+              {isSaving ? 'MENYIMPAN...' : 'SIMPAN PERUBAHAN'}
             </button>
           </form>
         </section>

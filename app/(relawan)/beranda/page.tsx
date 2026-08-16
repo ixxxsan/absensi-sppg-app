@@ -6,13 +6,15 @@ import { useEffect, useState } from 'react';
 import ClockWidget from '@/components/ClockWidget';
 import StatusBadge from '@/components/StatusBadge';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
-import { useAuthStore, useCameraStore } from '@/lib/stores';
+import { useCameraStore } from '@/lib/stores';
 import { getGreeting } from '@/lib/utils';
 import { getAbsensiHariIni } from '@/app/actions/absensi';
+import { authClient } from '@/lib/auth-client';
 
 export default function BerandaPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
   const { setTipeAbsen } = useCameraStore();
 
   const [hasMasuk, setHasMasuk] = useState(false);
@@ -38,7 +40,7 @@ export default function BerandaPage() {
     fetchAbsensi();
   }, []);
 
-  const firstName = user?.namaLengkap?.split(' ')[0] ?? 'Relawan';
+  const firstName = user?.name?.split(' ')[0] ?? 'Relawan';
   const greeting = getGreeting();
 
   const handleAbsenMasuk  = () => { setTipeAbsen('masuk');  router.push('/kamera'); };
@@ -62,17 +64,20 @@ export default function BerandaPage() {
             <h1 className="text-white text-xl font-bold leading-tight">{firstName}</h1>
           </div>
           {/* Avatar */}
-          <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+          <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg bg-cover bg-center"
                style={{
-                 background: 'linear-gradient(135deg, #b5e0ea, #7ec8d8)',
+                 backgroundImage: user?.image ? `url(${user.image})` : 'linear-gradient(135deg, #b5e0ea, #7ec8d8)',
                  boxShadow: '0 4px 16px rgba(181,224,234,0.3)',
                }}>
-            <span className="font-bold text-sm" style={{ color: '#071e49' }}>
-              {firstName.charAt(0).toUpperCase()}
-            </span>
+            {!user?.image && (
+              <span className="font-bold text-sm" style={{ color: '#071e49' }}>
+                {firstName.charAt(0).toUpperCase()}
+              </span>
+            )}
           </div>
         </div>
         <p className="mt-1 text-xs font-mono" style={{ color: 'rgba(181,224,234,0.4)' }}>
+          {/* @ts-ignore */}
           {user?.idRelawan ?? 'SPPG-000'}
         </p>
       </header>

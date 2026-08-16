@@ -3,29 +3,48 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut, Settings, Key, FileText, HelpCircle, ChevronRight, X, Camera } from 'lucide-react';
-import { useAuthStore } from '@/lib/stores';
+import { authClient } from '@/lib/auth-client';
 
 export default function ProfilPage() {
   const router = useRouter();
-  const { user, logout, login } = useAuthStore();
+  
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
+
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordToast, setPasswordToast] = useState('');
+  
+  // Password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLogout = () => {
-    logout();
-    router.replace('/login');
+  const handleLogout = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.replace('/login');
+        },
+      },
+    });
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && user) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const base64String = reader.result as string;
-        // Update user photo in AuthStore
-        login({ ...user, fotoProfil: base64String });
+        try {
+          await authClient.updateUser({
+            image: base64String
+          });
+        } catch (error) {
+          console.error("Failed to update profile photo", error);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -35,15 +54,38 @@ export default function ProfilPage() {
     router.push('/profil/cuti');
   };
 
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate password change success
-    setShowPasswordModal(false);
-    setPasswordToast('Password berhasil diubah.');
-    setTimeout(() => setPasswordToast(''), 3000);
+    if (newPassword !== confirmPassword) {
+      setPasswordToast('Gagal: Konfirmasi password baru tidak cocok.');
+      setTimeout(() => setPasswordToast(''), 3000);
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await authClient.changePassword({
+        newPassword: newPassword,
+        currentPassword: currentPassword,
+        revokeOtherSessions: true,
+      });
+
+      setShowPasswordModal(false);
+      setPasswordToast('Password berhasil diubah.');
+      // clear inputs
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPasswordToast(''), 3000);
+    } catch (error: any) {
+      setPasswordToast(error.message || 'Gagal mengubah password.');
+      setTimeout(() => setPasswordToast(''), 3000);
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
-  const firstName = user?.namaLengkap?.split(' ')[0] ?? 'Relawan';
+  const firstName = user?.name?.split(' ')[0] ?? 'Relawan';
 
   return (
     <div className="min-h-dvh flex flex-col pt-safe pb-24 relative"
@@ -51,7 +93,7 @@ export default function ProfilPage() {
       
       {/* ── Toasts ── */}
       {passwordToast && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg z-50 animate-fade-in-up">
+        <div className={`absolute top-4 left-1/2 -translate-x-1/2 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg z-50 animate-fade-in-up ${passwordToast.includes('Gagal') ? 'bg-red-500' : 'bg-emerald-500'}`}>
           {passwordToast}
         </div>
       )}
@@ -65,12 +107,12 @@ export default function ProfilPage() {
           className="w-24 h-24 rounded-full flex items-center justify-center shadow-2xl mb-4 relative cursor-pointer group"
           onClick={() => fileInputRef.current?.click()}
           style={{
-            background: user?.fotoProfil ? `url(${user.fotoProfil}) center/cover` : 'linear-gradient(135deg, #b5e0ea, #7ec8d8)',
+            background: user?.image ? `url(${user.image}) center/cover` : 'linear-gradient(135deg, #b5e0ea, #7ec8d8)',
             boxShadow: '0 8px 32px rgba(181,224,234,0.2)',
             border: '4px solid rgba(7,30,73,0.8)'
           }}
         >
-          {!user?.fotoProfil && (
+          {!user?.image && (
             <span className="font-bold text-4xl" style={{ color: '#071e49' }}>
               {firstName.charAt(0).toUpperCase()}
             </span>
@@ -90,11 +132,15 @@ export default function ProfilPage() {
           />
         </div>
         
-        <h2 className="text-white text-2xl font-bold">{user?.namaLengkap ?? 'Relawan SPPG'}</h2>
-        <div className="flex items-center justify-center gap-2 mt-1">
+        <h2 className="text-white text-2xl font-bold">{user?.name ?? (isPending ? 'Loading...' : 'Relawan SPPG')}</h2>
+        <div className="flex flex-col items-center gap-1 mt-1">
           <p className="text-sm font-semibold" style={{ color: '#b5e0ea' }}>
+            {/* @ts-ignore */}
             {user?.idRelawan ?? 'SPPG-000'}
+            {/* @ts-ignore */}
+            {user?.divisi && ` • ${user.divisi}`}
           </p>
+          {/* @ts-ignore */}
           {user?.status === 'Cuti' && (
             <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30">
               Cuti
@@ -194,18 +240,40 @@ export default function ProfilPage() {
             <form onSubmit={handleResetPassword} className="p-5 space-y-4">
               <div>
                 <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Password Lama</label>
-                <input type="password" required className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500" />
+                <input 
+                  type="password" 
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required 
+                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500" 
+                />
               </div>
               <div>
                 <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Password Baru</label>
-                <input type="password" required className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500" />
+                <input 
+                  type="password" 
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required 
+                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500" 
+                />
               </div>
               <div>
                 <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Konfirmasi Password Baru</label>
-                <input type="password" required className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500" />
+                <input 
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  required 
+                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500" 
+                />
               </div>
-              <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl mt-2 transition-colors">
-                Simpan Password
+              <button 
+                type="submit" 
+                disabled={isChangingPassword}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl mt-2 transition-colors flex justify-center items-center"
+              >
+                {isChangingPassword ? 'MENYIMPAN...' : 'Simpan Password'}
               </button>
             </form>
           </div>

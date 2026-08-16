@@ -74,3 +74,14 @@ export const absensi = pgTable("absensi", {
   statusValidasi: text("status_validasi").default('menunggu').notNull(), // 'menunggu' | 'valid' | 'invalid'
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+
+export const cuti = pgTable("cuti", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id),
+  jenisCuti: text("jenis_cuti").notNull(), // 'Cuti Tahunan' | 'Sakit' | 'Izin' | 'Keperluan Pribadi'
+  tanggalMulai: date("tanggal_mulai").notNull(),
+  tanggalSelesai: date("tanggal_selesai").notNull(),
+  alasan: text("alasan").notNull(),
+  status: text("status").default('Menunggu').notNull(), // 'Menunggu' | 'Disetujui' | 'Ditolak'
+  tanggalPengajuan: date("tanggal_pengajuan").defaultNow().notNull(),
+});

@@ -33,8 +33,7 @@ export default function BantuanPage() {
   };
 
   const handleContactAdmin = () => {
-    // Implement actual WhatsApp link here later
-    alert("Membuka WhatsApp Admin...");
+    window.open("https://wa.me/6285111604412", "_blank");
   };
 
   return (

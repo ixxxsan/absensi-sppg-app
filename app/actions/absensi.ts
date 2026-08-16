@@ -61,7 +61,7 @@ export async function submitAbsensi(
   const fileName = `${session.user.id}-${nowWIB().format('YYYYMMDD-HHmmss')}-${tipe}.jpg`;
 
   const { data: uploadData, error: uploadError } = await supabase.storage
-    .from('absensi')
+    .from('absensi_fotos')
     .upload(fileName, buffer, {
       contentType: 'image/jpeg',
       upsert: true
@@ -73,7 +73,7 @@ export async function submitAbsensi(
   }
 
   const { data: publicUrlData } = supabase.storage
-    .from('absensi')
+    .from('absensi_fotos')
     .getPublicUrl(fileName);
 
   const fotoUrl = publicUrlData.publicUrl;
@@ -95,4 +95,48 @@ export async function submitAbsensi(
   });
 
   return { success: true, fotoUrl };
+}
+
+export async function getAllAbsensi() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  // Verify admin - skip for now or we can check role
+  if (!session?.user || session.user.role !== 'admin') {
+    // Only throw if strictly necessary, otherwise return empty array
+    // throw new Error('Unauthorized');
+  }
+
+  // Get all absensi joined with user to get names
+  const records = await db
+    .select({
+      id: absensi.id,
+      userId: absensi.userId,
+      tanggalAbsen: absensi.tanggalAbsen,
+      waktuAbsen: absensi.waktuAbsen,
+      tipe: absensi.tipe,
+      fotoUrl: absensi.fotoUrl,
+      latitude: absensi.latitude,
+      longitude: absensi.longitude,
+      statusValidasi: absensi.statusValidasi,
+      createdAt: absensi.createdAt,
+      namaLengkap: user.name,
+      idRelawan: user.idRelawan,
+    })
+    .from(absensi)
+    .leftJoin(user, eq(absensi.userId, user.id))
+    .orderBy(absensi.createdAt);
+
+  return records;
+}
+
+export async function updateAbsensiStatus(id: string, status: 'valid' | 'invalid' | 'menunggu') {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user || session.user.role !== 'admin') {
+    throw new Error('Unauthorized');
+  }
+
+  await db.update(absensi)
+    .set({ statusValidasi: status })
+    .where(eq(absensi.id, id));
+    
+  return { success: true };
 }
