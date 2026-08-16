@@ -39,23 +39,19 @@ async function sendPasswordEmail(email: string, password: string, name: string) 
       <p style="color:#555;font-size:14px;line-height:1.6;">Akun relawan Anda telah berhasil dibuat oleh tim administrasi. Gunakan kredensial berikut untuk masuk ke aplikasi absensi:</p>
       <!-- Credential Box -->
       <div style="background:linear-gradient(135deg,#f8fafc,#eef2f7);padding:20px;border-radius:12px;margin:24px 0;border:1px solid #e2e8f0;">
-        <table style="width:100%;border-collapse:collapse;">
-          <tr>
-            <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:600;width:90px;vertical-align:top;">📧 Email</td>
-            <td style="padding:8px 0;color:#071e49;font-size:14px;font-weight:700;">${email}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:#64748b;font-size:13px;font-weight:600;vertical-align:top;">🔑 Password</td>
-            <td style="padding:8px 0;">
-              <code style="background:#071e49;color:#b5e0ea;padding:6px 14px;border-radius:6px;font-size:14px;font-weight:700;letter-spacing:1px;">${password}</code>
-            </td>
-          </tr>
-        </table>
+        <div style="margin-bottom: 16px;">
+          <span style="display:block;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px;">Email</span>
+          <span style="display:block;color:#071e49;font-size:15px;font-weight:700;word-break:break-all;">${email}</span>
+        </div>
+        <div>
+          <span style="display:block;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px;">Password</span>
+          <code style="display:inline-block;background:#071e49;color:#ffffff;padding:8px 16px;border-radius:6px;font-size:15px;font-weight:700;letter-spacing:1px;word-break:break-all;">${password}</code>
+        </div>
       </div>
       <div style="text-align:center;margin:28px 0;">
         <a href="https://absensi-sppg-teluknaga03.id/login" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#0c2860,#1a3a70);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:0.3px;">Masuk ke Aplikasi</a>
       </div>
-      <p style="color:#888;font-size:13px;line-height:1.5;">⚠️ Demi keamanan, segera <strong>ubah password</strong> Anda setelah berhasil masuk melalui menu <em>Profil → Pengaturan</em>.</p>
+      <p style="color:#888;font-size:13px;line-height:1.5;">Catatan: Demi keamanan, segera <strong>ubah password</strong> Anda setelah berhasil masuk melalui menu <em>Profil → Pengaturan</em>.</p>
       <p style="color:#888;font-size:13px;line-height:1.5;">Jika Anda memiliki pertanyaan, silakan hubungi tim administrasi SPPG Teluknaga 03.</p>
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
       <p style="color:#aaa;font-size:12px;text-align:center;">© 2026 SPPG Tangerang Teluknaga 03<br/>Email ini dikirim secara otomatis, mohon tidak membalas.</p>
