@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, asc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 import { Resend } from 'resend';
@@ -53,7 +53,7 @@ export async function getRelawans() {
       return [];
     }
 
-    const relawans = await db.select().from(user).where(eq(user.role, 'relawan')).orderBy(desc(user.createdAt));
+    const relawans = await db.select().from(user).where(eq(user.role, 'relawan')).orderBy(asc(user.createdAt));
     return relawans;
   } catch (error) {
     console.error('Error fetching relawans:', error);
