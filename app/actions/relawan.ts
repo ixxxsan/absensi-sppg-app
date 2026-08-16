@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
 import { Resend } from 'resend';
@@ -65,7 +65,11 @@ export async function getRelawans() {
 export async function createRelawan(formData: FormData) {
   try {
     const reqHeaders = await headers();
-    const session = await auth.api.getSession({ headers: reqHeaders });
+    const cookieStore = await cookies();
+    const mockHeaders = new Headers();
+    mockHeaders.set('cookie', cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; '));
+    
+    const session = await auth.api.getSession({ headers: mockHeaders });
     if (!session) {
       return { success: false, error: 'Sesi tidak valid atau telah berakhir (getSession returned null).' };
     }
@@ -122,7 +126,11 @@ export async function createRelawan(formData: FormData) {
 export async function updateRelawan(id: string, formData: FormData) {
   try {
     const reqHeaders = await headers();
-    const session = await auth.api.getSession({ headers: reqHeaders });
+    const cookieStore = await cookies();
+    const mockHeaders = new Headers();
+    mockHeaders.set('cookie', cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; '));
+
+    const session = await auth.api.getSession({ headers: mockHeaders });
     if (!session) {
       return { success: false, error: 'Sesi tidak valid saat memperbarui (getSession returned null).' };
     }

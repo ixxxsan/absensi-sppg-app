@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { absensi, user } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { nowWIB, haversineDistance } from '@/lib/utils';
 
@@ -52,7 +52,11 @@ export async function submitAbsensi(
   longitude: number,
   tipe: 'masuk' | 'pulang'
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const cookieStore = await cookies();
+  const mockHeaders = new Headers();
+  mockHeaders.set('cookie', cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; '));
+
+  const session = await auth.api.getSession({ headers: mockHeaders });
   if (!session) {
     return { success: false, error: 'Sesi tidak valid saat absensi (getSession returned null).' };
   }
