@@ -50,10 +50,6 @@ export default function ProfilPage() {
     }
   };
 
-  const handleAjukanCuti = () => {
-    router.push('/profil/cuti');
-  };
-
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -188,21 +184,6 @@ export default function ProfilPage() {
               <Key className="w-5 h-5" style={{ color: '#b5e0ea' }} />
             </div>
             <span className="text-white font-medium">Ganti Password</span>
-          </div>
-          <ChevronRight className="w-5 h-5" style={{ color: 'rgba(181,224,234,0.3)' }} />
-        </button>
-
-        {/* Pengajuan Cuti/Izin */}
-        <button 
-          onClick={handleAjukanCuti}
-          className="w-full card flex items-center justify-between transition-colors hover:bg-white/5 active:scale-[0.98]"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                 style={{ background: 'rgba(181,224,234,0.1)' }}>
-              <FileText className="w-5 h-5" style={{ color: '#b5e0ea' }} />
-            </div>
-            <span className="text-white font-medium">Ajukan Cuti / Izin</span>
           </div>
           <ChevronRight className="w-5 h-5" style={{ color: 'rgba(181,224,234,0.3)' }} />
         </button>
