@@ -36,8 +36,13 @@ export default function AdminLoginPage() {
     setIsLoading(true);
     setLoginError('');
     try {
-      const emailInput = data.email.trim().toLowerCase();
+      let emailInput = data.email.trim().toLowerCase();
       
+      // Auto-append @sppg.com if user only types 'admin'
+      if (emailInput === 'admin') {
+        emailInput = 'admin@sppg.com';
+      }
+
       const { data: signInData, error } = await authClient.signIn.email({
         email: emailInput,
         password: data.password,
