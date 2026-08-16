@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, User, Phone, Mail, Bell } from 'lucide-react';
+import { ChevronLeft, User, Phone, Mail } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { goeyToast } from 'goey-toast';
 
@@ -18,8 +18,6 @@ export default function PengaturanAkunPage() {
   const [noTelepon, setNoTelepon] = useState('');
   const [divisi, setDivisi] = useState('');
 
-  const [notifAbsensi, setNotifAbsensi] = useState(true);
-  const [notifPengumuman, setNotifPengumuman] = useState(true);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -147,49 +145,7 @@ export default function PengaturanAkunPage() {
           </form>
         </section>
 
-        {/* Preferensi Notifikasi */}
-        <section>
-          <h2 className="text-slate-300 text-sm font-bold mb-3 uppercase tracking-wider">Preferensi Notifikasi</h2>
-          <div className="card p-2">
 
-            <div className="flex items-center justify-between p-3 border-b border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-800">
-                  <Bell className="w-4 h-4 text-[#b5e0ea]" />
-                </div>
-                <div>
-                  <p className="text-white text-sm font-semibold">Pengingat Absensi</p>
-                  <p className="text-slate-400 text-[10px]">Notifikasi saat tiba waktu absen</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setNotifAbsensi(!notifAbsensi)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${notifAbsensi ? 'bg-emerald-500' : 'bg-slate-700'}`}
-              >
-                <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${notifAbsensi ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-800">
-                  <Bell className="w-4 h-4 text-[#b5e0ea]" />
-                </div>
-                <div>
-                  <p className="text-white text-sm font-semibold">Pengumuman SPPG</p>
-                  <p className="text-slate-400 text-[10px]">Info terbaru dari pengurus</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setNotifPengumuman(!notifPengumuman)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${notifPengumuman ? 'bg-emerald-500' : 'bg-slate-700'}`}
-              >
-                <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${notifPengumuman ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
-            </div>
-
-          </div>
-        </section>
 
       </div>
     </div>
