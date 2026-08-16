@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
           </div>
           <div>
             <h1 className="text-white text-3xl font-bold">Panel Admin</h1>
-            <p className="text-slate-400 mt-2">Manajemen Absensi Relawan SPPG</p>
+            <p className="text-slate-400 mt-2">Manajemen Absensi Relawan SPPG TELUKNAGA 03</p>
           </div>
         </div>
       </div>
@@ -86,7 +86,7 @@ export default function AdminLoginPage() {
             </div>
             <div className="text-center">
               <h1 className="text-white text-xl font-bold">Admin Panel</h1>
-              <p className="text-emerald-400 text-sm">SPPG Management System</p>
+              <p className="text-emerald-400 text-sm">SPPG TELUKNAGA 03 Management System</p>
             </div>
           </div>
 
