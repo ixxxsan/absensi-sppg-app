@@ -1,30 +1,15 @@
-'use client';
-
 import { Users, UserCheck, UserX, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
 import { formatDateLong } from '@/lib/utils';
 import { nowWIB } from '@/lib/utils';
+import { db } from '@/lib/db';
+import { user } from '@/lib/db/schema';
+import { eq, count } from 'drizzle-orm';
 
-// Mock data — replace with real API fetches
-const MOCK_KPI = {
-  totalRelawan: 120,
-  hadirHariIni: 98,
-  tidakHadir: 22,
-  persentase: 81.7,
-};
+import { desc, and } from 'drizzle-orm';
+import { absensi } from '@/lib/db/schema';
 
-const MOCK_RECENT: Array<{
-  id: number; idRelawan: string; nama: string; waktu: string;
-  tipe: 'masuk' | 'pulang'; status: 'valid' | 'invalid'; lokasi: string;
-}> = [
-  { id: 1, idRelawan: 'SPPG-001', nama: 'Budi Santoso', waktu: '08:15 WIB', tipe: 'masuk', status: 'valid', lokasi: '-6.208, 106.845' },
-  { id: 2, idRelawan: 'SPPG-002', nama: 'Siti Rahayu', waktu: '08:22 WIB', tipe: 'masuk', status: 'invalid', lokasi: '-6.209, 106.846' },
-  { id: 3, idRelawan: 'SPPG-003', nama: 'Ahmad Yani', waktu: '08:30 WIB', tipe: 'masuk', status: 'valid', lokasi: '-6.207, 106.847' },
-  { id: 4, idRelawan: 'SPPG-001', nama: 'Budi Santoso', waktu: '17:05 WIB', tipe: 'pulang', status: 'valid', lokasi: '-6.208, 106.845' },
-  { id: 5, idRelawan: 'SPPG-004', nama: 'Dewi Lestari', waktu: '08:45 WIB', tipe: 'masuk', status: 'invalid', lokasi: '-6.300, 106.900' },
-];
-
-const MOCK_CHART = [78, 85, 90, 82, 88, 95, 81.7];
 const CHART_DAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Hari ini'];
+const MOCK_CHART = [0, 0, 0, 0, 0, 0, 0];
 
 interface KPICardProps {
   title: string;
@@ -63,9 +48,37 @@ const statusLabel = {
   invalid: 'text-red-700 bg-red-50',
 };
 
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
   const today = formatDateLong(nowWIB());
-  const maxBar = Math.max(...MOCK_CHART);
+  const maxBar = Math.max(...MOCK_CHART) || 1; // prevent divide by zero
+
+  // Fetch real count from DB
+  const result = await db.select({ value: count() }).from(user).where(eq(user.role, 'relawan'));
+  const totalRelawan = result[0].value;
+
+  const todayDate = nowWIB().format('YYYY-MM-DD');
+
+  // Fetch hadir hari ini (distinct users who checked in today)
+  // We can just get all absensi for today and unique by userId
+  const todayAbsensi = await db.select({
+      id: absensi.id,
+      userId: absensi.userId,
+      waktuAbsen: absensi.waktuAbsen,
+      tipe: absensi.tipe,
+      statusValidasi: absensi.statusValidasi,
+      namaLengkap: user.name,
+      idRelawan: user.idRelawan,
+    })
+    .from(absensi)
+    .leftJoin(user, eq(absensi.userId, user.id))
+    .where(eq(absensi.tanggalAbsen, todayDate))
+    .orderBy(desc(absensi.id));
+
+  const uniqueUsersToday = new Set(todayAbsensi.map(a => a.userId)).size;
+  const tidakHadir = totalRelawan - uniqueUsersToday;
+  const persentase = totalRelawan === 0 ? 0 : Math.round((uniqueUsersToday / totalRelawan) * 100);
+
+  const recentAbsensi = todayAbsensi.slice(0, 5);
 
   return (
     <div className="p-6 space-y-6">
@@ -85,33 +98,33 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Total Relawan"
-          value={MOCK_KPI.totalRelawan}
+          value={totalRelawan}
           icon={<Users className="w-5 h-5 text-blue-600" />}
           color="text-slate-800"
           bgColor="bg-blue-50"
         />
         <KPICard
           title="Hadir Hari Ini"
-          value={MOCK_KPI.hadirHariIni}
+          value={uniqueUsersToday}
           icon={<UserCheck className="w-5 h-5 text-emerald-600" />}
           color="text-emerald-600"
           bgColor="bg-emerald-50"
-          trend="↑ +3"
+          trend="—"
         />
         <KPICard
           title="Tidak Hadir"
-          value={MOCK_KPI.tidakHadir}
+          value={tidakHadir}
           icon={<UserX className="w-5 h-5 text-red-500" />}
           color="text-red-500"
           bgColor="bg-red-50"
         />
         <KPICard
           title="Kehadiran"
-          value={`${MOCK_KPI.persentase}%`}
+          value={`${persentase}%`}
           icon={<TrendingUp className="w-5 h-5 text-purple-600" />}
           color="text-purple-600"
           bgColor="bg-purple-50"
-          trend="↑ 2.1%"
+          trend="—"
         />
       </div>
 
@@ -142,7 +155,7 @@ export default function AdminDashboard() {
         <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-slate-700 font-semibold text-sm">Absensi Hari Ini</h2>
-            <span className="text-slate-400 text-xs">{MOCK_RECENT.length} entri</span>
+            <span className="text-slate-400 text-xs">{recentAbsensi.length} entri</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -157,46 +170,54 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {MOCK_RECENT.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{row.idRelawan}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
-                          {row.nama.charAt(0)}
-                        </div>
-                        <span className="text-slate-700 font-medium text-sm">{row.nama}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 text-slate-600">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        <span className="font-mono text-xs">{row.waktu}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
-                        ${row.tipe === 'masuk' ? 'text-blue-700 bg-blue-50' : 'text-amber-700 bg-amber-50'}`}>
-                        {row.tipe === 'masuk' ? 'Masuk' : 'Pulang'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${statusLabel[row.status]}`}>
-                        {statusIcon[row.status]}
-                        {row.status === 'valid' ? 'Valid' : 'Ditolak'}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        id={`view-absen-${row.id}`}
-                        className="text-slate-400 hover:text-slate-600 transition-colors"
-                        aria-label="Lihat detail"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                {recentAbsensi.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-sm">
+                      Belum ada data absensi hari ini.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  recentAbsensi.map((row) => (
+                    <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-slate-500">{row.idRelawan}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
+                            {row.namaLengkap?.charAt(0) || '?'}
+                          </div>
+                          <span className="text-slate-700 font-medium text-sm">{row.namaLengkap}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1 text-slate-600">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          <span className="font-mono text-xs">{row.waktuAbsen}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
+                          ${row.tipe === 'masuk' ? 'text-blue-700 bg-blue-50' : 'text-amber-700 bg-amber-50'}`}>
+                          {row.tipe === 'masuk' ? 'Masuk' : 'Pulang'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${row.statusValidasi === 'valid' ? statusLabel.valid : statusLabel.invalid}`}>
+                          {row.statusValidasi === 'valid' ? statusIcon.valid : statusIcon.invalid}
+                          {row.statusValidasi === 'valid' ? 'Valid' : 'Ditolak'}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          id={`view-absen-${row.id}`}
+                          className="text-slate-400 hover:text-slate-600 transition-colors"
+                          aria-label="Lihat detail"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

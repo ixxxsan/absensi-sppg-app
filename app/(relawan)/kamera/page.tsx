@@ -37,56 +37,34 @@ export default function KameraPage() {
   };
 
   const { gpsStatus, tipeAbsen, latitude, longitude, reset } = useCameraStore();
-  const { setAbsenMasuk, setAbsenPulang } = useAbsensiStore();
   const { user } = useAuthStore();
 
   const canShoot = gpsStatus === 'found' || gpsStatus === 'out_of_range';
 
   const handleCapture = useCallback(async (watermarkedDataUrl: string) => {
+    // Force GPS validation
+    const dist = haversineDistance(latitude ?? 0, longitude ?? 0, -6.098751, 106.653180);
+    if (dist > 500) {
+      alert("Anda berada di luar radius tugas. Absensi ditolak. Silakan pindah mendekat ke lokasi.");
+      return;
+    }
+
     setUiState('processing');
 
     try {
-      // Step 1: Process watermark (already done client-side)
-      setUploadText('Menerapkan watermark...');
-      await delay(600);
-
-      // Step 2: Upload to server (mocked — replace with real API call)
-      setUploadText('Mengunggah foto...');
-      await delay(800);
-
-      // Step 3: Save attendance record (mocked)
-      setUploadText('Menyimpan data absensi...');
-      await delay(600);
-
-      const now = nowWIB();
-      const dist = haversineDistance(latitude ?? 0, longitude ?? 0, -6.098751, 106.653180);
-      const isDitolak = tipeAbsen === 'masuk' && dist > 500;
-
-      const record: AbsenRecord = {
-        id: Date.now(),
-        relawanId: user?.id ?? 0,
-        tanggalAbsen: now.format('YYYY-MM-DD'),
-        waktuAbsen: now.format('HH:mm') + ' WIB',
-        fotoUrl: watermarkedDataUrl,
-        latitude: latitude ?? 0,
-        longitude: longitude ?? 0,
-        tipe: tipeAbsen,
-        statusValidasi: isDitolak ? 'ditolak' : 'valid',
-      };
-
-      if (tipeAbsen === 'masuk') {
-        setAbsenMasuk(record);
-      } else {
-        setAbsenPulang(record);
-      }
+      setUploadText('Mengunggah dan menyimpan...');
+      
+      const { submitAbsensi } = await import('@/app/actions/absensi');
+      await submitAbsensi(watermarkedDataUrl, latitude ?? 0, longitude ?? 0, tipeAbsen);
 
       reset(); // Clear camera state
       router.push('/sukses');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload error:', err);
+      alert(err.message || "Terjadi kesalahan saat mengunggah.");
       setUiState('preview'); // Return to camera on error
     }
-  }, [tipeAbsen, latitude, longitude, user, setAbsenMasuk, setAbsenPulang, reset, router]);
+  }, [tipeAbsen, latitude, longitude, reset, router]);
 
   const handleBack = () => {
     reset();

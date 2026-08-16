@@ -18,6 +18,9 @@ export const user = pgTable("user", {
   nik: text("nik"),
   divisi: text("divisi"),
   status: text("status").default('Aktif'), // 'Aktif' | 'Magang' | 'Cuti'
+  banned: boolean("banned"),
+  banReason: text("banReason"),
+  banExpires: timestamp("banExpires"),
 });
 
 export const session = pgTable("session", {

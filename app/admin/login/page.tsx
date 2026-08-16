@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
     try {
       await new Promise((r) => setTimeout(r, 800));
       const emailInput = data.email.trim().toLowerCase();
-      if (emailInput === 'admin@sppg.id' && data.password === 'admin123') {
+      if (emailInput === 'admin@sppg.com' && data.password === 'admin123') {
         login({
           id: 99,
           namaLengkap: 'Admin SPPG',

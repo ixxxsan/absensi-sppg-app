@@ -2,17 +2,41 @@
 
 import { useRouter } from 'next/navigation';
 import { Camera, MapPin, Clock, ChevronRight, LogIn, LogOut, Check, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import ClockWidget from '@/components/ClockWidget';
 import StatusBadge from '@/components/StatusBadge';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
-import { useAuthStore, useAbsensiStore, useCameraStore } from '@/lib/stores';
+import { useAuthStore, useCameraStore } from '@/lib/stores';
 import { getGreeting } from '@/lib/utils';
+import { getAbsensiHariIni } from '@/app/actions/absensi';
 
 export default function BerandaPage() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { statusHariIni, absenMasukToday, absenPulangToday } = useAbsensiStore();
   const { setTipeAbsen } = useCameraStore();
+
+  const [hasMasuk, setHasMasuk] = useState(false);
+  const [isLengkap, setIsLengkap] = useState(false);
+  const [masukData, setMasukData] = useState<any>(null);
+  const [pulangData, setPulangData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchAbsensi() {
+      try {
+        const data = await getAbsensiHariIni();
+        setHasMasuk(data.hasMasuk);
+        setIsLengkap(data.isLengkap);
+        setMasukData(data.masuk);
+        setPulangData(data.pulang);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchAbsensi();
+  }, []);
 
   const firstName = user?.namaLengkap?.split(' ')[0] ?? 'Relawan';
   const greeting = getGreeting();
@@ -20,11 +44,9 @@ export default function BerandaPage() {
   const handleAbsenMasuk  = () => { setTipeAbsen('masuk');  router.push('/kamera'); };
   const handleAbsenPulang = () => { setTipeAbsen('pulang'); router.push('/kamera'); };
 
-  // If the latest masuk/pulang is ditolak, they haven't successfully completed it
-  const isMasukDitolak = statusHariIni === 'masuk' && absenMasukToday?.statusValidasi === 'ditolak';
-  const isPulangDitolak = statusHariIni === 'lengkap' && absenPulangToday?.statusValidasi === 'ditolak';
-  const isLengkap = statusHariIni === 'lengkap' && !isPulangDitolak;
-  const hasMasuk  = (statusHariIni === 'masuk' && !isMasukDitolak) || statusHariIni === 'lengkap';
+  const statusHariIni = isLengkap ? 'lengkap' : (hasMasuk ? 'masuk' : 'belum');
+  const isMasukDitolak = false; // GPS auto-rejects before submission, so no rejected records in DB
+  const isPulangDitolak = false;
 
   return (
     <div className="min-h-dvh flex flex-col"
@@ -77,15 +99,15 @@ export default function BerandaPage() {
               </div>
               <div>
                 <p className="text-white text-sm font-semibold">Absen Masuk</p>
-                {hasMasuk && absenMasukToday ? (
+                {hasMasuk && masukData ? (
                   <div className="flex items-center gap-1 mt-0.5">
                     <Clock className="w-3 h-3" style={{ color: '#b5e0ea' }} />
                     <span className="text-xs font-medium font-mono-clock" style={{ color: '#b5e0ea' }}>
-                      {absenMasukToday.waktuAbsen}
+                      {masukData.waktuAbsen}
                     </span>
                     <MapPin className="w-3 h-3 ml-1" style={{ color: 'rgba(181,224,234,0.45)' }} />
                     <span className="text-xs font-mono" style={{ color: 'rgba(181,224,234,0.45)' }}>
-                      {absenMasukToday.latitude.toFixed(3)}, {absenMasukToday.longitude.toFixed(3)}
+                      {Number(masukData.latitude).toFixed(3)}, {Number(masukData.longitude).toFixed(3)}
                     </span>
                   </div>
                 ) : isMasukDitolak ? (
@@ -113,11 +135,11 @@ export default function BerandaPage() {
               </div>
               <div>
                 <p className="text-white text-sm font-semibold">Absen Pulang</p>
-                {isLengkap && absenPulangToday ? (
+                {isLengkap && pulangData ? (
                   <div className="flex items-center gap-1 mt-0.5">
                     <Clock className="w-3 h-3" style={{ color: '#fbbf24' }} />
                     <span className="text-xs font-medium font-mono-clock" style={{ color: '#fbbf24' }}>
-                      {absenPulangToday.waktuAbsen}
+                      {pulangData.waktuAbsen}
                     </span>
                   </div>
                 ) : isPulangDitolak ? (
