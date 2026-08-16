@@ -6,8 +6,9 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, AlertCircle, Eye, EyeOff, Shield } from 'lucide-react';
+import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores';
+import { authClient } from '@/lib/auth-client';
 
 const adminLoginSchema = z.object({
   email: z.string().min(1, 'Username / Email tidak boleh kosong'),
@@ -35,19 +36,31 @@ export default function AdminLoginPage() {
     setIsLoading(true);
     setLoginError('');
     try {
-      await new Promise((r) => setTimeout(r, 800));
       const emailInput = data.email.trim().toLowerCase();
-      if ((emailInput === 'admin' || emailInput === 'admin@sppg.com') && data.password === 'Teluknagahebat123') {
+      
+      const { data: signInData, error } = await authClient.signIn.email({
+        email: emailInput,
+        password: data.password,
+      });
+
+      if (error || !signInData?.user) {
+        setLoginError('Email/Username atau password salah.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Pastikan user ini memiliki role admin atau super_admin di database
+      if (signInData.user.role === 'admin' || signInData.user.role === 'super_admin') {
         login({
           id: 99,
-          namaLengkap: 'Admin SPPG',
-          email: emailInput,
-          role: 'super_admin',
-          token: 'admin-token-xyz',
+          namaLengkap: signInData.user.name,
+          email: signInData.user.email,
+          role: signInData.user.role as any,
+          token: 'admin-token-xyz', // Dummy for zustand compatibility
         });
         router.replace('/admin/dashboard');
       } else {
-        setLoginError('Email/Username atau password salah.');
+        setLoginError('Akses ditolak: Akun bukan admin.');
         setIsLoading(false);
       }
     } catch {
