@@ -107,7 +107,7 @@ export default function LaporanPage() {
 
     const aoa = [
       ['REKAPAN ABSENSI RELAWAN'],
-      ['SPPG TELUKNAGA'],
+      ['SPPG TELUKNAGA 03'],
       [`PERIODE ${dateFrom} s/d ${dateTo}`],
       [], // Empty row
       headers,
@@ -205,7 +205,7 @@ export default function LaporanPage() {
     const wsSummary = XLSX.utils.json_to_sheet(summary);
     XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan');
 
-    const filename = `Rekap_Absensi_SPPG_${dateFrom}_${dateTo}.xlsx`;
+    const filename = `Rekap_Absensi_SPPG_03_${dateFrom}_${dateTo}.xlsx`;
     XLSX.writeFile(wb, filename);
 
     setLastExport(nowWIB().format('HH:mm DD/MM/YYYY'));
