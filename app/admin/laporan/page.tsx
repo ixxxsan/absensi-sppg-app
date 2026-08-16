@@ -235,7 +235,7 @@ export default function LaporanPage() {
           </div>
           <div>
             <h2 className="text-slate-700 font-semibold text-sm">Export Excel</h2>
-            <p className="text-slate-400 text-xs">Format kolom siap VLOOKUP HRD</p>
+            <p className="text-slate-400 text-xs">Format kolom siap VLOOKUP</p>
           </div>
         </div>
 
