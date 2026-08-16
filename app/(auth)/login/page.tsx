@@ -64,15 +64,11 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-4 animate-fade-in-up">
           {/* Logo */}
           <div className="relative animate-float">
-            {/* Glow ring */}
-            <div className="absolute inset-0 rounded-3xl blur-xl opacity-40"
-                 style={{ background: '#b5e0ea', transform: 'scale(1.1)' }} />
-            <div className="relative w-24 h-24 rounded-3xl overflow-hidden shadow-2xl bg-transparent"
-                 style={{ border: 'none' }}>
+            <div className="relative w-28 h-28 flex items-center justify-center mx-auto">
               <img
                 src="/icons/icon-192.png"
                 alt="Logo SPPG"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain drop-shadow-lg"
               />
             </div>
           </div>

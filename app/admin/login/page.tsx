@@ -84,8 +84,8 @@ export default function AdminLoginPage() {
           <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-blue-400 blur-3xl" />
         </div>
         <div className="relative text-center space-y-6">
-          <div className="w-24 h-24 rounded-3xl bg-transparent flex items-center justify-center mx-auto overflow-hidden shadow-2xl">
-            <Image src="/icons/icon-192.png" alt="Logo" width={96} height={96} className="w-full h-full object-contain" />
+          <div className="w-28 h-28 flex items-center justify-center mx-auto">
+            <Image src="/icons/icon-192.png" alt="Logo" width={112} height={112} className="w-full h-full object-contain drop-shadow-xl" />
           </div>
           <div>
             <h1 className="text-white text-3xl font-bold">Panel Admin</h1>
@@ -99,8 +99,8 @@ export default function AdminLoginPage() {
         <div className="w-full max-w-sm">
           {/* Logo mobile */}
           <div className="flex lg:hidden flex-col items-center gap-4 mb-10">
-            <div className="w-20 h-20 rounded-2xl bg-transparent flex items-center justify-center overflow-hidden shadow-xl">
-              <Image src="/icons/icon-192.png" alt="Logo" width={80} height={80} className="w-full h-full object-contain" />
+            <div className="w-24 h-24 flex items-center justify-center">
+              <Image src="/icons/icon-192.png" alt="Logo" width={96} height={96} className="w-full h-full object-contain drop-shadow-lg" />
             </div>
             <div className="text-center">
               <h1 className="text-white text-xl font-bold">Admin Panel</h1>
