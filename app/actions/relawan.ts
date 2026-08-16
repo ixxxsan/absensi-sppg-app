@@ -5,7 +5,6 @@ import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { headers, cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
 import { Resend } from 'resend';

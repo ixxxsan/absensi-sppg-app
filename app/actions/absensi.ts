@@ -1,11 +1,9 @@
 'use server';
 
-import { auth } from '@/lib/auth';
 import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { absensi, user } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { headers, cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { nowWIB, haversineDistance } from '@/lib/utils';
 
