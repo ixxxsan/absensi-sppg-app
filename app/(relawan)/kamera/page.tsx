@@ -235,6 +235,20 @@ export default function KameraPage() {
                 </p>
               </div>
             )}
+
+            {/* Fake GPS Error */}
+            {gpsStatus === 'fake_gps' && (
+              <div className="absolute top-1/2 left-4 right-4 -translate-y-8 z-10 flex flex-col items-center
+                              justify-center gap-3 rounded-2xl px-6 py-5 bg-red-600/95 border-2 border-red-400 shadow-2xl backdrop-blur-md">
+                <AlertTriangle className="w-10 h-10 text-white flex-shrink-0 animate-pulse" />
+                <div className="text-center">
+                  <p className="text-white font-bold text-lg mb-1 uppercase tracking-wider">Aplikasi Fake GPS Terdeteksi!</p>
+                  <p className="text-red-100 text-sm leading-relaxed">
+                    Sistem mendeteksi penggunaan lokasi palsu/mock location. Harap matikan aplikasi Fake GPS Anda untuk melakukan absensi.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </>
       ) : (

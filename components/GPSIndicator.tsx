@@ -24,6 +24,20 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude: lat, longitude: lon, accuracy } = pos.coords;
+        
+        // Anti Fake GPS Heuristics
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isMocked = (pos as any).mocked || (pos.coords as any).mocked;
+        const isSuspicious = 
+          (pos.coords.altitude === 0 && pos.coords.altitudeAccuracy === 0 && pos.coords.speed === 0 && pos.coords.heading === 0) ||
+          (accuracy > 0 && accuracy % 100 === 0) || // Exactly 100, 200, 500 etc. usually synthetic
+          isMocked;
+
+        if (isSuspicious) {
+          setGpsStatus('fake_gps');
+          return;
+        }
+
         setGPS(lat, lon, accuracy);
         const dist = haversineDistance(lat, lon, TASK_LOCATION.lat, TASK_LOCATION.lon);
         setDistanceFromTask(dist);
