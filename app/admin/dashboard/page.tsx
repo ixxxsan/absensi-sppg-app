@@ -1,14 +1,11 @@
+import { Suspense } from 'react';
 import { Users, UserCheck, UserX, TrendingUp, Clock, CheckCircle, XCircle, Eye } from 'lucide-react';
-import { formatDateLong } from '@/lib/utils';
-import { nowWIB } from '@/lib/utils';
+import { formatDateLong, nowWIB } from '@/lib/utils';
 import { db } from '@/lib/db';
-import { user } from '@/lib/db/schema';
-import { eq, count } from 'drizzle-orm';
+import { user, absensi } from '@/lib/db/schema';
+import { eq, count, desc } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
-
-import { desc } from 'drizzle-orm';
-import { absensi } from '@/lib/db/schema';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,37 +46,55 @@ const statusLabel = {
   invalid: 'text-red-700 bg-red-50',
 };
 
-export default async function AdminDashboard() {
-  // Server-side auth guard
-  const session = await getServerSession();
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
-    redirect('/admin/login');
-  }
+// --- SKELETON COMPONENT ---
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      {/* KPI Skeletons */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white/50 rounded-2xl p-5 shadow-sm border border-slate-100 h-32 flex flex-col justify-between">
+            <div className="w-11 h-11 rounded-xl bg-slate-100" />
+            <div>
+              <div className="w-16 h-8 bg-slate-100 rounded mt-2" />
+              <div className="w-24 h-4 bg-slate-50 rounded mt-2" />
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {/* Chart & Table Skeletons */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-2 bg-white/50 rounded-2xl p-5 shadow-sm border border-slate-100 h-64" />
+        <div className="lg:col-span-3 bg-white/50 rounded-2xl shadow-sm border border-slate-100 h-64" />
+      </div>
+    </div>
+  );
+}
 
-  const today = formatDateLong(nowWIB());
-
-  // Fetch real count from DB
-  const result = await db.select({ value: count() }).from(user).where(eq(user.role, 'relawan'));
-  const totalRelawan = result[0].value;
-
+// --- ASYNC DATA COMPONENT ---
+async function DashboardContent() {
   const todayDate = nowWIB().format('YYYY-MM-DD');
 
-  // Fetch hadir hari ini (distinct users who checked in today)
-  // We can just get all absensi for today and unique by userId
-  const todayAbsensi = await db.select({
-      id: absensi.id,
-      userId: absensi.userId,
-      waktuAbsen: absensi.waktuAbsen,
-      tipe: absensi.tipe,
-      statusValidasi: absensi.statusValidasi,
-      namaLengkap: user.name,
-      idRelawan: user.idRelawan,
-    })
-    .from(absensi)
-    .leftJoin(user, eq(absensi.userId, user.id))
-    .where(eq(absensi.tanggalAbsen, todayDate))
-    .orderBy(desc(absensi.id));
+  // Fetch totalRelawan and todayAbsensi in PARALLEL
+  const [result, todayAbsensi] = await Promise.all([
+    db.select({ value: count() }).from(user).where(eq(user.role, 'relawan')),
+    db.select({
+        id: absensi.id,
+        userId: absensi.userId,
+        waktuAbsen: absensi.waktuAbsen,
+        tipe: absensi.tipe,
+        statusValidasi: absensi.statusValidasi,
+        namaLengkap: user.name,
+        idRelawan: user.idRelawan,
+      })
+      .from(absensi)
+      .leftJoin(user, eq(absensi.userId, user.id))
+      .where(eq(absensi.tanggalAbsen, todayDate))
+      .orderBy(desc(absensi.id))
+  ]);
 
+  const totalRelawan = result[0].value;
   const uniqueUsersToday = new Set(todayAbsensi.map(a => a.userId)).size;
   const tidakHadir = totalRelawan - uniqueUsersToday;
   const persentase = totalRelawan === 0 ? 0 : Math.round((uniqueUsersToday / totalRelawan) * 100);
@@ -88,37 +103,32 @@ export default async function AdminDashboard() {
 
   const daysIndo = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
   const chartDaysStr: string[] = [];
-  const chartData: number[] = [];
+  const dateStrs: string[] = [];
   
   for (let i = 6; i >= 0; i--) {
     const d = nowWIB().subtract(i, 'day');
     chartDaysStr.push(i === 0 ? 'Hari ini' : daysIndo[d.day()]);
-    
-    const dateStr = d.format('YYYY-MM-DD');
-    const dayAbsensi = await db.select({ userId: absensi.userId })
-      .from(absensi)
-      .where(eq(absensi.tanggalAbsen, dateStr));
-    
-    const uniqueUsersDay = new Set(dayAbsensi.map(a => a.userId)).size;
-    const persentaseDay = totalRelawan === 0 ? 0 : Math.round((uniqueUsersDay / totalRelawan) * 100);
-    chartData.push(persentaseDay);
+    dateStrs.push(d.format('YYYY-MM-DD'));
   }
+
+  // Fetch 7 days in PARALLEL instead of sequentially
+  const weeklyData = await Promise.all(
+    dateStrs.map(dateStr => 
+      db.select({ userId: absensi.userId })
+        .from(absensi)
+        .where(eq(absensi.tanggalAbsen, dateStr))
+    )
+  );
+
+  const chartData = weeklyData.map(dayAbsensi => {
+    const uniqueUsersDay = new Set(dayAbsensi.map(a => a.userId)).size;
+    return totalRelawan === 0 ? 0 : Math.round((uniqueUsersDay / totalRelawan) * 100);
+  });
+
   const maxBar = Math.max(...chartData) || 1;
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-slate-800 text-2xl font-bold">Dashboard</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{today}</p>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-emerald-700 text-sm font-semibold">Live</span>
-        </div>
-      </div>
-
+    <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
@@ -248,6 +258,37 @@ export default async function AdminDashboard() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// --- PAGE COMPONENT ---
+export default async function AdminDashboard() {
+  // Server-side auth guard
+  const session = await getServerSession();
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
+    redirect('/admin/login');
+  }
+
+  const today = formatDateLong(nowWIB());
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header (Renders instantly) */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-slate-800 text-2xl font-bold">Dashboard</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{today}</p>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-emerald-700 text-sm font-semibold">Live</span>
+        </div>
+      </div>
+
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardContent />
+      </Suspense>
     </div>
   );
 }
