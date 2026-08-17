@@ -223,7 +223,7 @@ export default function KameraPage() {
             </div>
 
             {/* Instruction text */}
-            {!canShoot && gpsStatus !== 'error' && (
+            {!canShoot && gpsStatus !== 'error' && gpsStatus !== 'out_of_range' && (
               <div className="absolute top-1/2 left-4 right-4 -translate-y-8 z-10 flex items-center
                               justify-center gap-2 glass rounded-xl px-4 py-3 bg-black/40 backdrop-blur-md">
                 <Info className="w-4 h-4 text-amber-400 flex-shrink-0" />
