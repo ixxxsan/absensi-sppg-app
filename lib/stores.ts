@@ -73,7 +73,7 @@ interface CameraState {
   longitude: number | null;
   addressName: string | null;     // Full address string
   gpsAccuracy: number | null;
-  gpsStatus: 'idle' | 'searching' | 'found' | 'error' | 'out_of_range' | 'fake_gps';
+  gpsStatus: 'idle' | 'searching' | 'found' | 'error' | 'out_of_range' | 'fake_gps' | 'poor_accuracy';
   distanceFromTask: number | null;    // meters
   setTipeAbsen: (tipe: 'masuk' | 'pulang') => void;
   setCapturedImage: (img: string | null) => void;

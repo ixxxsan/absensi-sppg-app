@@ -223,12 +223,23 @@ export default function KameraPage() {
             </div>
 
             {/* Instruction text */}
-            {!canShoot && gpsStatus !== 'error' && gpsStatus !== 'fake_gps' && (
+            {!canShoot && gpsStatus !== 'error' && gpsStatus !== 'fake_gps' && gpsStatus !== 'poor_accuracy' && (
               <div className="absolute top-1/2 left-4 right-4 -translate-y-8 z-10 flex items-center
                               justify-center gap-2 glass rounded-xl px-4 py-3 bg-black/40 backdrop-blur-md">
                 <Info className="w-4 h-4 text-amber-400 flex-shrink-0" />
                 <p className="text-amber-300 text-sm text-center">
                   Tunggu GPS terkunci sebelum mengambil foto
+                </p>
+              </div>
+            )}
+
+            {/* GPS Poor Accuracy warning */}
+            {gpsStatus === 'poor_accuracy' && (
+              <div className="absolute top-1/2 left-4 right-4 -translate-y-8 z-10 flex items-center
+                              justify-center gap-2 rounded-xl px-4 py-3 bg-orange-500/80 border border-orange-500 backdrop-blur-md">
+                <AlertTriangle className="w-6 h-6 text-white flex-shrink-0" />
+                <p className="text-white text-sm text-center">
+                  Akurasi GPS rendah. Silakan pindah ke tempat yang lebih terbuka agar lokasi lebih akurat.
                 </p>
               </div>
             )}
