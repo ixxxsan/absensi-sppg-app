@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/auth-server';
 import AdminSidebar from './AdminSidebar';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // We can't rely completely on middleware for role check since middleware 
   // might not have full db access if we ever need it, but getServerSession does.
