@@ -106,13 +106,42 @@ export default function LaporanPage() {
 
     const wb = XLSX.utils.book_new();
 
-    // Define headers explicitly so the sheet is never completely empty (which causes Excel display issues)
+    // Define headers explicitly so the sheet is never completely empty
     const exportHeaders = ['ID Relawan', 'Nama Lengkap', 'Divisi', 'Total Hari Kerja (Hari)'];
     
-    const wsAggregate = XLSX.utils.json_to_sheet(aggregateList, { header: exportHeaders });
+    // Title rows
+    const titleData = [
+      ['REKAPAN ABSENSI'],
+      ['SPPG TELUKNAGA 03'],
+      [`PERIODE: ${dateFrom} s/d ${dateTo}`],
+      [] // Empty row before table
+    ];
+
+    // Create worksheet with title data
+    const wsAggregate = XLSX.utils.aoa_to_sheet(titleData);
+
+    // Add table data starting at row 5 (index 4)
+    XLSX.utils.sheet_add_json(wsAggregate, aggregateList, { origin: 'A5', header: exportHeaders });
+    
     wsAggregate['!cols'] = [ { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 25 } ];
     
-    // Apply basic styling to headers
+    // Merge cells for titles
+    wsAggregate['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }
+    ];
+
+    // Style titles
+    const titleStyle = { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } };
+    const subtitleStyle = { font: { bold: true, sz: 12 }, alignment: { horizontal: 'center' } };
+    const periodStyle = { font: { italic: true }, alignment: { horizontal: 'center' } };
+
+    if (wsAggregate['A1']) wsAggregate['A1'].s = titleStyle;
+    if (wsAggregate['A2']) wsAggregate['A2'].s = subtitleStyle;
+    if (wsAggregate['A3']) wsAggregate['A3'].s = periodStyle;
+
+    // Style table (headers and data borders)
     const headerStyle = {
       font: { bold: true, color: { rgb: "000000" } },
       fill: { fgColor: { rgb: "E2EFDA" } },
@@ -121,13 +150,31 @@ export default function LaporanPage() {
         bottom: { style: "thin", color: { rgb: "000000" } },
         left: { style: "thin", color: { rgb: "000000" } },
         right: { style: "thin", color: { rgb: "000000" } }
+      },
+      alignment: { horizontal: 'center' }
+    };
+
+    const dataStyle = {
+      border: {
+        top: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } }
       }
     };
-    
-    const range = XLSX.utils.decode_range(wsAggregate['!ref'] || 'A1:A1');
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cellRef = XLSX.utils.encode_cell({ r: 0, c: C });
-      if (wsAggregate[cellRef]) wsAggregate[cellRef].s = headerStyle;
+
+    const range = XLSX.utils.decode_range(wsAggregate['!ref'] || 'A1:A5');
+    // Row 4 (index 4) is the header row
+    for (let R = 4; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= 3; ++C) { // Up to column 3 (D)
+        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!wsAggregate[cellRef]) wsAggregate[cellRef] = { t: 's', v: '' }; // Ensure cell exists for border
+        if (R === 4) {
+          wsAggregate[cellRef].s = headerStyle;
+        } else {
+          wsAggregate[cellRef].s = dataStyle;
+        }
+      }
     }
 
     XLSX.utils.book_append_sheet(wb, wsAggregate, 'Total Hari Kerja');
