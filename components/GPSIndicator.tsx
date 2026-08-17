@@ -94,11 +94,39 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
             })
             .then(data => {
               const addrData = data.addresses && data.addresses[0] ? data.addresses[0].address : null;
-              if (addrData && addrData.freeformAddress) {
-                useCameraStore.getState().setAddressName(addrData.freeformAddress);
-              } else {
+              
+              // Jika TomTom tidak memiliki data nama jalan untuk koordinat ini, 
+              // kita fallback ke Nominatim yang seringkali memiliki data gang/jalan kecil dari komunitas OSM.
+              if (!addrData || !addrData.streetName) {
+                console.warn('TomTom tidak memiliki nama jalan. Mencoba Nominatim...');
                 fallbackToNominatim();
+                return;
               }
+              
+              let jalan = addrData.streetName || '';
+              if (jalan && !jalan.toLowerCase().startsWith('jl') && !jalan.toLowerCase().startsWith('jalan')) {
+                  jalan = `Jl. ${jalan}`;
+              }
+              
+              const no = addrData.streetNumber ? `No.${addrData.streetNumber}` : '';
+              const jalanLengkap = [jalan, no].filter(Boolean).join(' ');
+              
+              const desa = addrData.municipalitySubdivision || '';
+              
+              let kecamatan = addrData.municipalitySecondarySubdivision || '';
+              if (kecamatan && !kecamatan.toLowerCase().startsWith('kec')) {
+                  kecamatan = `Kec. ${kecamatan}`;
+              }
+              
+              const kotaKab = addrData.municipality || '';
+              const provinsi = addrData.countrySubdivision || '';
+              const kodepos = addrData.postalCode || '';
+              const provPos = [provinsi, kodepos].filter(Boolean).join(' ');
+              
+              const parts = [jalanLengkap, desa, kecamatan, kotaKab, provPos].filter(Boolean);
+              const finalParts = parts.filter((item, pos, self) => self.indexOf(item) === pos);
+              
+              useCameraStore.getState().setAddressName(finalParts.join(', '));
             })
             .catch(err => {
               console.warn('TomTom gagal/limit habis. Menggunakan Nominatim (OSM)...', err);
