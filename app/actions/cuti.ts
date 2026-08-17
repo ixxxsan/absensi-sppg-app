@@ -6,88 +6,44 @@ import { cuti, user } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { nowWIB } from '@/lib/utils';
 
-export async function submitCuti(
-  jenisCuti: string,
-  tanggalMulai: string,
-  tanggalSelesai: string,
-  alasan: string,
-  urlBukti?: string
-) {
+export async function submitCuti(jenis: string, mulai: string, selesai: string, alasan: string, urlBukti?: string) {
   const session = await getServerSession();
-  if (!session?.user) {
-    return { success: false, error: 'Unauthorized' };
-  }
-
-  const now = nowWIB();
-
-  const safeJenisCuti = (jenisCuti || '').trim().substring(0, 100);
-  const safeAlasan = (alasan || '').trim().substring(0, 500);
+  if (!session?.user) return { success: false, error: 'Unauthorized' };
 
   await db.insert(cuti).values({
     userId: session.user.id,
-    jenisCuti: safeJenisCuti,
-    tanggalMulai,
-    tanggalSelesai,
-    alasan: safeAlasan,
+    jenisCuti: jenis?.trim().substring(0, 100) || '',
+    tanggalMulai: mulai,
+    tanggalSelesai: selesai,
+    alasan: alasan?.trim().substring(0, 500) || '',
     urlBukti: urlBukti || null,
     status: 'Menunggu',
-    tanggalPengajuan: now.format('YYYY-MM-DD'),
+    tanggalPengajuan: nowWIB().format('YYYY-MM-DD'),
   });
-
   return { success: true };
 }
 
 export async function getCutiRelawan() {
   const session = await getServerSession();
-  if (!session?.user) {
-    return [];
-  }
-
-  const records = await db
-    .select()
-    .from(cuti)
-    .where(eq(cuti.userId, session.user.id))
-    .orderBy(desc(cuti.tanggalPengajuan));
-
-  return records;
+  return session?.user ? db.select().from(cuti).where(eq(cuti.userId, session.user.id)).orderBy(desc(cuti.tanggalPengajuan)) : [];
 }
 
 export async function getAllCutiAdmin() {
   const session = await getServerSession();
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
-    return [];
-  }
+  if (!session?.user?.role?.includes('admin')) return [];
 
-  const records = await db
-    .select({
-      id: cuti.id,
-      userId: cuti.userId,
-      jenisCuti: cuti.jenisCuti,
-      tanggalMulai: cuti.tanggalMulai,
-      tanggalSelesai: cuti.tanggalSelesai,
-      alasan: cuti.alasan,
-      status: cuti.status,
-      tanggalPengajuan: cuti.tanggalPengajuan,
-      urlBukti: cuti.urlBukti,
-      namaLengkap: user.name,
-      idRelawan: user.idRelawan,
-    })
-    .from(cuti)
-    .leftJoin(user, eq(cuti.userId, user.id))
-    .orderBy(desc(cuti.tanggalPengajuan));
-
-  return records;
+  return db.select({
+    id: cuti.id, userId: cuti.userId, jenisCuti: cuti.jenisCuti, tanggalMulai: cuti.tanggalMulai,
+    tanggalSelesai: cuti.tanggalSelesai, alasan: cuti.alasan, status: cuti.status,
+    tanggalPengajuan: cuti.tanggalPengajuan, urlBukti: cuti.urlBukti,
+    namaLengkap: user.name, idRelawan: user.idRelawan
+  }).from(cuti).leftJoin(user, eq(cuti.userId, user.id)).orderBy(desc(cuti.tanggalPengajuan));
 }
 
 export async function updateCutiStatus(id: string, status: 'Disetujui' | 'Ditolak' | 'Menunggu') {
   const session = await getServerSession();
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
-    return { success: false, error: 'Unauthorized' };
-  }
+  if (!session?.user?.role?.includes('admin')) return { success: false, error: 'Unauthorized' };
 
-  await db.update(cuti)
-    .set({ status })
-    .where(eq(cuti.id, id));
-
+  await db.update(cuti).set({ status }).where(eq(cuti.id, id));
   return { success: true };
 }

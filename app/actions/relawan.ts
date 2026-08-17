@@ -7,195 +7,81 @@ import { user } from '@/lib/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { randomBytes } from 'crypto';
-
 import { Resend } from 'resend';
 
-async function sendPasswordEmail(email: string, password: string, name: string) {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn("RESEND_API_KEY tidak ditemukan, pengiriman email di-skip.");
-    return;
-  }
-  const resend = new Resend(process.env.RESEND_API_KEY);
-
+// ponytail: simplified template to the bare minimum that works and reads well.
+async function sendPasswordEmail(email: string, pass: string, name: string) {
+  if (!process.env.RESEND_API_KEY) return;
   try {
-    await resend.emails.send({
-      from: 'SPPG Teluknaga 03 <no-reply@absensi-sppg-teluknaga03.id>',
+    await new Resend(process.env.RESEND_API_KEY).emails.send({
+      from: 'SPPG <no-reply@absensi-sppg-teluknaga03.id>',
       to: email,
-      subject: 'Akun Relawan SPPG Teluknaga 03 Anda Telah Dibuat',
-      html: `
-<!DOCTYPE html>
-<html lang="id">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
-  <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-    <!-- Header -->
-    <div style="background:linear-gradient(135deg,#071e49 0%,#0c2860 100%);padding:32px 24px;text-align:center;">
-      <img src="https://absensi-sppg-teluknaga03.id/logo-bgn.png" alt="Logo SPPG" style="width:64px;height:auto;margin-bottom:12px;" />
-      <h1 style="color:#ffffff;font-size:20px;margin:0;">Selamat Datang!</h1>
-      <p style="color:#b5e0ea;font-size:14px;margin:8px 0 0;">SPPG Tangerang Teluknaga 03</p>
-    </div>
-    <!-- Body -->
-    <div style="padding:32px 24px;">
-      <p style="color:#333;font-size:15px;line-height:1.6;">Halo <strong>${name}</strong>,</p>
-      <p style="color:#555;font-size:14px;line-height:1.6;">Akun relawan Anda telah berhasil dibuat oleh tim administrasi. Gunakan kredensial berikut untuk masuk ke aplikasi absensi:</p>
-      <!-- Credential Box -->
-      <div style="background:linear-gradient(135deg,#f8fafc,#eef2f7);padding:20px;border-radius:12px;margin:24px 0;border:1px solid #e2e8f0;">
-        <div style="margin-bottom: 16px;">
-          <span style="display:block;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px;">Email</span>
-          <span style="display:block;color:#071e49;font-size:15px;font-weight:700;word-break:break-all;">${email}</span>
-        </div>
-        <div>
-          <span style="display:block;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px;">Password</span>
-          <code style="display:inline-block;background:#071e49;color:#ffffff;padding:8px 16px;border-radius:6px;font-size:15px;font-weight:700;letter-spacing:1px;word-break:break-all;">${password}</code>
-        </div>
-      </div>
-      <div style="text-align:center;margin:28px 0;">
-        <a href="https://absensi-sppg-teluknaga03.id/login" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#0c2860,#1a3a70);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:0.3px;">Masuk ke Aplikasi</a>
-      </div>
-      <p style="color:#888;font-size:13px;line-height:1.5;">Catatan: Demi keamanan, segera <strong>ubah password</strong> Anda setelah berhasil masuk melalui menu <em>Profil → Pengaturan</em>.</p>
-      <p style="color:#888;font-size:13px;line-height:1.5;">Jika Anda memiliki pertanyaan, silakan hubungi tim administrasi SPPG Teluknaga 03.</p>
-      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
-      <p style="color:#aaa;font-size:12px;text-align:center;">© 2026 SPPG Tangerang Teluknaga 03<br/>Email ini dikirim secara otomatis, mohon tidak membalas.</p>
-    </div>
-  </div>
-</body>
-</html>`,
+      subject: 'Akun SPPG Teluknaga 03 Anda Dibuat',
+      html: `<p>Halo ${name},</p><p>Email: <b>${email}</b><br/>Password: <b>${pass}</b></p><p><a href="https://absensi-sppg-teluknaga03.id/login">Masuk</a></p>`,
     });
-    console.log(`[RESEND] Email berhasil dikirim ke: ${email}`);
-  } catch (error) {
-    console.error(`[RESEND ERROR] Gagal mengirim email ke: ${email}`, error);
+  } catch (e) {
+    console.error('Email error:', e);
   }
 }
+
+const isAdmin = (role?: string) => role === 'admin' || role === 'super_admin';
 
 export async function getRelawans() {
-  try {
-    const session = await getServerSession();
-    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
-      return [];
-    }
-
-    const relawans = await db.select().from(user).where(eq(user.role, 'relawan')).orderBy(asc(user.createdAt));
-    return relawans;
-  } catch (error) {
-    console.error('Error fetching relawans:', error);
-    return [];
-  }
+  const session = await getServerSession();
+  return isAdmin(session?.user?.role) ? db.select().from(user).where(eq(user.role, 'relawan')).orderBy(asc(user.createdAt)) : [];
 }
 
-export async function createRelawan(formData: FormData) {
+export async function createRelawan(fd: FormData) {
+  const session = await getServerSession();
+  if (!isAdmin(session?.user?.role)) return { success: false, error: 'Unauthorized' };
+
+  const [email, namaLengkap, status] = ['email', 'namaLengkap', 'status'].map(k => (fd.get(k) as string || '').trim());
+  const pass = randomBytes(4).toString('hex');
+
   try {
-    const session = await getServerSession();
-    if (!session) {
-      return { success: false, error: 'Sesi tidak valid atau telah berakhir (Silakan login ulang).' };
-    }
-    if (!session.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
-      return { success: false, error: 'Akses ditolak: Anda bukan admin.' };
-    }
-
-    const namaLengkap = (formData.get('namaLengkap') as string || '').trim();
-    const email = (formData.get('email') as string || '').trim();
-    const nik = (formData.get('nik') as string || '').trim();
-    const noTelepon = (formData.get('noTelepon') as string || '').trim();
-    const divisi = (formData.get('divisi') as string || '').trim();
-    const status = (formData.get('status') as string || '').trim();
-    const idRelawan = (formData.get('idRelawan') as string || '').trim();
-
-    // Generate random secure password (8 characters)
-    const defaultPassword = randomBytes(4).toString('hex');
-
-    // Create user via better-auth signUpEmail
-    const result = await auth.api.signUpEmail({
-      body: {
-        email,
-        name: namaLengkap,
-        password: defaultPassword,
-      }
-    });
-
-    if (result && result.user) {
-      // Update additional fields via Drizzle
-      await db.update(user).set({
-        role: 'relawan',
-        nik,
-        divisi,
-        status,
-        idRelawan,
-        noTelepon,
-        statusAktif: status === 'Aktif'
-      }).where(eq(user.id, result.user.id));
-
-      // Simulate sending email
-      await sendPasswordEmail(email, defaultPassword, namaLengkap);
-      revalidatePath('/admin/relawan');
-      return { success: true };
-    }
-    
-    return { success: false, error: 'Gagal membuat relawan (result API kosong).' };
-  } catch (error: unknown) {
-    console.error('Error creating relawan:', error);
-    return { success: false, error: `Gagal menyimpan: ${error instanceof Error ? error.message : 'Unknown error'}` };
-  }
-}
-
-export async function updateRelawan(id: string, formData: FormData) {
-  try {
-    const session = await getServerSession();
-    if (!session) {
-      return { success: false, error: 'Sesi tidak valid saat memperbarui (getSession returned null).' };
-    }
-    if (!session.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
-      return { success: false, error: 'Akses ditolak: Anda bukan admin.' };
-    }
-
-    const namaLengkap = (formData.get('namaLengkap') as string || '').trim();
-    const nik = (formData.get('nik') as string || '').trim();
-    const email = (formData.get('email') as string || '').trim(); // changing email might require special handling, assuming just update DB here
-    const noTelepon = (formData.get('noTelepon') as string || '').trim();
-    const divisi = (formData.get('divisi') as string || '').trim();
-    const status = (formData.get('status') as string || '').trim();
+    const res = await auth.api.signUpEmail({ body: { email, name: namaLengkap, password: pass } });
+    if (!res?.user) throw new Error('API signUp gagal');
 
     await db.update(user).set({
-      name: namaLengkap,
-      nik,
-      email,
-      noTelepon,
-      divisi,
-      status,
+      role: 'relawan', nik: fd.get('nik') as string, divisi: fd.get('divisi') as string, 
+      status, idRelawan: fd.get('idRelawan') as string, noTelepon: fd.get('noTelepon') as string,
       statusAktif: status === 'Aktif'
-    }).where(eq(user.id, id));
+    }).where(eq(user.id, res.user.id));
 
+    await sendPasswordEmail(email, pass, namaLengkap);
     revalidatePath('/admin/relawan');
     return { success: true };
-  } catch (error: unknown) {
-    console.error('Error updating relawan:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Terjadi kesalahan saat memperbarui data.' };
+  } catch (err: any) {
+    return { success: false, error: err.message };
   }
+}
+
+export async function updateRelawan(id: string, fd: FormData) {
+  const session = await getServerSession();
+  if (!isAdmin(session?.user?.role)) return { success: false, error: 'Unauthorized' };
+
+  const status = (fd.get('status') as string || '').trim();
+  await db.update(user).set({
+    name: fd.get('namaLengkap') as string, nik: fd.get('nik') as string,
+    email: fd.get('email') as string, noTelepon: fd.get('noTelepon') as string,
+    divisi: fd.get('divisi') as string, status, statusAktif: status === 'Aktif'
+  }).where(eq(user.id, id));
+
+  revalidatePath('/admin/relawan');
+  return { success: true };
 }
 
 export async function deleteRelawan(id: string) {
-  try {
-    const session = await getServerSession();
-    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
-      return { success: false, error: 'Unauthorized' };
-    }
+  const session = await getServerSession();
+  if (!isAdmin(session?.user?.role)) return { success: false, error: 'Unauthorized' };
 
-    // Use transaction to ensure all-or-nothing delete
-    const { absensi, cuti, session: sessionTable, account } = await import('@/lib/db/schema');
-    
-    await db.transaction(async (tx) => {
-      await tx.delete(cuti).where(eq(cuti.userId, id));
-      await tx.delete(absensi).where(eq(absensi.userId, id));
-      await tx.delete(sessionTable).where(eq(sessionTable.userId, id));
-      await tx.delete(account).where(eq(account.userId, id));
-      await tx.delete(user).where(eq(user.id, id));
-    });
-    
-    revalidatePath('/admin/relawan');
-    return { success: true };
-  } catch (error: unknown) {
-    console.error('Error deleting relawan:', error);
-    return { success: false, error: 'Gagal menghapus data.' };
-  }
+  const { absensi, cuti, session: s, account } = await import('@/lib/db/schema');
+  await db.transaction(async (tx) => {
+    await Promise.all([tx.delete(cuti).where(eq(cuti.userId, id)), tx.delete(absensi).where(eq(absensi.userId, id)), tx.delete(s).where(eq(s.userId, id)), tx.delete(account).where(eq(account.userId, id))]);
+    await tx.delete(user).where(eq(user.id, id));
+  });
+  revalidatePath('/admin/relawan');
+  return { success: true };
 }
 
 export interface BulkImportRow {
@@ -208,79 +94,31 @@ export interface BulkImportRow {
 }
 
 export async function bulkImportRelawan(rows: BulkImportRow[]) {
-  try {
-    const session = await getServerSession();
-    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
-      return { success: false, error: 'Unauthorized' };
+  const session = await getServerSession();
+  if (!isAdmin(session?.user?.role)) return { success: false, error: 'Unauthorized' };
+
+  const nums = (await db.select({ idRelawan: user.idRelawan }).from(user).where(eq(user.role, 'relawan')))
+    .map(u => parseInt(u.idRelawan?.replace(/\D/g, '') || '0')).sort((a, b) => a - b);
+  
+  let next = 1;
+  while (nums.includes(next)) next++;
+
+  const results = await Promise.all(rows.map(async (r, i) => {
+    const pass = randomBytes(4).toString('hex');
+    try {
+      const res = await auth.api.signUpEmail({ body: { email: r.email, name: r.namaLengkap, password: pass } });
+      if (!res?.user) throw new Error('Fail');
+      await db.update(user).set({
+        role: 'relawan', nik: r.nik, divisi: r.divisi, status: r.status || 'Aktif',
+        idRelawan: `SPPG-${String(next + i).padStart(3, '0')}`, noTelepon: r.noTelepon, statusAktif: r.status !== 'Cuti'
+      }).where(eq(user.id, res.user.id));
+      await sendPasswordEmail(r.email, pass, r.namaLengkap);
+      return { success: true, email: r.email };
+    } catch (e: any) {
+      return { success: false, email: r.email, error: e.message };
     }
+  }));
 
-    // Determine starting ID Relawan
-    const existingUsers = await db.select({ idRelawan: user.idRelawan }).from(user).where(eq(user.role, 'relawan'));
-    const usedNumbers = existingUsers
-      .map(u => parseInt(u.idRelawan?.replace('SPPG-', '') || '0', 10))
-      .filter(n => !isNaN(n))
-      .sort((a, b) => a - b);
-
-    let nextNum = 1;
-    for (const num of usedNumbers) {
-      if (num === nextNum) {
-        nextNum++;
-      } else if (num > nextNum) {
-        break;
-      }
-    }
-
-    // We process sequentially or with careful ID assignment. Since batch size is 50, let's process sequentially for DB safety
-    // or assign IDs upfront and use Promise.allSettled. Let's assign IDs upfront.
-    const rowsWithIds = rows.map((row, index) => {
-      // If there are gaps, this naive increment might fill a gap and then collide later, but it's fine for bulk import 
-      // where we just increment nextNum sequentially and don't re-check gaps for the current batch.
-      const idRelawan = `SPPG-${(nextNum + index).toString().padStart(3, '0')}`;
-      return { ...row, idRelawan };
-    });
-
-    const promises = rowsWithIds.map(async (row) => {
-      const defaultPassword = randomBytes(4).toString('hex');
-
-      try {
-        const result = await auth.api.signUpEmail({
-          body: {
-            email: row.email,
-            name: row.namaLengkap,
-            password: defaultPassword,
-          }
-        });
-
-        if (result && result.user) {
-          await db.update(user).set({
-            role: 'relawan',
-            nik: row.nik,
-            divisi: row.divisi,
-            status: row.status || 'Aktif',
-            idRelawan: row.idRelawan,
-            noTelepon: row.noTelepon,
-            statusAktif: row.status !== 'Cuti'
-          }).where(eq(user.id, result.user.id));
-
-          await sendPasswordEmail(row.email, defaultPassword, row.namaLengkap);
-          return { success: true, email: row.email };
-        } else {
-          return { success: false, email: row.email, error: 'API signUp gagal.' };
-        }
-      } catch (err: unknown) {
-        return { success: false, email: row.email, error: err instanceof Error ? err.message : 'Unknown error' };
-      }
-    });
-
-    const settled = await Promise.allSettled(promises);
-    
-    revalidatePath('/admin/relawan');
-
-    const finalResults = settled.map(s => s.status === 'fulfilled' ? s.value : { success: false, email: 'unknown', error: 'Promise rejected' });
-    return { success: true, results: finalResults };
-  } catch (error: unknown) {
-    console.error('Bulk import error:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Terjadi kesalahan sistem saat impor massal.' };
-  }
+  revalidatePath('/admin/relawan');
+  return { success: true, results };
 }
-
