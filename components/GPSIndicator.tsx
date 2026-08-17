@@ -28,11 +28,6 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
         
         setGPS(lat, lon, accuracy);
 
-        if (accuracy > 100) {
-          setGpsStatus('poor_accuracy');
-          return;
-        }
-
         const dist = haversineDistance(lat, lon, TASK_LOCATION.lat, TASK_LOCATION.lon);
         setDistanceFromTask(dist);
         if (dist <= GEOFENCE_RADIUS || tipeAbsen === 'pulang') { setGpsStatus('found'); onLocationFound?.(lat, lon); }
