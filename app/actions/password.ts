@@ -83,7 +83,7 @@ export async function requestPasswordReset(identifier: string): Promise<{
     }
 
     // 4. Panggil better-auth forgetPassword API
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://absensi-sppg-teluknaga03.id';
 
     await auth.api.requestPasswordReset({
       body: {
