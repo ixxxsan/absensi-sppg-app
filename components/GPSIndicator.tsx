@@ -70,7 +70,8 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
               const kotaKab = addr.city || addr.county || addr.town || '';
               const provinsi = addr.state || '';
               let kodepos = addr.postcode || '';
-              if (kecamatan.toLowerCase().includes('teluknaga')) {
+              const fullArea = (jalanLengkap + ' ' + desa + ' ' + kecamatan + ' ' + kotaKab).toLowerCase();
+              if (fullArea.includes('teluknaga')) {
                   kodepos = '15510';
               }
               const provPos = [provinsi, kodepos].filter(Boolean).join(' ');
@@ -124,7 +125,8 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
               const kotaKab = addrData.municipality || '';
               const provinsi = addrData.countrySubdivision || '';
               let kodepos = addrData.postalCode || '';
-              if (kecamatan.toLowerCase().includes('teluknaga')) {
+              const fullArea = (jalanLengkap + ' ' + desa + ' ' + kecamatan + ' ' + kotaKab).toLowerCase();
+              if (fullArea.includes('teluknaga')) {
                   kodepos = '15510';
               }
               const provPos = [provinsi, kodepos].filter(Boolean).join(' ');
