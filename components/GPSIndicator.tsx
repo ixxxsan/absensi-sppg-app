@@ -69,7 +69,10 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
               }
               const kotaKab = addr.city || addr.county || addr.town || '';
               const provinsi = addr.state || '';
-              const kodepos = addr.postcode || '';
+              let kodepos = addr.postcode || '';
+              if (kecamatan.toLowerCase().includes('teluknaga')) {
+                  kodepos = '15510';
+              }
               const provPos = [provinsi, kodepos].filter(Boolean).join(' ');
               const parts = [jalanLengkap, desa, kecamatan, kotaKab, provPos].filter(Boolean);
               const finalParts = parts.filter((item, pos, self) => self.indexOf(item) === pos);
@@ -120,7 +123,10 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
               
               const kotaKab = addrData.municipality || '';
               const provinsi = addrData.countrySubdivision || '';
-              const kodepos = addrData.postalCode || '';
+              let kodepos = addrData.postalCode || '';
+              if (kecamatan.toLowerCase().includes('teluknaga')) {
+                  kodepos = '15510';
+              }
               const provPos = [provinsi, kodepos].filter(Boolean).join(' ');
               
               const parts = [jalanLengkap, desa, kecamatan, kotaKab, provPos].filter(Boolean);
