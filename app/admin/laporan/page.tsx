@@ -106,7 +106,10 @@ export default function LaporanPage() {
 
     const wb = XLSX.utils.book_new();
 
-    const wsAggregate = XLSX.utils.json_to_sheet(aggregateList);
+    // Define headers explicitly so the sheet is never completely empty (which causes Excel display issues)
+    const exportHeaders = ['ID Relawan', 'Nama Lengkap', 'Divisi', 'Total Hari Kerja (Hari)'];
+    
+    const wsAggregate = XLSX.utils.json_to_sheet(aggregateList, { header: exportHeaders });
     wsAggregate['!cols'] = [ { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 25 } ];
     
     // Apply basic styling to headers
