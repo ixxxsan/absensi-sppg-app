@@ -52,10 +52,11 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // Pastikan user ini memiliki role admin atau super_admin di database
       if (signInData.user.role === 'admin' || signInData.user.role === 'super_admin') {
-        // Better Auth handles cookie setting, we just redirect
-        router.replace('/admin/dashboard');
+        // Better Auth handles cookie setting.
+        // We use window.location.href to ensure a full page reload so Next.js middleware and RSC 
+        // get the fresh cookie reliably, avoiding client-side router cache issues.
+        window.location.href = '/admin/dashboard';
       } else {
         // Log them out if they are not an admin (but managed to sign in as relawan)
         await authClient.signOut();

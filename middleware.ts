@@ -24,7 +24,7 @@ export function middleware(request: NextRequest) {
   // 2. Admin Route Protection
   if (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') {
     // Check for better-auth session cookie
-    const sessionCookie = request.cookies.get('better-auth.session_token');
+    const sessionCookie = request.cookies.get('better-auth.session_token') || request.cookies.get('__Secure-better-auth.session_token');
     if (!sessionCookie?.value) {
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
