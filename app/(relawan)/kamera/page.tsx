@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Info, Circle, AlertTriangle, Camera } from 'lucide-react';
 import CameraView from '@/components/CameraView';
 import GPSIndicator from '@/components/GPSIndicator';
-import { useCameraStore } from '@/lib/stores';
+import { useCameraStore, useAbsensiStore } from '@/lib/stores';
 import { nowWIB, haversineDistance, formatDateLong, formatCoords } from '@/lib/utils';
 import { GEOFENCE } from '@/lib/config';
 import { authClient } from '@/lib/auth-client';
@@ -108,8 +108,26 @@ export default function KameraPage() {
       
       const { submitAbsensi } = await import('@/app/actions/absensi');
       const res = await submitAbsensi(publicUrlData.publicUrl, latitude ?? 0, longitude ?? 0, tipeAbsen, Date.now());
-      if (!res || !res.success) {
+      if (!res || !res.success || !res.record) {
         throw new Error(res?.error || 'Gagal mengirim absensi.');
+      }
+
+      const newRecord = {
+        id: res.record.id,
+        userId: res.record.userId,
+        tanggalAbsen: res.record.tanggalAbsen,
+        waktuAbsen: res.record.waktuAbsen,
+        fotoUrl: res.record.fotoUrl,
+        latitude: Number(res.record.latitude),
+        longitude: Number(res.record.longitude),
+        tipe: res.record.tipe as 'masuk' | 'pulang',
+        statusValidasi: res.record.statusValidasi as any,
+      };
+
+      if (tipeAbsen === 'masuk') {
+        useAbsensiStore.getState().setAbsenMasuk(newRecord);
+      } else {
+        useAbsensiStore.getState().setAbsenPulang(newRecord);
       }
 
       reset(); // Clear camera state

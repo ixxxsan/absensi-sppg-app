@@ -92,7 +92,7 @@ export async function submitAbsensi(
 
   // 2. Insert into Database
   // Note: We auto-approve based on the frontend logic.
-  await db.insert(absensi).values({
+  const inserted = await db.insert(absensi).values({
     userId: session.user.id,
     tanggalAbsen: now.format('YYYY-MM-DD'),
     waktuAbsen: now.format('HH:mm:ss'),
@@ -102,9 +102,9 @@ export async function submitAbsensi(
     longitude: longitude.toString(),
     statusValidasi,
     catatanSistem,
-  });
+  }).returning();
 
-  return { success: true, fotoUrl };
+  return { success: true, record: inserted[0] };
 }
 
 export async function getAllAbsensi() {

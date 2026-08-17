@@ -17,11 +17,14 @@ interface AttendanceCardProps {
 function AttendanceCard({ record }: AttendanceCardProps) {
   const [showPhoto, setShowPhoto] = useState(false);
 
-  const statusConfig = {
+  const statusConfig: Record<string, { icon: any, color: string, bg: string, label: string }> = {
     valid: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', label: 'Valid' },
     ditolak: { icon: XCircle, color: '#f87171', bg: 'rgba(248,113,113,0.15)', label: 'Ditolak' },
+    menunggu: { icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', label: 'Menunggu' },
+    invalid: { icon: XCircle, color: '#f87171', bg: 'rgba(248,113,113,0.15)', label: 'Tidak Valid' },
+    flagged: { icon: CheckCircle, color: 'text-orange-400', bg: 'bg-orange-500/10', label: 'Flagged' },
   };
-  const status = statusConfig[record.statusValidasi];
+  const status = statusConfig[record.statusValidasi] || statusConfig.menunggu;
   const StatusIcon = status.icon;
 
   return (

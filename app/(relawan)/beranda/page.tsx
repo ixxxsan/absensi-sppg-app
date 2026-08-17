@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import ClockWidget from '@/components/ClockWidget';
 import StatusBadge from '@/components/StatusBadge';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
-import { useCameraStore } from '@/lib/stores';
+import { useCameraStore, useAbsensiStore } from '@/lib/stores';
 import { getGreeting } from '@/lib/utils';
 import { getAbsensiHariIni } from '@/app/actions/absensi';
 import { authClient } from '@/lib/auth-client';
@@ -31,6 +31,26 @@ export default function BerandaPage() {
         setIsLengkap(data.isLengkap);
         setMasukData(data.masuk);
         setPulangData(data.pulang);
+
+        // Sync to Zustand store for riwayat/sukses page
+        if (data.masuk) {
+          useAbsensiStore.getState().setAbsenMasuk({
+            ...data.masuk,
+            latitude: Number(data.masuk.latitude),
+            longitude: Number(data.masuk.longitude),
+            tipe: 'masuk',
+            statusValidasi: data.masuk.statusValidasi as any
+          });
+        }
+        if (data.pulang) {
+          useAbsensiStore.getState().setAbsenPulang({
+            ...data.pulang,
+            latitude: Number(data.pulang.latitude),
+            longitude: Number(data.pulang.longitude),
+            tipe: 'pulang',
+            statusValidasi: data.pulang.statusValidasi as any
+          });
+        }
       } catch (err) {
         console.error(err);
       }

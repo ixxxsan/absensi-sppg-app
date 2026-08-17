@@ -13,15 +13,15 @@ export type StatusRelawan = 'Aktif' | 'Magang' | 'Cuti';
 export type AbsensiStatus = 'belum' | 'masuk' | 'lengkap';
 
 export interface AbsenRecord {
-  id: number;
-  relawanId: number;
+  id: string;
+  userId?: string;
   tanggalAbsen: string;   // YYYY-MM-DD
   waktuAbsen: string;     // HH:mm WIB
   fotoUrl: string;
   latitude: number;
   longitude: number;
   tipe: 'masuk' | 'pulang';
-  statusValidasi: 'valid' | 'ditolak';
+  statusValidasi: 'menunggu' | 'valid' | 'invalid' | 'flagged' | 'ditolak';
 }
 
 interface AbsensiState {
