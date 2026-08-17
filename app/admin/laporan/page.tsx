@@ -9,6 +9,7 @@ import { getAllAbsensi } from '@/app/actions/absensi';
 interface LaporanItem {
   idRelawan: string;
   namaLengkap: string;
+  divisi: string;
   tanggal: string;
   jamMasuk: string;
   jamPulang: string;
@@ -17,6 +18,17 @@ interface LaporanItem {
   koordinatMasuk: string;
   koordinatPulang: string;
 }
+
+const DIVISI_OPTIONS = [
+  'ASISTEN LAPANGAN', 'ADMIN', 'STOCKIST', 'SECURITY', 'DRIVER', 
+  'CLEANING SERVICE', 'PERSIAPAN', 'PENGOLAHAN', 'PEMORSIAN', 'PENCUCI TRAY'
+];
+
+const getDivisiRank = (divisi: string | null | undefined) => {
+  if (!divisi) return 999;
+  const index = DIVISI_OPTIONS.indexOf(divisi.toUpperCase());
+  return index === -1 ? 999 : index;
+};
 
 export default function LaporanPage() {
   const [dateFrom, setDateFrom] = useState(nowWIB().startOf('month').format('YYYY-MM-DD'));
@@ -42,6 +54,7 @@ export default function LaporanPage() {
           grouped[key] = {
             idRelawan: r.idRelawan || 'SPPG-000',
             namaLengkap: r.namaLengkap || 'Unknown',
+            divisi: r.divisi || '-',
             tanggal: r.tanggalAbsen,
             jamMasuk: '',
             jamPulang: '',
@@ -63,7 +76,9 @@ export default function LaporanPage() {
         }
       });
       
-      setData(Object.values(grouped));
+      const groupedData = Object.values(grouped);
+      groupedData.sort((a, b) => getDivisiRank(a.divisi) - getDivisiRank(b.divisi));
+      setData(groupedData);
     }
     fetchData();
   }, []);
@@ -85,7 +100,7 @@ export default function LaporanPage() {
 
     // Build Excel workbook for Daily Logs
     const headers = [
-      'ID Relawan', 'Nama Lengkap', 'Tanggal', 'Jam Masuk (WIB)', 
+      'ID Relawan', 'Nama Lengkap', 'Divisi', 'Tanggal', 'Jam Masuk (WIB)', 
       'Jam Pulang (WIB)', 'Status Masuk', 'Status Pulang', 
       'Koordinat Masuk', 'Koordinat Pulang', 'Total Hari Kerja'
     ];
@@ -95,6 +110,7 @@ export default function LaporanPage() {
       .map((r) => [
         r.idRelawan,
         r.namaLengkap,
+        r.divisi,
         r.tanggal,
         r.jamMasuk,
         r.jamPulang || '-',
@@ -165,14 +181,14 @@ export default function LaporanPage() {
 
     // Merge title cells
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 9 } }
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } }
     ];
 
     // Column widths for readability
     ws['!cols'] = [
-      { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+      { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
       { wch: 15 }, { wch: 15 }, { wch: 22 }, { wch: 22 }, { wch: 18 }
     ];
 
@@ -183,7 +199,7 @@ export default function LaporanPage() {
     data.forEach(r => {
       if (r.tanggal >= dateFrom && r.tanggal <= dateTo) {
         if (!aggregateMap.has(r.idRelawan)) {
-          aggregateMap.set(r.idRelawan, { 'ID Relawan': r.idRelawan, 'Nama Lengkap': r.namaLengkap, 'Total Hari Kerja (Hari)': 0 });
+          aggregateMap.set(r.idRelawan, { 'ID Relawan': r.idRelawan, 'Nama Lengkap': r.namaLengkap, 'Divisi': r.divisi, 'Total Hari Kerja (Hari)': 0 });
         }
         if (r.statusMasuk === 'valid') {
           aggregateMap.get(r.idRelawan)['Total Hari Kerja (Hari)'] += 1;
@@ -192,7 +208,7 @@ export default function LaporanPage() {
     });
     
     const wsAggregate = XLSX.utils.json_to_sheet(Array.from(aggregateMap.values()));
-    wsAggregate['!cols'] = [ { wch: 15 }, { wch: 25 }, { wch: 25 } ];
+    wsAggregate['!cols'] = [ { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 25 } ];
     XLSX.utils.book_append_sheet(wb, wsAggregate, 'Total Hari Kerja');
 
     // Summary sheet
@@ -280,8 +296,8 @@ export default function LaporanPage() {
           <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-blue-700 space-y-0.5">
             <p className="font-semibold">Kolom yang diekspor (siap VLOOKUP):</p>
-            <p>Sheet Harian: ID Relawan · Nama Lengkap · Tanggal · Jam Masuk · Jam Pulang · Koordinat · Total Hari Kerja</p>
-            <p>Sheet Total: ID Relawan · Nama Lengkap · Total Hari Kerja</p>
+            <p>Sheet Harian: ID Relawan · Nama Lengkap · Divisi · Tanggal · Jam Masuk · Jam Pulang · Koordinat · Total Hari Kerja</p>
+            <p>Sheet Total: ID Relawan · Nama Lengkap · Divisi · Total Hari Kerja</p>
           </div>
         </div>
 
@@ -326,7 +342,7 @@ export default function LaporanPage() {
           <table className="w-full text-xs">
             <thead className="bg-slate-50">
               <tr>
-                {['ID Relawan', 'Nama', 'Tanggal', 'Jam Masuk', 'Jam Pulang', 'Status Masuk', 'Status Pulang'].map((h) => (
+                {['ID Relawan', 'Nama', 'Divisi', 'Tanggal', 'Jam Masuk', 'Jam Pulang', 'Status Masuk', 'Status Pulang'].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                     {h}
                   </th>
@@ -338,6 +354,7 @@ export default function LaporanPage() {
                 <tr key={i} className="hover:bg-slate-50/50">
                   <td className="px-4 py-3 font-mono text-emerald-600 font-semibold">{r.idRelawan}</td>
                   <td className="px-4 py-3 text-slate-700 font-medium whitespace-nowrap">{r.namaLengkap}</td>
+                  <td className="px-4 py-3 text-slate-600 font-medium whitespace-nowrap">{r.divisi}</td>
                   <td className="px-4 py-3 text-slate-500 font-mono">{r.tanggal}</td>
                   <td className="px-4 py-3 font-mono text-slate-600">{r.jamMasuk || '-'}</td>
                   <td className="px-4 py-3 font-mono text-slate-600">{r.jamPulang || '-'}</td>
