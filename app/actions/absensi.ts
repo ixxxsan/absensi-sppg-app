@@ -86,7 +86,7 @@ export async function submitAbsensi(
   if (tipe === 'masuk') {
     const dist = haversineDistance(latitude, longitude, GEOFENCE.lat, GEOFENCE.lon);
     if (dist > GEOFENCE.radiusMeters) {
-      return { success: false, error: 'Anda berada di luar radius tugas (lebih dari 1500m). Absensi masuk ditolak.' };
+      return { success: false, error: `Anda berada di luar radius tugas (lebih dari ${GEOFENCE.radiusMeters}m). Absensi masuk ditolak.` };
     }
   }
 

@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, Clock, User, XCircle } from 'lucide-react';
 import SuccessCheck from '@/components/SuccessCheck';
 import { useAbsensiStore } from '@/lib/stores';
 import { authClient } from '@/lib/auth-client';
+import { GEOFENCE } from '@/lib/config';
 
 const REDIRECT_DELAY = 5; // seconds
 
@@ -60,7 +61,7 @@ export default function SuksesPage() {
           <p className="text-sm font-medium mt-2 leading-relaxed"
              style={{ color: isDitolak ? '#f87171' : '#b5e0ea' }}>
             {isDitolak
-              ? 'Anda berada di luar radius 1500m dari titik tugas. Silakan mendekat dan ulangi absensi.'
+              ? `Anda berada di luar radius ${GEOFENCE.radiusMeters}m dari titik tugas. Silakan mendekat dan ulangi absensi.`
               : (isLengkap ? 'Absensi hari ini sudah lengkap' : `${tipeLabel} tercatat`)
             }
           </p>
