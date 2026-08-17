@@ -33,6 +33,10 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
+  if (pathname === '/admin/login') {
+    return null;
+  }
+
   const handleLogout = async () => {
     await authClient.signOut();
     router.replace('/admin/login');
