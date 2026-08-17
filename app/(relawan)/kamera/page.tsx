@@ -251,7 +251,7 @@ export default function KameraPage() {
                 <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
                 <p className="text-red-300 text-sm text-center">
                   {tipeAbsen === 'masuk'
-                    ? 'Anda berada di luar radius tugas (>1500m). Foto tidak dapat diambil. Pindah mendekat ke lokasi tugas.'
+                    ? `Anda berada di luar radius tugas (>${GEOFENCE.radiusMeters}m). Foto tidak dapat diambil. Pindah mendekat ke lokasi tugas.`
                     : 'Anda berada di luar radius tugas.'}
                 </p>
               </div>
