@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/auth-server';
 import AdminSidebar from './AdminSidebar';
 

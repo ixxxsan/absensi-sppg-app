@@ -24,8 +24,8 @@ export async function requestPasswordReset(identifier: string) {
         body: { email: found.email, redirectTo: `${process.env.FRONTEND_URL || 'https://absensi-sppg-teluknaga03.id'}/reset-password` },
       });
     }
-    return { success: true }; // Anti-enumeration
-  } catch (err) {
+    return { success: true };
+  } catch {
     return { success: true };
   }
 }
@@ -35,7 +35,8 @@ export async function resetPassword(token: string, newPassword: string) {
     if (!token || newPassword.length < 8) return { success: false, error: 'Invalid token atau password.' };
     await auth.api.resetPassword({ body: { token, newPassword } });
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err?.message || 'Gagal mereset password.' };
+  } catch (err: unknown) {
+    const error = err as Error;
+    return { success: false, error: error?.message || 'Gagal mereset password.' };
   }
 }

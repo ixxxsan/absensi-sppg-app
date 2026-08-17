@@ -36,10 +36,10 @@ export default function BerandaPage() {
         if (data.masuk) {
           useAbsensiStore.getState().setAbsenMasuk({
             ...data.masuk,
+            tipe: data.masuk.tipe as 'masuk' | 'pulang',
             latitude: Number(data.masuk.latitude),
             longitude: Number(data.masuk.longitude),
-            tipe: 'masuk',
-            statusValidasi: data.masuk.statusValidasi as any
+            statusValidasi: data.masuk.statusValidasi as 'valid' | 'invalid' | 'menunggu' | 'flagged' | 'ditolak'
           });
         }
         if (data.pulang) {
@@ -48,7 +48,7 @@ export default function BerandaPage() {
             latitude: Number(data.pulang.latitude),
             longitude: Number(data.pulang.longitude),
             tipe: 'pulang',
-            statusValidasi: data.pulang.statusValidasi as any
+            statusValidasi: data.pulang.statusValidasi as 'valid' | 'invalid' | 'menunggu' | 'flagged' | 'ditolak'
           });
         }
       } catch (err) {

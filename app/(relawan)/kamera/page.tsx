@@ -121,7 +121,7 @@ export default function KameraPage() {
         latitude: Number(res.record.latitude),
         longitude: Number(res.record.longitude),
         tipe: res.record.tipe as 'masuk' | 'pulang',
-        statusValidasi: res.record.statusValidasi as any,
+        statusValidasi: res.record.statusValidasi as 'valid' | 'invalid' | 'menunggu' | 'flagged' | 'ditolak',
       };
 
       if (tipeAbsen === 'masuk') {

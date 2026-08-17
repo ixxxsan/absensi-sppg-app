@@ -54,9 +54,9 @@ export default function AdminLoginPage() {
 
       if (signInData.user.role === 'admin' || signInData.user.role === 'super_admin') {
         // Better Auth handles cookie setting.
-        // We use window.location.href to ensure a full page reload so Next.js middleware and RSC 
-        // get the fresh cookie reliably, avoiding client-side router cache issues.
-        window.location.href = '/admin/dashboard';
+        // We use router.push and router.refresh() to navigate and get fresh cookies.
+        router.push('/admin/dashboard');
+        router.refresh();
       } else {
         // Log them out if they are not an admin (but managed to sign in as relawan)
         await authClient.signOut();

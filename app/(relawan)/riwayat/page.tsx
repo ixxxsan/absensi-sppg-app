@@ -17,7 +17,7 @@ interface AttendanceCardProps {
 function AttendanceCard({ record }: AttendanceCardProps) {
   const [showPhoto, setShowPhoto] = useState(false);
 
-  const statusConfig: Record<string, { icon: any, color: string, bg: string, label: string }> = {
+  const statusConfig: Record<string, { icon: unknown, color: string, bg: string, label: string }> = {
     valid: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', label: 'Valid' },
     ditolak: { icon: XCircle, color: '#f87171', bg: 'rgba(248,113,113,0.15)', label: 'Ditolak' },
     menunggu: { icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', label: 'Menunggu' },
@@ -25,7 +25,7 @@ function AttendanceCard({ record }: AttendanceCardProps) {
     flagged: { icon: CheckCircle, color: 'text-orange-400', bg: 'bg-orange-500/10', label: 'Flagged' },
   };
   const status = statusConfig[record.statusValidasi] || statusConfig.menunggu;
-  const StatusIcon = status.icon;
+  const StatusIcon = status.icon as React.ElementType;
 
   return (
     <div className="card space-y-3">
@@ -42,7 +42,9 @@ function AttendanceCard({ record }: AttendanceCardProps) {
           <p className="text-slate-400 text-xs">{record.tanggalAbsen}</p>
         </div>
         <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${status.bg}`}>
-          <StatusIcon className={`w-3 h-3 ${status.color}`} />
+          {StatusIcon && typeof StatusIcon !== 'string' ? (
+            <StatusIcon className={`w-3 h-3 ${status.color}`} />
+          ) : null}
           <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
         </div>
       </div>

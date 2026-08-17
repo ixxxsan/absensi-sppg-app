@@ -51,8 +51,9 @@ export async function createRelawan(fd: FormData) {
     await sendPasswordEmail(email, pass, namaLengkap);
     revalidatePath('/admin/relawan');
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    const error = err as Error;
+    return { success: false, error: error.message };
   }
 }
 
@@ -114,8 +115,9 @@ export async function bulkImportRelawan(rows: BulkImportRow[]) {
       }).where(eq(user.id, res.user.id));
       await sendPasswordEmail(r.email, pass, r.namaLengkap);
       return { success: true, email: r.email };
-    } catch (e: any) {
-      return { success: false, email: r.email, error: e.message };
+    } catch (e: unknown) {
+      const err = e as Error;
+      return { success: false, email: r.email, error: err.message };
     }
   }));
 
