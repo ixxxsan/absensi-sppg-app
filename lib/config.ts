@@ -5,5 +5,5 @@
 export const GEOFENCE = {
   lat: -6.098782,
   lon: 106.653263,
-  radiusMeters: 500,
+  radiusMeters: 1500,
 } as const;
