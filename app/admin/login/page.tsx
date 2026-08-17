@@ -7,7 +7,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
-import { useAuthStore } from '@/lib/stores';
 import { authClient } from '@/lib/auth-client';
 
 const adminLoginSchema = z.object({
@@ -19,7 +18,6 @@ type AdminLoginForm = z.infer<typeof adminLoginSchema>;
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { login } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -56,15 +54,11 @@ export default function AdminLoginPage() {
 
       // Pastikan user ini memiliki role admin atau super_admin di database
       if (signInData.user.role === 'admin' || signInData.user.role === 'super_admin') {
-        login({
-          id: 99,
-          namaLengkap: signInData.user.name,
-          email: signInData.user.email,
-          role: signInData.user.role as "admin" | "super_admin",
-          token: 'admin-token-xyz', // Dummy for zustand compatibility
-        });
+        // Better Auth handles cookie setting, we just redirect
         router.replace('/admin/dashboard');
       } else {
+        // Log them out if they are not an admin (but managed to sign in as relawan)
+        await authClient.signOut();
         setLoginError('Akses ditolak: Akun bukan admin.');
         setIsLoading(false);
       }

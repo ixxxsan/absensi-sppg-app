@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { randomBytes } from 'crypto';
 
 import { Resend } from 'resend';
 
@@ -99,8 +100,8 @@ export async function createRelawan(formData: FormData) {
     const status = (formData.get('status') as string || '').trim();
     const idRelawan = (formData.get('idRelawan') as string || '').trim();
 
-    // Generate random password (Sppg + last 4 digits of NIK)
-    const defaultPassword = `Sppg${nik.slice(-4)}!`;
+    // Generate random secure password (8 characters)
+    const defaultPassword = randomBytes(4).toString('hex');
 
     // Create user via better-auth signUpEmail
     const result = await auth.api.signUpEmail({
@@ -239,7 +240,7 @@ export async function bulkImportRelawan(rows: BulkImportRow[]) {
     });
 
     const promises = rowsWithIds.map(async (row) => {
-      const defaultPassword = `Sppg${row.nik.slice(-4)}!`;
+      const defaultPassword = randomBytes(4).toString('hex');
 
       try {
         const result = await auth.api.signUpEmail({

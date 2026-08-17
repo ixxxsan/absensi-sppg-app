@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Clock, User, XCircle } from 'lucide-react';
 import SuccessCheck from '@/components/SuccessCheck';
-import { useAbsensiStore, useAuthStore } from '@/lib/stores';
+import { useAbsensiStore } from '@/lib/stores';
+import { authClient } from '@/lib/auth-client';
 
 const REDIRECT_DELAY = 5; // seconds
 
@@ -12,7 +13,8 @@ export default function SuksesPage() {
   const router = useRouter();
   const [countdown, setCountdown] = useState(REDIRECT_DELAY);
   const { statusHariIni, absenMasukToday, absenPulangToday } = useAbsensiStore();
-  const { user } = useAuthStore();
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
 
   // Determine which record to show
   const lastRecord = statusHariIni === 'lengkap' ? absenPulangToday : absenMasukToday;
@@ -101,7 +103,7 @@ export default function SuksesPage() {
                 </div>
                 <div>
                   <p className="text-xs" style={{ color: 'rgba(181,224,234,0.5)' }}>Nama Relawan</p>
-                  <p className="text-white text-sm font-semibold">{user?.namaLengkap}</p>
+                  <p className="text-white text-sm font-semibold">{user?.name || 'Relawan'}</p>
                 </div>
               </div>
 

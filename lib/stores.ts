@@ -7,48 +7,7 @@ export type UserRole = 'relawan' | 'admin' | 'super_admin';
 export type Divisi = 'ASISTEN LAPANGAN' | 'ADMIN' | 'STOCKIST' | 'SECURITY' | 'DRIVER' | 'CLEANING SERVICE' | 'PERSIAPAN' | 'PENGOLAHAN' | 'PEMORSIAN' | 'PENCUCI TRAY';
 export type StatusRelawan = 'Aktif' | 'Magang' | 'Cuti';
 
-export interface AuthUser {
-  id: number;
-  idRelawan?: string;    // e.g. SPPG-001 (for relawan)
-  namaLengkap: string;
-  email: string;
-  role: UserRole;
-  token: string;
-  fotoProfil?: string;
-  divisi?: Divisi;
-  status?: StatusRelawan;
-}
-
-interface AuthState {
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (user: AuthUser) => void;
-  logout: () => void;
-  setLoading: (v: boolean) => void;
-}
-
-// ─── Auth Store ───────────────────────────────────────────
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      login: (user) => set({ user, isAuthenticated: true }),
-      logout: () => set({ user: null, isAuthenticated: false }),
-      setLoading: (v) => set({ isLoading: v }),
-    }),
-    {
-      name: 'sppg-auth',
-      // Only persist user + auth status (not loading state)
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    }
-  )
-);
+// AuthStore has been removed. Use authClient.useSession() or getServerSession() instead.
 
 // ─── Types ────────────────────────────────────────────────
 export type AbsensiStatus = 'belum' | 'masuk' | 'lengkap';
