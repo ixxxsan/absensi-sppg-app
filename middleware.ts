@@ -32,9 +32,11 @@ export function middleware(request: NextRequest) {
   }
 
   // 3. Prevent logged-in admin from accessing login page
-  if (request.nextUrl.pathname === '/admin/login' && sessionCookie?.value) {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-  }
+  // We cannot blindly redirect here because non-admin users (relawan) will also have a session cookie,
+  // which causes an infinite loop when the dashboard redirects them back to /admin/login.
+  // if (request.nextUrl.pathname === '/admin/login' && sessionCookie?.value) {
+  //   return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+  // }
 
   // Lanjutkan request jika aman
   const response = NextResponse.next();
