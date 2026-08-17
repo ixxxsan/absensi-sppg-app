@@ -31,6 +31,10 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterDivisi, setFilterDivisi] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<RelawanItem | null>(null);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -41,14 +45,36 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [importReport, setImportReport] = useState<{ success: number, failed: number, details: any[] } | null>(null);
 
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleFilterStatus = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterStatus(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleFilterDivisi = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterDivisi(e.target.value);
+    setCurrentPage(1);
+  };
+
   const filtered = initialData.filter((r) => {
     const matchesSearch = r.name?.toLowerCase().includes(search.toLowerCase()) ||
                           r.idRelawan?.toLowerCase().includes(search.toLowerCase()) ||
                           r.email?.toLowerCase().includes(search.toLowerCase()) ||
                           (r.nik && r.nik.toLowerCase().includes(search.toLowerCase()));
     const matchesStatus = filterStatus ? r.status === filterStatus : true;
-    return matchesSearch && matchesStatus;
+    const matchesDivisi = filterDivisi ? r.divisi === filterDivisi : true;
+    return matchesSearch && matchesStatus && matchesDivisi;
   });
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedData = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleEdit = (r: RelawanItem) => {
     setEditTarget(r);
@@ -253,7 +279,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
       </div>
 
       {/* Search + Filter */}
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -261,27 +287,45 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
             type="text"
             placeholder="Cari nama, ID, atau email..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={handleSearch}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white
                        text-slate-700 text-sm placeholder-slate-400
                        focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
           />
         </div>
-        <div className="relative">
-          <select
-            id="filter-status"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="appearance-none pl-4 pr-8 py-2.5 rounded-xl border border-slate-200 bg-white
-                       text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
-                       cursor-pointer"
-          >
-            <option value="">Semua Status</option>
-            <option value="Aktif">Aktif</option>
-            <option value="Magang">Magang</option>
-            <option value="Cuti">Cuti</option>
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
+        <div className="flex gap-3">
+          <div className="relative">
+            <select
+              id="filter-divisi"
+              value={filterDivisi}
+              onChange={handleFilterDivisi}
+              className="appearance-none pl-4 pr-8 py-2.5 rounded-xl border border-slate-200 bg-white
+                         text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
+                         cursor-pointer w-[160px]"
+            >
+              <option value="">Semua Divisi</option>
+              {DIVISI_OPTIONS.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
+          </div>
+          <div className="relative">
+            <select
+              id="filter-status"
+              value={filterStatus}
+              onChange={handleFilterStatus}
+              className="appearance-none pl-4 pr-8 py-2.5 rounded-xl border border-slate-200 bg-white
+                         text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
+                         cursor-pointer w-[140px]"
+            >
+              <option value="">Semua Status</option>
+              <option value="Aktif">Aktif</option>
+              <option value="Magang">Magang</option>
+              <option value="Cuti">Cuti</option>
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
+          </div>
         </div>
       </div>
 
@@ -299,7 +343,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtered.map((r) => (
+              {paginatedData.map((r) => (
                 <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-4 py-3.5 font-mono text-xs font-semibold text-emerald-600">
                     {r.idRelawan}
@@ -377,6 +421,33 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
                 <p className="text-sm">Tidak ditemukan relawan dengan kata kunci tersebut</p>
               </>
             )}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+            <p className="text-xs text-slate-500 font-medium">
+              Menampilkan <span className="font-semibold text-slate-700">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> hingga <span className="font-semibold text-slate-700">{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}</span> dari <span className="font-semibold text-slate-700">{filtered.length}</span> data
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-semibold
+                           hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white transition-colors"
+              >
+                Sebelumnya
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-semibold
+                           hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white transition-colors"
+              >
+                Selanjutnya
+              </button>
+            </div>
           </div>
         )}
       </div>
