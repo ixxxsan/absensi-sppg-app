@@ -87,56 +87,32 @@ export default function LaporanPage() {
     setIsExporting(true);
     await new Promise((r) => setTimeout(r, 800)); // Simulate UI loading feel
 
+    const filteredForExport = data.filter((r) => r.tanggal >= dateFrom && r.tanggal <= dateTo);
+    
     // Calculate Total Hari Kerja per Volunteer
-    const hariKerjaMap: Record<string, number> = {};
-    data.forEach(r => {
-      if (r.tanggal >= dateFrom && r.tanggal <= dateTo) {
-        if (r.statusMasuk === 'valid') {
-          if (!hariKerjaMap[r.idRelawan]) hariKerjaMap[r.idRelawan] = 0;
-          hariKerjaMap[r.idRelawan] += 1;
-        }
+    const aggregateMap = new Map();
+    filteredForExport.forEach(r => {
+      if (!aggregateMap.has(r.idRelawan)) {
+        aggregateMap.set(r.idRelawan, { 'ID Relawan': r.idRelawan, 'Nama Lengkap': r.namaLengkap, 'Divisi': r.divisi, 'Total Hari Kerja (Hari)': 0 });
+      }
+      if (r.statusMasuk === 'valid') {
+        aggregateMap.get(r.idRelawan)['Total Hari Kerja (Hari)'] += 1;
       }
     });
 
-    // Build Excel workbook for Daily Logs
-    const headers = [
-      'ID Relawan', 'Nama Lengkap', 'Divisi', 'Tanggal', 'Jam Masuk (WIB)', 
-      'Jam Pulang (WIB)', 'Status Masuk', 'Status Pulang', 
-      'Koordinat Masuk', 'Koordinat Pulang', 'Total Hari Kerja'
-    ];
-
-    const dataRows = data
-      .filter((r) => r.tanggal >= dateFrom && r.tanggal <= dateTo)
-      .map((r) => [
-        r.idRelawan,
-        r.namaLengkap,
-        r.divisi,
-        r.tanggal,
-        r.jamMasuk,
-        r.jamPulang || '-',
-        r.statusMasuk,
-        r.statusPulang,
-        r.koordinatMasuk,
-        r.koordinatPulang || '-',
-        hariKerjaMap[r.idRelawan] || 0
-      ]);
-
-    const aoa = [
-      ['REKAPAN ABSENSI RELAWAN'],
-      ['SPPG TELUKNAGA 03'],
-      [`PERIODE ${dateFrom} s/d ${dateTo}`],
-      [], // Empty row
-      headers,
-      ...dataRows
-    ];
+    const aggregateList = Array.from(aggregateMap.values());
+    // Sort by Divisi Rank
+    aggregateList.sort((a, b) => getDivisiRank(a['Divisi']) - getDivisiRank(b['Divisi']));
 
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-    // Apply styling
+    const wsAggregate = XLSX.utils.json_to_sheet(aggregateList);
+    wsAggregate['!cols'] = [ { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 25 } ];
+    
+    // Apply basic styling to headers
     const headerStyle = {
       font: { bold: true, color: { rgb: "000000" } },
-      fill: { fgColor: { rgb: "E2EFDA" } }, // Light green fill
+      fill: { fgColor: { rgb: "E2EFDA" } },
       border: {
         top: { style: "thin", color: { rgb: "000000" } },
         bottom: { style: "thin", color: { rgb: "000000" } },
@@ -144,81 +120,25 @@ export default function LaporanPage() {
         right: { style: "thin", color: { rgb: "000000" } }
       }
     };
-
-    const dataStyle = {
-      border: {
-        top: { style: "thin", color: { rgb: "000000" } },
-        bottom: { style: "thin", color: { rgb: "000000" } },
-        left: { style: "thin", color: { rgb: "000000" } },
-        right: { style: "thin", color: { rgb: "000000" } }
-      }
-    };
-
-    const titleStyle = {
-      font: { bold: true, sz: 14 }
-    };
-
-    // Apply styles to cells
-    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellAddress = { c: C, r: R };
-        const cellRef = XLSX.utils.encode_cell(cellAddress);
-        if (!ws[cellRef]) continue;
-
-        if (R < 3) {
-          // Titles
-          ws[cellRef].s = titleStyle;
-        } else if (R === 4) {
-          // Table Headers
-          ws[cellRef].s = headerStyle;
-        } else if (R > 4) {
-          // Table Data
-          ws[cellRef].s = dataStyle;
-        }
-      }
+    
+    const range = XLSX.utils.decode_range(wsAggregate['!ref'] || 'A1:A1');
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: C });
+      if (wsAggregate[cellRef]) wsAggregate[cellRef].s = headerStyle;
     }
 
-    // Merge title cells
-    ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } }
-    ];
-
-    // Column widths for readability
-    ws['!cols'] = [
-      { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
-      { wch: 15 }, { wch: 15 }, { wch: 22 }, { wch: 22 }, { wch: 18 }
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, 'Rekap Absensi Harian');
-
-    // Build Excel sheet for Aggregate Total Hari Kerja
-    const aggregateMap = new Map();
-    data.forEach(r => {
-      if (r.tanggal >= dateFrom && r.tanggal <= dateTo) {
-        if (!aggregateMap.has(r.idRelawan)) {
-          aggregateMap.set(r.idRelawan, { 'ID Relawan': r.idRelawan, 'Nama Lengkap': r.namaLengkap, 'Divisi': r.divisi, 'Total Hari Kerja (Hari)': 0 });
-        }
-        if (r.statusMasuk === 'valid') {
-          aggregateMap.get(r.idRelawan)['Total Hari Kerja (Hari)'] += 1;
-        }
-      }
-    });
-    
-    const wsAggregate = XLSX.utils.json_to_sheet(Array.from(aggregateMap.values()));
-    wsAggregate['!cols'] = [ { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 25 } ];
     XLSX.utils.book_append_sheet(wb, wsAggregate, 'Total Hari Kerja');
 
     // Summary sheet
     const summary = [
       { 'Keterangan': 'Periode', 'Nilai': `${dateFrom} s/d ${dateTo}` },
-      { 'Keterangan': 'Total Entri', 'Nilai': dataRows.length },
+      { 'Keterangan': 'Total Baris Riwayat', 'Nilai': filteredForExport.length },
+      { 'Keterangan': 'Total Relawan Aktif', 'Nilai': aggregateList.length },
       { 'Keterangan': 'Diekspor pada', 'Nilai': nowWIB().format('DD/MM/YYYY HH:mm') + ' WIB' },
       { 'Keterangan': 'Diekspor oleh', 'Nilai': 'Admin SPPG' },
     ];
     const wsSummary = XLSX.utils.json_to_sheet(summary);
+    wsSummary['!cols'] = [ { wch: 25 }, { wch: 35 } ];
     XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan');
 
     const filename = `Rekap_Absensi_SPPG_03_${dateFrom}_${dateTo}.xlsx`;
@@ -233,13 +153,31 @@ export default function LaporanPage() {
     (r) => r.tanggal >= dateFrom && r.tanggal <= dateTo
   );
 
+  const summaryMap: Record<string, { idRelawan: string; namaLengkap: string; divisi: string; totalHariKerja: number }> = {};
+  filtered.forEach(r => {
+    if (!summaryMap[r.idRelawan]) {
+      summaryMap[r.idRelawan] = {
+        idRelawan: r.idRelawan,
+        namaLengkap: r.namaLengkap,
+        divisi: r.divisi,
+        totalHariKerja: 0
+      };
+    }
+    if (r.statusMasuk === 'valid') {
+      summaryMap[r.idRelawan].totalHariKerja += 1;
+    }
+  });
+
+  const summaryData = Object.values(summaryMap);
+  summaryData.sort((a, b) => getDivisiRank(a.divisi) - getDivisiRank(b.divisi));
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-slate-800 text-2xl font-bold">Laporan & Export</h1>
         <p className="text-slate-500 text-sm mt-0.5">
-          Export rekap absensi ke format Excel (VLOOKUP ready)
+          Export rekapitulasi hari kerja relawan ke format Excel
         </p>
       </div>
 
@@ -250,8 +188,8 @@ export default function LaporanPage() {
             <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h2 className="text-slate-700 font-semibold text-sm">Export Excel</h2>
-            <p className="text-slate-400 text-xs">Format kolom siap VLOOKUP</p>
+            <h2 className="text-slate-700 font-semibold text-sm">Export Excel (Penggajian)</h2>
+            <p className="text-slate-400 text-xs">Rekap total hari kerja per relawan</p>
           </div>
         </div>
 
@@ -295,9 +233,9 @@ export default function LaporanPage() {
         <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-blue-50 border border-blue-100 mb-5">
           <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-blue-700 space-y-0.5">
-            <p className="font-semibold">Kolom yang diekspor (siap VLOOKUP):</p>
-            <p>Sheet Harian: ID Relawan · Nama Lengkap · Divisi · Tanggal · Jam Masuk · Jam Pulang · Koordinat · Total Hari Kerja</p>
-            <p>Sheet Total: ID Relawan · Nama Lengkap · Divisi · Total Hari Kerja</p>
+            <p className="font-semibold">Format Export Penggajian:</p>
+            <p>1 Baris = 1 Relawan. Sudah diurutkan berdasarkan prioritas divisi.</p>
+            <p>Kolom: ID Relawan · Nama Lengkap · Divisi · Total Hari Kerja (Hari)</p>
           </div>
         </div>
 
@@ -319,7 +257,7 @@ export default function LaporanPage() {
           ) : (
             <>
               <Download className="w-4 h-4" />
-              Export Excel ({filtered.length} entri)
+              Export Excel ({summaryData.length} Relawan)
             </>
           )}
         </button>
@@ -335,14 +273,14 @@ export default function LaporanPage() {
       {/* Preview Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-slate-700 font-semibold text-sm">Preview Data</h2>
-          <span className="text-slate-400 text-xs">{filtered.length} baris</span>
+          <h2 className="text-slate-700 font-semibold text-sm">Preview Ringkasan Hari Kerja</h2>
+          <span className="text-slate-400 text-xs">{summaryData.length} relawan aktif</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="bg-slate-50">
               <tr>
-                {['ID Relawan', 'Nama', 'Divisi', 'Tanggal', 'Jam Masuk', 'Jam Pulang', 'Status Masuk', 'Status Pulang'].map((h) => (
+                {['ID Relawan', 'Nama Lengkap', 'Divisi', 'Total Hari Kerja'].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                     {h}
                   </th>
@@ -350,28 +288,26 @@ export default function LaporanPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtered.map((r, i) => (
-                <tr key={i} className="hover:bg-slate-50/50">
-                  <td className="px-4 py-3 font-mono text-emerald-600 font-semibold">{r.idRelawan}</td>
-                  <td className="px-4 py-3 text-slate-700 font-medium whitespace-nowrap">{r.namaLengkap}</td>
-                  <td className="px-4 py-3 text-slate-600 font-medium whitespace-nowrap">{r.divisi}</td>
-                  <td className="px-4 py-3 text-slate-500 font-mono">{r.tanggal}</td>
-                  <td className="px-4 py-3 font-mono text-slate-600">{r.jamMasuk || '-'}</td>
-                  <td className="px-4 py-3 font-mono text-slate-600">{r.jamPulang || '-'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold
-                      ${r.statusMasuk === 'valid' ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50'}`}>
-                      {r.statusMasuk}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold
-                      ${r.statusPulang === 'valid' ? 'text-emerald-700 bg-emerald-50' : 'text-slate-400 bg-slate-100'}`}>
-                      {r.statusPulang}
-                    </span>
+              {summaryData.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                    Tidak ada data absensi pada periode ini.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                summaryData.map((r, i) => (
+                  <tr key={i} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-3 font-mono text-emerald-600 font-semibold">{r.idRelawan}</td>
+                    <td className="px-4 py-3 text-slate-700 font-medium whitespace-nowrap">{r.namaLengkap}</td>
+                    <td className="px-4 py-3 text-slate-600 font-medium whitespace-nowrap">{r.divisi}</td>
+                    <td className="px-4 py-3">
+                      <span className="px-2.5 py-1 rounded-md text-emerald-700 bg-emerald-50 font-bold border border-emerald-100">
+                        {r.totalHariKerja} Hari
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
