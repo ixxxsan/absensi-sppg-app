@@ -211,7 +211,9 @@ export default function KameraPage() {
                     {formatDateLong()}
                   </span>
                   <span className="text-slate-200 font-medium text-xs leading-relaxed max-w-[90%] drop-shadow-md">
-                    {useCameraStore.getState().addressName || formatCoords(latitude ?? 0, longitude ?? 0)}
+                    {useCameraStore.getState().addressName || 
+                     (latitude !== null && longitude !== null ? formatCoords(latitude, longitude) : 
+                      gpsStatus === 'error' ? 'Lokasi tidak tersedia' : 'Mencari lokasi...')}
                   </span>
                   <span className="text-emerald-400 font-bold text-xs mt-0.5 drop-shadow-md">
                     Divisi: {user?.divisi ?? 'Relawan'}
@@ -221,12 +223,23 @@ export default function KameraPage() {
             </div>
 
             {/* Instruction text */}
-            {!canShoot && gpsStatus !== 'error' && (
+            {!canShoot && gpsStatus !== 'error' && gpsStatus !== 'fake_gps' && (
               <div className="absolute top-1/2 left-4 right-4 -translate-y-8 z-10 flex items-center
-                              justify-center gap-2 glass rounded-xl px-4 py-3">
+                              justify-center gap-2 glass rounded-xl px-4 py-3 bg-black/40 backdrop-blur-md">
                 <Info className="w-4 h-4 text-amber-400 flex-shrink-0" />
                 <p className="text-amber-300 text-sm text-center">
                   Tunggu GPS terkunci sebelum mengambil foto
+                </p>
+              </div>
+            )}
+
+            {/* GPS Error warning */}
+            {gpsStatus === 'error' && (
+              <div className="absolute top-1/2 left-4 right-4 -translate-y-8 z-10 flex items-center
+                              justify-center gap-2 rounded-xl px-4 py-3 bg-red-500/80 border border-red-500 backdrop-blur-md">
+                <AlertTriangle className="w-6 h-6 text-white flex-shrink-0" />
+                <p className="text-white text-sm text-center">
+                  Gagal mendapatkan lokasi. Pastikan GPS aktif dan izin lokasi diberikan di pengaturan browser/HP Anda.
                 </p>
               </div>
             )}
