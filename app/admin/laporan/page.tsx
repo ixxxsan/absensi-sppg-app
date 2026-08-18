@@ -42,23 +42,43 @@ export default function LaporanPage() {
       // In this DB schema, we have separate rows for 'masuk' and 'pulang' per user/date.
       // We need to merge them for the report table.
       
+      const userRecords: Record<string, typeof records> = {};
+      records.forEach(r => {
+        if (!userRecords[r.userId]) userRecords[r.userId] = [];
+        userRecords[r.userId].push(r);
+      });
+
       const grouped: Record<string, LaporanItem> = {};
-      
-      records.forEach((r) => {
-        const key = `${r.userId}-${r.tanggalAbsen}`;
-        if (!grouped[key]) {
-          grouped[key] = {
-            idRelawan: r.idRelawan || 'SPPG-000',
-            namaLengkap: r.namaLengkap || 'Unknown',
-            divisi: r.divisi || '-',
-            status: r.status || '-',
-            tanggal: r.tanggalAbsen,
-            statusMasuk: '-'
-          };
-        }
-        
-        if (r.tipe === 'masuk') {
-          grouped[key].statusMasuk = r.statusValidasi;
+
+      Object.values(userRecords).forEach(userRecs => {
+        let currentPulang: typeof records[0] | null = null;
+
+        for (let i = 0; i < userRecs.length; i++) {
+          const r = userRecs[i];
+          if (r.tipe === 'pulang') {
+            currentPulang = r;
+          } else if (r.tipe === 'masuk') {
+            const effectiveDate = currentPulang ? currentPulang.tanggalAbsen : r.tanggalAbsen;
+            const key = `${r.userId}-${effectiveDate}`;
+
+            if (!grouped[key]) {
+              grouped[key] = {
+                idRelawan: r.idRelawan || 'SPPG-000',
+                namaLengkap: r.namaLengkap || 'Unknown',
+                divisi: r.divisi || '-',
+                status: r.status || '-',
+                tanggal: effectiveDate,
+                statusMasuk: '-'
+              };
+            }
+            
+            // Jika sudah valid, jangan ditimpa oleh record invalid/menunggu lainnya
+            if (grouped[key].statusMasuk !== 'valid') {
+              grouped[key].statusMasuk = r.statusValidasi;
+            }
+
+            currentPulang = null;
+          }
         }
       });
       

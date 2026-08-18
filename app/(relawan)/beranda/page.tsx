@@ -154,30 +154,26 @@ export default function BerandaPage() {
           <motion.div variants={itemVars} className="bg-white/5 backdrop-blur-xl rounded-[1.5rem] p-4 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${hasMasuk ? 'bg-[#b5e0ea]/20' : 'bg-slate-800/80'}`}>
-                  <LogIn className="w-6 h-6" style={{ color: hasMasuk ? '#b5e0ea' : 'rgba(255,255,255,0.4)' }} />
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${masukData ? 'bg-[#b5e0ea]/20' : 'bg-slate-800/80'}`}>
+                  <LogIn className="w-6 h-6" style={{ color: masukData ? '#b5e0ea' : 'rgba(255,255,255,0.4)' }} />
                 </div>
                 <div>
-                  <p className="text-white text-base font-semibold">Absen Masuk</p>
-                  {hasMasuk && masukData ? (
+                  <p className="text-white text-base font-semibold">Absen Masuk Terakhir</p>
+                  {masukData ? (
                     <div className="flex items-center gap-1.5 mt-1">
                       <Clock className="w-3.5 h-3.5" style={{ color: '#b5e0ea' }} />
                       <span className="text-xs font-semibold font-mono-clock" style={{ color: '#b5e0ea' }}>
-                        {masukData.waktuAbsen}
-                      </span>
-                      <MapPin className="w-3.5 h-3.5 ml-1.5 text-white/40" />
-                      <span className="text-[10px] font-mono text-white/40 tracking-wider">
-                        {Number(masukData.latitude).toFixed(3)}, {Number(masukData.longitude).toFixed(3)}
+                        {new Date(masukData.createdAt).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})} {masukData.waktuAbsen}
                       </span>
                     </div>
                   ) : isMasukDitolak ? (
                     <p className="text-xs mt-1 font-medium text-red-400">Ditolak (Di Luar Radius)</p>
                   ) : (
-                    <p className="text-xs mt-1 font-medium text-white/40">Belum absen masuk</p>
+                    <p className="text-xs mt-1 font-medium text-white/40">Belum ada riwayat</p>
                   )}
                 </div>
               </div>
-              {hasMasuk
+              {hasMasuk // if currently active
                 ? <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><Check className="w-5 h-5 text-white" /></div>
                 : <ChevronRight className="w-5 h-5 text-white/30" />
               }
@@ -188,28 +184,28 @@ export default function BerandaPage() {
           <motion.div variants={itemVars} className="bg-white/5 backdrop-blur-xl rounded-[1.5rem] p-4 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isLengkap ? 'bg-amber-400/20' : 'bg-slate-800/80'}`}>
-                  <LogOut className="w-6 h-6" style={{ color: isLengkap ? '#fbbf24' : 'rgba(255,255,255,0.4)' }} />
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${pulangData ? 'bg-amber-400/20' : 'bg-slate-800/80'}`}>
+                  <LogOut className="w-6 h-6" style={{ color: pulangData ? '#fbbf24' : 'rgba(255,255,255,0.4)' }} />
                 </div>
                 <div>
-                  <p className="text-white text-base font-semibold">Absen Pulang</p>
-                  {isLengkap && pulangData ? (
+                  <p className="text-white text-base font-semibold">Absen Pulang Terakhir</p>
+                  {pulangData ? (
                     <div className="flex items-center gap-1.5 mt-1">
                       <Clock className="w-3.5 h-3.5 text-amber-400" />
                       <span className="text-xs font-semibold font-mono-clock text-amber-400">
-                        {pulangData.waktuAbsen}
+                        {new Date(pulangData.createdAt).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})} {pulangData.waktuAbsen}
                       </span>
                     </div>
                   ) : isPulangDitolak ? (
                     <p className="text-xs mt-1 font-medium text-red-400">Ditolak (Di Luar Radius)</p>
                   ) : (
                     <p className="text-xs mt-1 font-medium text-white/40">
-                      {hasMasuk ? 'Belum absen pulang' : 'Absen masuk dulu'}
+                      {hasMasuk ? 'Sedang bertugas (belum pulang)' : 'Belum ada riwayat'}
                     </p>
                   )}
                 </div>
               </div>
-              {isLengkap
+              {!hasMasuk && pulangData
                 ? <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><Check className="w-5 h-5 text-white" /></div>
                 : <ChevronRight className="w-5 h-5 text-white/30" />
               }
@@ -219,7 +215,7 @@ export default function BerandaPage() {
 
         {/* ── CTA Buttons ── */}
         <section className="px-5 pt-6 pb-6 space-y-4">
-          {!hasMasuk && (
+          {!hasMasuk ? (
             <motion.button
               variants={itemVars}
               whileTap={{ scale: 0.96 }}
@@ -232,9 +228,7 @@ export default function BerandaPage() {
               <Camera className="w-7 h-7" strokeWidth={2.5} />
               {isMasukDitolak ? 'ULANGI ABSEN MASUK' : 'ABSEN MASUK'}
             </motion.button>
-          )}
-
-          {hasMasuk && !isLengkap && (
+          ) : (
             <motion.button
               variants={itemVars}
               whileTap={{ scale: 0.96 }}
@@ -247,16 +241,6 @@ export default function BerandaPage() {
               <Camera className="w-7 h-7" strokeWidth={2.5} />
               {isPulangDitolak ? 'ULANGI ABSEN PULANG' : 'ABSEN PULANG'}
             </motion.button>
-          )}
-
-          {isLengkap && (
-            <motion.div 
-              variants={itemVars}
-              className="w-full py-5 rounded-[1.5rem] flex items-center justify-center gap-3 bg-white/10 backdrop-blur-md border border-white/20"
-            >
-              <CheckCircle className="w-6 h-6 text-emerald-400" />
-              <span className="font-bold text-lg text-white">Absensi Hari Ini Lengkap!</span>
-            </motion.div>
           )}
         </section>
       </motion.div>

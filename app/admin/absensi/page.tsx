@@ -5,12 +5,13 @@ import { Search, Eye, CheckCircle, XCircle } from 'lucide-react';
 import { getAllAbsensi, updateAbsensiStatus } from '@/app/actions/absensi';
 import { goeyToast } from 'goey-toast';
 
-type ValidationStatus = 'valid' | 'invalid' | 'menunggu';
+type ValidationStatus = 'valid' | 'invalid' | 'menunggu' | 'flagged';
 
 const statusBadge: Record<ValidationStatus, string> = {
   valid: 'text-emerald-700 bg-emerald-50 border border-emerald-200',
   invalid: 'text-red-700 bg-red-50 border border-red-200',
   menunggu: 'text-slate-700 bg-slate-100 border border-slate-200',
+  flagged: 'text-orange-700 bg-orange-50 border border-orange-200',
 };
 
 type AbsensiItem = Awaited<ReturnType<typeof getAllAbsensi>>[number];
@@ -21,6 +22,12 @@ export default function AbsensiValidasiPage() {
   const [filterStatus, setFilterStatus] = useState<'' | ValidationStatus>('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterStatus]);
 
   useEffect(() => {
     async function fetchData() {
@@ -38,6 +45,9 @@ export default function AbsensiValidasiPage() {
     const matchStatus = filterStatus ? row.statusValidasi === filterStatus : true;
     return matchSearch && matchStatus;
   });
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedData = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const updateStatus = async (id: string, status: ValidationStatus) => {
     try {
@@ -82,7 +92,7 @@ export default function AbsensiValidasiPage() {
           />
         </div>
         <div className="flex gap-2">
-          {(['', 'valid', 'invalid'] as const).map((s) => (
+          {(['', 'valid', 'invalid', 'flagged'] as const).map((s) => (
             <button
               key={s}
               id={`filter-${s || 'all'}`}
@@ -93,7 +103,7 @@ export default function AbsensiValidasiPage() {
                   : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
                 }`}
             >
-              {s === '' ? 'Semua' : s === 'valid' ? 'Valid' : 'Ditolak'}
+              {s === '' ? 'Semua' : s === 'valid' ? 'Valid' : s === 'invalid' ? 'Ditolak' : 'Flagged'}
             </button>
           ))}
         </div>
@@ -104,6 +114,7 @@ export default function AbsensiValidasiPage() {
         {[
           { label: 'Valid', count: data.filter(r => r.statusValidasi === 'valid').length, color: 'text-emerald-600 bg-emerald-50' },
           { label: 'Ditolak', count: data.filter(r => r.statusValidasi === 'invalid').length, color: 'text-red-600 bg-red-50' },
+          { label: 'Flagged', count: data.filter(r => r.statusValidasi === 'flagged').length, color: 'text-orange-600 bg-orange-50' },
         ].map(({ label, count, color }) => (
           <div key={label} className={`rounded-xl p-3 text-center ${color}`}>
             <p className="text-2xl font-bold">{count}</p>
@@ -123,7 +134,7 @@ export default function AbsensiValidasiPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {filtered.map((row) => (
+            {paginatedData.map((row) => (
               <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-4 py-3.5 font-mono text-xs font-semibold text-emerald-600">{row.idRelawan}</td>
                 <td className="px-4 py-3.5 text-slate-700 font-medium">{row.namaLengkap || 'Unknown'}</td>
@@ -140,7 +151,7 @@ export default function AbsensiValidasiPage() {
                 </td>
                 <td className="px-4 py-3.5">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge[row.statusValidasi as ValidationStatus] || statusBadge.menunggu}`}>
-                    {row.statusValidasi === 'valid' ? 'Valid' : row.statusValidasi === 'invalid' ? 'Ditolak' : 'Menunggu'}
+                    {row.statusValidasi === 'valid' ? 'Valid' : row.statusValidasi === 'invalid' ? 'Ditolak' : row.statusValidasi === 'flagged' ? 'Indikasi Spoof' : 'Menunggu'}
                   </span>
                 </td>
                 <td className="px-4 py-3.5">
@@ -180,6 +191,34 @@ export default function AbsensiValidasiPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-500">
+            Menampilkan <span className="font-semibold text-slate-700">{filtered.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}</span> hingga <span className="font-semibold text-slate-700">{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}</span> dari <span className="font-semibold text-slate-700">{filtered.length}</span> data
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+            >
+              Sebelumnya
+            </button>
+            <span className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold text-sm border border-emerald-100">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+            >
+              Berikutnya
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Photo Preview Modal */}
       {previewRow && (
