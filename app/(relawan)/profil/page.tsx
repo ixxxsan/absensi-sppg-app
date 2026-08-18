@@ -43,6 +43,7 @@ export default function ProfilPage() {
             image: base64String
           });
         } catch (error) {
+          goeyToast.error("Gagal mengupdate foto profil");
           console.error("Failed to update profile photo", error);
         }
       };

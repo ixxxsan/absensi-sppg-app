@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid, decimal, time, date } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, uuid, decimal, time, date, index } from "drizzle-orm/pg-core";
 
 // --- BETTER AUTH REQUIRED TABLES ---
 export const user = pgTable("user", {
@@ -74,6 +74,11 @@ export const absensi = pgTable("absensi", {
   statusValidasi: text("status_validasi").default('menunggu').notNull(), // 'menunggu' | 'valid' | 'invalid' | 'flagged'
   catatanSistem: text("catatan_sistem"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdIdx: index("absensi_user_id_idx").on(table.userId),
+    tanggalIdx: index("absensi_tanggal_absen_idx").on(table.tanggalAbsen),
+  }
 });
 
 export const cuti = pgTable("cuti", {
@@ -86,4 +91,8 @@ export const cuti = pgTable("cuti", {
   status: text("status").default('Menunggu').notNull(), // 'Menunggu' | 'Disetujui' | 'Ditolak'
   urlBukti: text("url_bukti"),
   tanggalPengajuan: date("tanggal_pengajuan").defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdIdx: index("cuti_user_id_idx").on(table.userId),
+  }
 });

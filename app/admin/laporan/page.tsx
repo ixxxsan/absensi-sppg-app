@@ -36,7 +36,11 @@ export default function LaporanPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const records = await getAllAbsensi();
+      // Pass dateFrom and dateTo directly to server to prevent full-table fetch
+      const records = await getAllAbsensi({
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      });
       
       // Transform records into a flatter format suitable for export, grouping by user/date
       // In this DB schema, we have separate rows for 'masuk' and 'pulang' per user/date.
@@ -204,13 +208,14 @@ export default function LaporanPage() {
     setIsExporting(false);
   };
 
-  // Preview table
-  const filtered = data.filter(
-    (r) => r.tanggal >= dateFrom && r.tanggal <= dateTo
-  );
+  // Data is already filtered by date from the server, but keep this in case there are overlapping times outside exact dates
+  const filteredData = data.filter(item => {
+    const d = item.tanggal;
+    return d >= dateFrom && d <= dateTo;
+  });
 
   const summaryMap: Record<string, { idRelawan: string; namaLengkap: string; divisi: string; status: string; totalHariKerja: number }> = {};
-  filtered.forEach(r => {
+  filteredData.forEach(r => {
     if (!summaryMap[r.idRelawan]) {
       summaryMap[r.idRelawan] = {
         idRelawan: r.idRelawan,

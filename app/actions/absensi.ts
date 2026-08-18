@@ -3,7 +3,7 @@
 import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { absensi, user } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, ilike, sql } from 'drizzle-orm';
 import { nowWIB, haversineDistance } from '@/lib/utils';
 import { GEOFENCE } from '@/lib/config';
 
@@ -69,16 +69,94 @@ export async function submitAbsensi(fotoUrl: string, lat: number, lon: number, t
   }
 }
 
-export async function getAllAbsensi() {
+export async function getAllAbsensi(options?: {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  statusFilter?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
   const session = await getServerSession();
   if (!session?.user?.role?.includes('admin')) return [];
 
-  return db.select({
+  let baseQuery = db.select({
     id: absensi.id, userId: absensi.userId, tanggalAbsen: absensi.tanggalAbsen, waktuAbsen: absensi.waktuAbsen,
     tipe: absensi.tipe, fotoUrl: absensi.fotoUrl, latitude: absensi.latitude, longitude: absensi.longitude,
     statusValidasi: absensi.statusValidasi, catatanSistem: absensi.catatanSistem, createdAt: absensi.createdAt,
     namaLengkap: user.name, idRelawan: user.idRelawan, divisi: user.divisi, status: user.status
-  }).from(absensi).leftJoin(user, eq(absensi.userId, user.id)).orderBy(desc(absensi.createdAt));
+  }).from(absensi).leftJoin(user, eq(absensi.userId, user.id));
+
+  // Build conditions
+  const conditions = [];
+  
+  if (options?.search) {
+    conditions.push(ilike(user.name, `%${options.search}%`));
+  }
+  
+  if (options?.statusFilter && options.statusFilter !== 'semua') {
+    conditions.push(eq(absensi.statusValidasi, options.statusFilter));
+  }
+  
+  if (options?.dateFrom) {
+    conditions.push(sql`${absensi.tanggalAbsen} >= ${options.dateFrom}`);
+  }
+
+  if (options?.dateTo) {
+    conditions.push(sql`${absensi.tanggalAbsen} <= ${options.dateTo}`);
+  }
+
+  // Apply conditions
+  let queryWithWhere = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
+
+  // Apply order
+  let finalQuery = queryWithWhere.orderBy(desc(absensi.createdAt));
+
+  // Apply pagination
+  if (options?.limit) {
+    finalQuery = finalQuery.limit(options.limit);
+  }
+  
+  if (options?.offset) {
+    finalQuery = finalQuery.offset(options.offset);
+  }
+
+  return finalQuery;
+}
+
+export async function getAbsensiCount(options?: {
+  search?: string;
+  statusFilter?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
+  const session = await getServerSession();
+  if (!session?.user?.role?.includes('admin')) return 0;
+
+  const conditions = [];
+  
+  if (options?.search) {
+    conditions.push(ilike(user.name, `%${options.search}%`));
+  }
+  
+  if (options?.statusFilter && options.statusFilter !== 'semua') {
+    conditions.push(eq(absensi.statusValidasi, options.statusFilter));
+  }
+  
+  if (options?.dateFrom) {
+    conditions.push(sql`${absensi.tanggalAbsen} >= ${options.dateFrom}`);
+  }
+
+  if (options?.dateTo) {
+    conditions.push(sql`${absensi.tanggalAbsen} <= ${options.dateTo}`);
+  }
+
+  const result = await db.select({ count: sql`count(*)`.mapWith(Number) })
+    .from(absensi)
+    .leftJoin(user, eq(absensi.userId, user.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+  return result[0]?.count || 0;
 }
 
 export async function updateAbsensiStatus(id: string, statusValidasi: 'valid' | 'invalid' | 'menunggu' | 'flagged' | 'ditolak') {

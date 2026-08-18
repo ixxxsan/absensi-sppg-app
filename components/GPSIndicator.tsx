@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useCameraStore } from '@/lib/stores';
 import { haversineDistance } from '@/lib/utils';
 import { GEOFENCE } from '@/lib/config';
+import { goeyToast } from 'goey-toast';
 
 const TASK_LOCATION = { lat: GEOFENCE.lat, lon: GEOFENCE.lon };
 const GEOFENCE_RADIUS = GEOFENCE.radiusMeters;
@@ -85,6 +86,7 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
               }
             })
             .catch(err => {
+              goeyToast.error('Gagal mendapatkan nama jalan dari GPS');
               console.error('Nominatim fallback error:', err);
               useCameraStore.getState().setAddressName('Gagal mendapatkan alamat');
             });

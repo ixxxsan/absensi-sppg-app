@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Search, Eye, CheckCircle, XCircle } from 'lucide-react';
-import { getAllAbsensi, updateAbsensiStatus } from '@/app/actions/absensi';
+import { getAllAbsensi, getAbsensiCount, updateAbsensiStatus } from '@/app/actions/absensi';
 import { goeyToast } from 'goey-toast';
 
 type ValidationStatus = 'valid' | 'invalid' | 'menunggu' | 'flagged';
@@ -25,29 +25,43 @@ export default function AbsensiValidasiPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
+  const [totalRecords, setTotalRecords] = useState(0);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [search, filterStatus]);
 
+  // Use a debounced search term for API calls to prevent spamming
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   useEffect(() => {
     async function fetchData() {
-      const records = await getAllAbsensi();
+      const options = {
+        limit: ITEMS_PER_PAGE,
+        offset: (currentPage - 1) * ITEMS_PER_PAGE,
+        search: debouncedSearch,
+        statusFilter: filterStatus
+      };
+      
+      const [records, count] = await Promise.all([
+        getAllAbsensi(options),
+        getAbsensiCount(options)
+      ]);
+      
       setData(records || []);
+      setTotalRecords(count || 0);
     }
     fetchData();
-  }, []);
+  }, [currentPage, debouncedSearch, filterStatus]);
 
-  const filtered = data.filter((row) => {
-    const nama = row.namaLengkap || 'Unknown';
-    const idRelawan = row.idRelawan || 'SPPG-000';
-    const matchSearch = nama.toLowerCase().includes(search.toLowerCase()) ||
-                        idRelawan.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus ? row.statusValidasi === filterStatus : true;
-    return matchSearch && matchStatus;
-  });
-
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginatedData = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
+  const paginatedData = data;
 
   const updateStatus = async (id: string, status: ValidationStatus) => {
     try {
@@ -107,20 +121,6 @@ export default function AbsensiValidasiPage() {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: 'Valid', count: data.filter(r => r.statusValidasi === 'valid').length, color: 'text-emerald-600 bg-emerald-50' },
-          { label: 'Ditolak', count: data.filter(r => r.statusValidasi === 'invalid').length, color: 'text-red-600 bg-red-50' },
-          { label: 'Flagged', count: data.filter(r => r.statusValidasi === 'flagged').length, color: 'text-orange-600 bg-orange-50' },
-        ].map(({ label, count, color }) => (
-          <div key={label} className={`rounded-xl p-3 text-center ${color}`}>
-            <p className="text-2xl font-bold">{count}</p>
-            <p className="text-xs font-semibold">{label}</p>
-          </div>
-        ))}
       </div>
 
       {/* Table */}
@@ -196,7 +196,7 @@ export default function AbsensiValidasiPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-slate-500">
-            Menampilkan <span className="font-semibold text-slate-700">{filtered.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}</span> hingga <span className="font-semibold text-slate-700">{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}</span> dari <span className="font-semibold text-slate-700">{filtered.length}</span> data
+            Menampilkan <span className="font-semibold text-slate-700">{totalRecords === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}</span> hingga <span className="font-semibold text-slate-700">{Math.min(currentPage * ITEMS_PER_PAGE, totalRecords)}</span> dari <span className="font-semibold text-slate-700">{totalRecords}</span> data
           </p>
           <div className="flex gap-2">
             <button
