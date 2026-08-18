@@ -91,7 +91,10 @@ export default function BerandaPage() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col bg-gradient-to-b from-slate-900 to-slate-950 text-white">
+    <div 
+      className="min-h-[100dvh] flex flex-col text-white"
+      style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}
+    >
       
       {/* ── Header ── */}
       <header className="px-5 pt-safe pt-8 pb-2">

@@ -107,7 +107,10 @@ export default function ProfilPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col pt-safe pb-24 relative bg-gradient-to-b from-slate-900 to-slate-950 text-white">
+    <div 
+      className="min-h-[100dvh] flex flex-col pt-safe pb-24 relative text-white"
+      style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}
+    >
 
       {/* ── Header ── */}
       <motion.header 

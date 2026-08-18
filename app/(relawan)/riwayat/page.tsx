@@ -141,7 +141,10 @@ export default function RiwayatPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-slate-900 to-slate-950 text-white pb-24">
+    <div 
+      className="min-h-[100dvh] text-white pb-24"
+      style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}
+    >
       {/* Header */}
       <motion.header 
         initial={{ opacity: 0, y: -20 }}

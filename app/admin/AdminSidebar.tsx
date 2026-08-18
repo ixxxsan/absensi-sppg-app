@@ -19,7 +19,7 @@ const navItems = [
   { href: '/admin/laporan',  icon: FileSpreadsheet,   label: 'Laporan & Export' },
 ];
 
-const APP_NAME = 'SPPG\nTELUKNAGA';
+const APP_NAME = 'SPPG TELUKNAGA 03';
 
 interface AdminSidebarProps {
   user: {
@@ -53,12 +53,13 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
       initial={{ width: 260 }}
       animate={{ width: collapsed ? 80 : 260 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="relative flex flex-col bg-white border-r border-slate-200/60 z-40 h-full flex-shrink-0"
+      className="relative flex flex-col border-r border-white/10 z-40 h-full flex-shrink-0"
+      style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)' }}
     >
       {/* Logo Area */}
-      <div className={`flex items-center gap-3 p-5 border-b border-slate-100 min-h-[88px] ${collapsed ? 'justify-center' : ''}`}>
-        <div className="relative w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-emerald-500 shadow-sm">
-          <Image src="/icons/icon-192.png" alt="Logo" fill className="object-cover" />
+      <div className={`flex items-center gap-3 p-5 border-b border-white/10 min-h-[88px] ${collapsed ? 'justify-center' : ''}`}>
+        <div className="relative w-10 h-10 flex-shrink-0">
+          <Image src="/icons/icon-192.png" alt="Logo" fill className="object-contain drop-shadow-md" />
         </div>
         <AnimatePresence mode="wait">
           {!collapsed && (
@@ -69,7 +70,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
               transition={{ duration: 0.2 }}
               className="overflow-hidden whitespace-nowrap"
             >
-              <h1 className="text-[13px] font-bold text-slate-800 leading-tight">
+              <h1 className="text-[13px] font-bold text-white leading-tight drop-shadow-sm">
                 {APP_NAME}
               </h1>
               <p className="text-[9px] font-semibold text-slate-400 mt-0.5 tracking-wider uppercase">
@@ -92,15 +93,15 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
               className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
                 ${collapsed ? 'justify-center' : ''}
                 ${isActive 
-                  ? 'text-emerald-700 font-semibold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-medium'
+                  ? 'text-emerald-400 font-semibold' 
+                  : 'text-slate-400 hover:text-white hover:bg-white/5 font-medium'
                 }
               `}
             >
               {isActive && (
                 <motion.div 
                   layoutId="activeNavIndicator"
-                  className="absolute inset-0 bg-emerald-50/80 rounded-xl border border-emerald-100/50"
+                  className="absolute inset-0 bg-emerald-500/10 rounded-xl border border-emerald-500/20"
                   initial={false}
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
@@ -125,7 +126,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
       </nav>
 
       {/* User Profile & Logout */}
-      <div className="p-4 border-t border-slate-100">
+      <div className="p-4 border-t border-white/10">
         <div className={`flex items-center gap-3 mb-2 px-2 ${collapsed ? 'justify-center' : ''}`}>
           {!collapsed && (
             <motion.div 
@@ -134,7 +135,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
               exit={{ opacity: 0 }}
               className="flex-1 overflow-hidden"
             >
-              <p className="text-[13px] font-semibold text-slate-800 truncate">
+              <p className="text-[13px] font-semibold text-white truncate">
                 {displayUser.namaLengkap}
               </p>
               <p className="text-[10px] font-medium text-slate-400 capitalize truncate">
@@ -147,7 +148,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
         <button
           onClick={handleLogout}
           title={collapsed ? 'Keluar' : undefined}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 group active:scale-95
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 group active:scale-95
             ${collapsed ? 'justify-center' : ''}
           `}
         >
@@ -170,7 +171,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
       {/* Collapse Toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3.5 top-9 w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 shadow-sm transition-colors z-50 active:scale-90"
+        className="absolute -right-3.5 top-9 w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-500 shadow-lg shadow-black/20 transition-colors z-50 active:scale-90"
       >
         <motion.div
           animate={{ rotate: collapsed ? 180 : 0 }}

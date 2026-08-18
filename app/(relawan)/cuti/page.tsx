@@ -123,7 +123,10 @@ export default function PengajuanCutiPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-b from-slate-900 to-slate-950 text-white">
+    <div 
+      className="min-h-[100dvh] flex flex-col text-white"
+      style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}
+    >
 
       {/* Header */}
       <header className="px-5 pt-safe pt-6 pb-4 flex items-center justify-between sticky top-0 z-30 bg-slate-950/80 backdrop-blur-xl border-b border-white/10">
