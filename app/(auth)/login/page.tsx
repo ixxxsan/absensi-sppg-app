@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { goeyToast } from 'goey-toast';
+import Image from 'next/image';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email atau ID Relawan wajib diisi'),
@@ -77,10 +78,12 @@ function LoginContent() {
           {/* Logo */}
           <div className="relative animate-float">
             <div className="relative w-28 h-28 flex items-center justify-center mx-auto">
-              <img
+              <Image
                 src="/icons/icon-192.png"
                 alt="Logo SPPG"
-                className="w-full h-full object-contain drop-shadow-lg"
+                fill
+                sizes="(max-width: 120px) 100vw, 120px"
+                className="object-contain drop-shadow-lg"
               />
             </div>
           </div>

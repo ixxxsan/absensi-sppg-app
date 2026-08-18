@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileSpreadsheet, Download, Calendar, Info, CheckCircle2 } from 'lucide-react';
-import * as XLSX from 'xlsx-js-style';
+import { Calendar, CheckCircle2, Download, FileSpreadsheet, Info } from 'lucide-react';
 import { nowWIB } from '@/lib/utils';
 import { getAllAbsensi } from '@/app/actions/absensi';
 
@@ -96,6 +95,8 @@ export default function LaporanPage() {
 
   const handleExport = async () => {
     setIsExporting(true);
+
+    const XLSX = await import('xlsx-js-style');
     await new Promise((r) => setTimeout(r, 800)); // Simulate UI loading feel
 
     const filteredForExport = data.filter((r) => r.tanggal >= dateFrom && r.tanggal <= dateTo);

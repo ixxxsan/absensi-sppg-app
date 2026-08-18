@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Search, Eye, CheckCircle, XCircle } from 'lucide-react';
 import { getAllAbsensi, getAbsensiCount, updateAbsensiStatus } from '@/app/actions/absensi';
 import { goeyToast } from 'goey-toast';
+import useSWR from 'swr';
+import Image from 'next/image';
 
 type ValidationStatus = 'valid' | 'invalid' | 'menunggu' | 'flagged';
 
@@ -17,7 +19,6 @@ const statusBadge: Record<ValidationStatus, string> = {
 type AbsensiItem = Awaited<ReturnType<typeof getAllAbsensi>>[number];
 
 export default function AbsensiValidasiPage() {
-  const [data, setData] = useState<AbsensiItem[]>([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'' | ValidationStatus>('');
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -25,54 +26,58 @@ export default function AbsensiValidasiPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
-  const [totalRecords, setTotalRecords] = useState(0);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentPage(1);
-  }, [search, filterStatus]);
-
   // Use a debounced search term for API calls to prevent spamming
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
+      setCurrentPage(1);
     }, 500);
     return () => clearTimeout(handler);
   }, [search]);
 
   useEffect(() => {
-    async function fetchData() {
-      const options = {
-        limit: ITEMS_PER_PAGE,
-        offset: (currentPage - 1) * ITEMS_PER_PAGE,
-        search: debouncedSearch,
-        statusFilter: filterStatus
-      };
-      
-      const [records, count] = await Promise.all([
-        getAllAbsensi(options),
-        getAbsensiCount(options)
-      ]);
-      
-      setData(records || []);
-      setTotalRecords(count || 0);
-    }
-    fetchData();
-  }, [currentPage, debouncedSearch, filterStatus]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentPage(1);
+  }, [filterStatus]);
+
+  // SWR Fetcher combining records and count
+  const fetcher = async ([, page, searchVal, status]: [string, number, string, string]) => {
+    const options = {
+      limit: ITEMS_PER_PAGE,
+      offset: (page - 1) * ITEMS_PER_PAGE,
+      search: searchVal,
+      statusFilter: status,
+    };
+    const [records, count] = await Promise.all([
+      getAllAbsensi(options),
+      getAbsensiCount(options),
+    ]);
+    return { records: records || [], count: count || 0 };
+  };
+
+  const { data: swrData, mutate } = useSWR(
+    ['absensiList', currentPage, debouncedSearch, filterStatus],
+    fetcher,
+    { keepPreviousData: true }
+  );
+
+  const data: AbsensiItem[] = swrData?.records || [];
+  const totalRecords: number = swrData?.count || 0;
 
   const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
   const paginatedData = data;
 
-  const updateStatus = async (id: string, status: ValidationStatus) => {
+  const updateStatus = async (id: string, newStatus: ValidationStatus) => {
     try {
-      const result = await updateAbsensiStatus(id, status);
-      if (result && !result.success) {
-        goeyToast.error(result.error || 'Gagal mengubah status');
-        return;
+      const res = await updateAbsensiStatus(id, newStatus);
+      if (res.success) {
+        goeyToast.success('Status absensi berhasil diperbarui');
+        // Update local SWR cache optimistically or revalidate
+        mutate();
+      } else {
+        goeyToast.error(res.error || 'Gagal mengubah status');
       }
-      goeyToast.success(`Status berhasil diubah menjadi ${status}`);
-      setData((d) => d.map((r) => r.id === id ? { ...r, statusValidasi: status } : r));
     } catch (e) {
       console.error(e);
     }
@@ -80,7 +85,7 @@ export default function AbsensiValidasiPage() {
     setIsFullscreen(false);
   };
 
-  const previewRow = data.find((r) => r.id === previewId);
+  const previewRow = data.find((r: AbsensiItem) => r.id === previewId);
 
   return (
     <div className="p-6 space-y-5">
@@ -134,9 +139,9 @@ export default function AbsensiValidasiPage() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
-            {paginatedData.map((row) => (
-              <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
+          <tbody className="divide-y divide-slate-100">
+            {paginatedData.map((row: AbsensiItem) => (
+              <tr key={row.id} className="hover:bg-slate-50 transition-colors">
                 <td className="px-4 py-3.5 font-mono text-xs font-semibold text-emerald-600">{row.idRelawan}</td>
                 <td className="px-4 py-3.5 text-slate-700 font-medium">{row.namaLengkap || 'Unknown'}</td>
                 <td className="px-4 py-3.5 text-slate-500 text-xs">{row.tanggalAbsen}</td>
@@ -231,12 +236,14 @@ export default function AbsensiValidasiPage() {
             <div className="absolute inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => setIsFullscreen(false)}
-                className="absolute top-4 right-4 p-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors"
+                className="absolute top-4 right-4 p-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors z-[70]"
                 aria-label="Tutup Layar Penuh"
               >
                 <XCircle className="w-8 h-8" />
               </button>
-              <img src={previewRow.fotoUrl} alt="Bukti Full" className="max-w-full max-h-full object-contain" />
+              <div className="relative w-full h-[90vh]">
+                <Image src={previewRow.fotoUrl} alt="Bukti Full" fill className="object-contain" sizes="100vw" />
+              </div>
             </div>
           ) : null}
           <div
@@ -257,7 +264,9 @@ export default function AbsensiValidasiPage() {
             <div className="bg-slate-100 rounded-xl flex items-center justify-center mb-4 overflow-hidden relative">
               {previewRow.fotoUrl ? (
                 <div className="relative group cursor-pointer w-full" onClick={() => setIsFullscreen(true)}>
-                  <img src={previewRow.fotoUrl} alt="Bukti" className="w-full max-h-[70vh] object-contain" />
+                  <div className="relative w-full h-[70vh]">
+                    <Image src={previewRow.fotoUrl} alt="Bukti" fill className="object-contain" sizes="(max-width: 800px) 100vw, 800px" />
+                  </div>
                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <span className="text-white font-semibold bg-black/50 px-4 py-2 rounded-lg">Klik untuk perbesar</span>
                   </div>

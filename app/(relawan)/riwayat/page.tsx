@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown, MapPin, Clock, Camera, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
 import { useAbsensiStore } from '@/lib/stores';
+import Image from 'next/image';
 import type { AbsenRecord } from '@/lib/stores';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
@@ -94,9 +95,11 @@ function AttendanceCard({ record }: AttendanceCardProps) {
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
             className="rounded-[1rem] overflow-hidden"
           >
-            <img
+            <Image
               src={record.fotoUrl}
               alt="Foto absensi dengan watermark"
+              width={600}
+              height={450}
               className="w-full object-cover max-h-60 mt-1"
             />
           </motion.div>

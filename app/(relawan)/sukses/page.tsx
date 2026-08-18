@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Clock, User, XCircle } from 'lucide-react';
+import Image from 'next/image';
 import SuccessCheck from '@/components/SuccessCheck';
 import { useAbsensiStore } from '@/lib/stores';
 import { authClient } from '@/lib/auth-client';
@@ -135,11 +136,13 @@ export default function SuksesPage() {
 
             {/* Photo thumbnail */}
             {lastRecord.fotoUrl && (
-              <div className="mt-2 rounded-xl overflow-hidden h-24">
-                <img
+              <div className="mt-2 rounded-xl overflow-hidden h-24 relative">
+                <Image
                   src={lastRecord.fotoUrl}
                   alt="Foto absensi"
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 400px) 100vw, 400px"
+                  className="object-cover"
                 />
               </div>
             )}

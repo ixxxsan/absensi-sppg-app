@@ -1,32 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Search, CheckCircle, XCircle, Clock, CalendarIcon, Paperclip, X } from 'lucide-react';
 import { getAllCutiAdmin, updateCutiStatus as updateCutiStatusAction } from '@/app/actions/cuti';
 import { goeyToast } from 'goey-toast';
+import useSWR from 'swr';
+import Image from 'next/image';
 
 type StatusCuti = 'Semua' | 'Menunggu' | 'Disetujui' | 'Ditolak';
 
-type CutiItem = Awaited<ReturnType<typeof getAllCutiAdmin>>[number];
 
 export default function AdminCutiPage() {
-  const [cutiRequests, setCutiRequests] = useState<CutiItem[]>([]);
-  
   const [filterStatus, setFilterStatus] = useState<StatusCuti>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const data = await getAllCutiAdmin();
-        setCutiRequests(data || []);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    fetchData();
-  }, []);
+  const { data: cutiRequests = [], mutate } = useSWR(
+    'cutiAdminList',
+    () => getAllCutiAdmin().then(res => res || []),
+    { keepPreviousData: true }
+  );
 
   const filteredRequests = cutiRequests.filter(req => {
     const matchStatus = filterStatus === 'Semua' || req.status === filterStatus;
@@ -42,8 +35,8 @@ export default function AdminCutiPage() {
         if (result && !result.success) {
           throw new Error(result.error || 'Gagal menyetujui');
         }
-        setCutiRequests(d => d.map(r => r.id === id ? { ...r, status: 'Disetujui' } : r));
         goeyToast.success('Pengajuan cuti disetujui.');
+        mutate();
       } catch (e) {
         console.error(e);
         goeyToast.error('Gagal menyetujui');
@@ -58,8 +51,8 @@ export default function AdminCutiPage() {
         if (result && !result.success) {
           throw new Error(result.error || 'Gagal menolak');
         }
-        setCutiRequests(d => d.map(r => r.id === id ? { ...r, status: 'Ditolak' } : r));
         goeyToast.success('Pengajuan cuti ditolak.');
+        mutate();
       } catch (e) {
         console.error(e);
         goeyToast.error('Gagal menolak');
@@ -215,16 +208,20 @@ export default function AdminCutiPage() {
         <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center animate-fade-in">
           <button 
             onClick={() => setSelectedImage(null)}
-            className="absolute top-6 right-6 p-2 text-white/70 hover:text-white bg-black/50 hover:bg-black/70 rounded-full transition-all"
+            className="absolute top-6 right-6 p-2 text-white/70 hover:text-white bg-black/50 hover:bg-black/70 rounded-full transition-all z-[110]"
           >
             <X className="w-8 h-8" />
           </button>
           
-          <img 
-            src={selectedImage} 
-            alt="Bukti Lampiran" 
-            className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg shadow-2xl"
-          />
+          <div className="relative w-[90vw] h-[85vh]">
+            <Image 
+              src={selectedImage} 
+              alt="Bukti Lampiran" 
+              fill
+              className="object-contain rounded-lg shadow-2xl"
+              sizes="90vw"
+            />
+          </div>
         </div>
       )}
     </div>

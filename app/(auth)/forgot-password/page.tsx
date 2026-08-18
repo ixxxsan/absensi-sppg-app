@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -62,10 +63,12 @@ export default function ForgotPasswordPage() {
         >
           <div className="relative animate-float">
             <div className="relative w-28 h-28 flex items-center justify-center mx-auto">
-              <img
+              <Image
                 src="/icons/icon-192.png"
                 alt="Logo SPPG"
-                className="w-full h-full object-contain drop-shadow-lg"
+                fill
+                sizes="(max-width: 120px) 100vw, 120px"
+                className="object-contain drop-shadow-lg"
               />
             </div>
           </div>

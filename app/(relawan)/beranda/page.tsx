@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Camera, MapPin, Clock, ChevronRight, LogIn, LogOut, Check, CheckCircle } from 'lucide-react';
+import { Camera, Clock, ChevronRight, LogIn, LogOut, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ClockWidget from '@/components/ClockWidget';
 import StatusBadge from '@/components/StatusBadge';

@@ -4,7 +4,6 @@ import { useState, useTransition, useRef } from 'react';
 import { Search, Plus, Edit2, Trash2, ChevronDown, CheckCircle, Clock, AlertCircle, Loader2, Users, Upload } from 'lucide-react';
 import { createRelawan, updateRelawan, deleteRelawan, bulkImportRelawan, BulkImportRow } from '@/app/actions/relawan';
 import { useRouter } from 'next/navigation';
-import * as XLSX from 'xlsx';
 import { goeyToast } from 'goey-toast';
 
 export type Divisi = 'ASISTEN LAPANGAN' | 'ADMIN' | 'STOCKIST' | 'SECURITY' | 'DRIVER' | 'CLEANING SERVICE' | 'PERSIAPAN' | 'PENGOLAHAN' | 'PEMORSIAN' | 'PENCUCI TRAY';
@@ -162,6 +161,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
     setImportReport(null);
 
     try {
+      const XLSX = await import('xlsx');
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: 'array' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
