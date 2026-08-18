@@ -18,7 +18,7 @@ export default function BantuanPage() {
     },
     {
       q: "Bagaimana cara mengajukan cuti?",
-      a: "Buka menu 'Profil', pilih 'Ajukan Cuti / Izin', isi form dengan lengkap, dan tunggu persetujuan dari Admin."
+      a: "Pilih menu 'Cuti' pada navigasi di bagian bawah layar, isi form pengajuan dengan lengkap, dan tunggu persetujuan dari Admin."
     },
     {
       q: "Kenapa absensi saya ditolak?",
