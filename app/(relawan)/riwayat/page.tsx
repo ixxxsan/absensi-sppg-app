@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ChevronDown, MapPin, Clock, Camera, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
 import { useAbsensiStore } from '@/lib/stores';
 import type { AbsenRecord } from '@/lib/stores';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -15,7 +15,7 @@ interface AttendanceCardProps {
   record: AbsenRecord;
 }
 
-const itemVars: any = {
+const itemVars: Variants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
 };
@@ -132,7 +132,7 @@ export default function RiwayatPage() {
 
   const sortedDates = Object.keys(grouped).sort((a, b) => (a > b ? -1 : 1));
 
-  const containerVars: any = {
+  const containerVars: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,

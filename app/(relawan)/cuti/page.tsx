@@ -281,7 +281,7 @@ export default function PengajuanCutiPage() {
                   <div>
                     <h3 className="font-bold text-white text-sm">{req.jenisCuti}</h3>
                     <p className="text-slate-400 text-xs mt-1">{req.tanggalMulai} s/d {req.tanggalSelesai}</p>
-                    <p className="text-slate-500 text-xs mt-2 line-clamp-1 italic">"{req.alasan}"</p>
+                    <p className="text-slate-500 text-xs mt-2 line-clamp-1 italic">&quot;{req.alasan}&quot;</p>
                   </div>
                   <div className="shrink-0">
                     {req.status === 'Menunggu' && (

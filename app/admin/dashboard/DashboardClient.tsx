@@ -47,12 +47,22 @@ const statusLabel = {
   invalid: 'text-red-700 bg-red-50 border-red-100',
 };
 
+export interface DashboardAbsensi {
+  id: string;
+  userId: string;
+  waktuAbsen: string;
+  tipe: string | null;
+  statusValidasi: string | null;
+  namaLengkap: string | null;
+  idRelawan: string | null;
+}
+
 interface DashboardClientProps {
   totalRelawan: number;
   uniqueUsersToday: number;
   tidakHadir: number;
   persentase: number;
-  recentAbsensi: any[];
+  recentAbsensi: DashboardAbsensi[];
   chartData: number[];
   chartDaysStr: string[];
   maxBar: number;

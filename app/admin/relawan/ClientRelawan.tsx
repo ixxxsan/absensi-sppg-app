@@ -10,6 +10,11 @@ import { goeyToast } from 'goey-toast';
 export type Divisi = 'ASISTEN LAPANGAN' | 'ADMIN' | 'STOCKIST' | 'SECURITY' | 'DRIVER' | 'CLEANING SERVICE' | 'PERSIAPAN' | 'PENGOLAHAN' | 'PEMORSIAN' | 'PENCUCI TRAY';
 export type StatusRelawan = 'Aktif' | 'Magang' | 'Cuti';
 
+export interface ImportFailedDetail {
+  email: string;
+  error?: string;
+}
+
 export interface RelawanItem {
   id: string;
   name: string;
@@ -42,8 +47,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [importReport, setImportReport] = useState<{ success: number, failed: number, details: any[] } | null>(null);
+  const [importReport, setImportReport] = useState<{ success: number, failed: number, details: ImportFailedDetail[] } | null>(null);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -161,8 +165,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: 'array' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rawRows: any[] = XLSX.utils.sheet_to_json(firstSheet);
+      const rawRows: Record<string, string | number>[] = XLSX.utils.sheet_to_json(firstSheet);
 
       if (!rawRows || rawRows.length === 0) {
         goeyToast.error('File Excel kosong atau format tidak sesuai.');
@@ -192,16 +195,14 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
       const batchSize = 50;
       let totalSuccess = 0;
       let totalFailed = 0;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const failedDetails: any[] = [];
+      const failedDetails: ImportFailedDetail[] = [];
 
       for (let i = 0; i < mappedRows.length; i += batchSize) {
         const batch = mappedRows.slice(i, i + batchSize);
         const res = await bulkImportRelawan(batch);
         
         if (res.success && res.results) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          res.results.forEach((r: any) => {
+          res.results.forEach((r: { success: boolean, email: string, error?: string }) => {
             if (r.success) {
               totalSuccess++;
             } else {
