@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { formatDateLong, nowWIB } from '@/lib/utils';
 import { db } from '@/lib/db';
 import { user, absensi } from '@/lib/db/schema';
-import { eq, count, desc } from 'drizzle-orm';
+import { eq, count, desc, inArray } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
 import DashboardClient from './DashboardClient';
@@ -74,16 +74,13 @@ async function DashboardContent() {
     dateStrs.push(d.format('YYYY-MM-DD'));
   }
 
-  // Fetch 7 days in PARALLEL instead of sequentially
-  const weeklyData = await Promise.all(
-    dateStrs.map(dateStr => 
-      db.select({ userId: absensi.userId })
-        .from(absensi)
-        .where(eq(absensi.tanggalAbsen, dateStr))
-    )
-  );
+  // Fetch 7 days data with a single query using IN array
+  const allWeeklyData = await db.select({ userId: absensi.userId, tanggalAbsen: absensi.tanggalAbsen })
+    .from(absensi)
+    .where(inArray(absensi.tanggalAbsen, dateStrs));
 
-  const chartData = weeklyData.map(dayAbsensi => {
+  const chartData = dateStrs.map(dateStr => {
+    const dayAbsensi = allWeeklyData.filter(a => a.tanggalAbsen === dateStr);
     const uniqueUsersDay = new Set(dayAbsensi.map(a => a.userId)).size;
     return totalRelawan === 0 ? 0 : Math.round((uniqueUsersDay / totalRelawan) * 100);
   });
