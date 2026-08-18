@@ -47,7 +47,8 @@ export default function LaporanPage() {
       // We need to merge them for the report table.
       
       const userRecords: Record<string, typeof records> = {};
-      records.forEach(r => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      records.forEach((r: any) => {
         if (!userRecords[r.userId]) userRecords[r.userId] = [];
         userRecords[r.userId].push(r);
       });
@@ -91,7 +92,7 @@ export default function LaporanPage() {
       setData(groupedData);
     }
     fetchData();
-  }, []);
+  }, [dateFrom, dateTo]);
 
   const handleExport = async () => {
     setIsExporting(true);

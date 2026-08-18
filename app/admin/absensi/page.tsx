@@ -28,6 +28,7 @@ export default function AbsensiValidasiPage() {
   const [totalRecords, setTotalRecords] = useState(0);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [search, filterStatus]);
 

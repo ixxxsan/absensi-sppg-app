@@ -80,7 +80,7 @@ export async function getAllAbsensi(options?: {
   const session = await getServerSession();
   if (!session?.user?.role?.includes('admin')) return [];
 
-  let baseQuery = db.select({
+  const baseQuery = db.select({
     id: absensi.id, userId: absensi.userId, tanggalAbsen: absensi.tanggalAbsen, waktuAbsen: absensi.waktuAbsen,
     tipe: absensi.tipe, fotoUrl: absensi.fotoUrl, latitude: absensi.latitude, longitude: absensi.longitude,
     statusValidasi: absensi.statusValidasi, catatanSistem: absensi.catatanSistem, createdAt: absensi.createdAt,
@@ -107,10 +107,11 @@ export async function getAllAbsensi(options?: {
   }
 
   // Apply conditions
-  let queryWithWhere = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
+  const queryWithWhere = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
   // Apply order
-  let finalQuery = queryWithWhere.orderBy(desc(absensi.createdAt));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let finalQuery: any = queryWithWhere.orderBy(desc(absensi.createdAt));
 
   // Apply pagination
   if (options?.limit) {
