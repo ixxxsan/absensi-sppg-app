@@ -58,8 +58,9 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
     >
       {/* Logo Area */}
       <div className={`flex items-center gap-3 p-5 border-b border-white/10 min-h-[88px] ${collapsed ? 'justify-center' : ''}`}>
-        <div className="relative w-10 h-10 flex-shrink-0">
-          <Image src="/icons/icon-192.png" alt="Logo" fill className="object-contain drop-shadow-md" />
+        <div className="relative w-10 h-10 flex-shrink-0 flex items-center justify-center">
+          <div className="absolute inset-1 bg-white/40 blur-md rounded-full" />
+          <Image src="/icons/icon-192.png" alt="Logo" fill className="object-contain drop-shadow-lg relative z-10" />
         </div>
         <AnimatePresence mode="wait">
           {!collapsed && (
