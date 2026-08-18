@@ -12,12 +12,7 @@ interface LaporanItem {
   divisi: string;
   status: string;
   tanggal: string;
-  jamMasuk: string;
-  jamPulang: string;
   statusMasuk: string;
-  statusPulang: string;
-  koordinatMasuk: string;
-  koordinatPulang: string;
 }
 
 const DIVISI_OPTIONS = [
@@ -58,23 +53,12 @@ export default function LaporanPage() {
             divisi: r.divisi || '-',
             status: r.status || '-',
             tanggal: r.tanggalAbsen,
-            jamMasuk: '',
-            jamPulang: '',
-            statusMasuk: '-',
-            statusPulang: '-',
-            koordinatMasuk: '',
-            koordinatPulang: ''
+            statusMasuk: '-'
           };
         }
         
         if (r.tipe === 'masuk') {
-          grouped[key].jamMasuk = r.waktuAbsen;
           grouped[key].statusMasuk = r.statusValidasi;
-          grouped[key].koordinatMasuk = `${Number(r.latitude).toFixed(4)}, ${Number(r.longitude).toFixed(4)}`;
-        } else if (r.tipe === 'pulang') {
-          grouped[key].jamPulang = r.waktuAbsen;
-          grouped[key].statusPulang = r.statusValidasi;
-          grouped[key].koordinatPulang = `${Number(r.latitude).toFixed(4)}, ${Number(r.longitude).toFixed(4)}`;
         }
       });
       
