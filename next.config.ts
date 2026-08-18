@@ -13,9 +13,6 @@ const nextConfig: NextConfig = {
   // Explicitly enable compression (fixes Site Features warning)
   compress: true,
   // PWA will be added once next-pwa is confirmed installed
-  // Allow mobile testing via IP
-  allowedDevOrigins: ['192.168.1.3', '192.168.1.1', 'localhost', '8c38365e77d8037d-103-130-18-137.serveousercontent.com'],
-
   async headers() {
     return [
       {
