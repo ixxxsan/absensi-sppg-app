@@ -10,6 +10,7 @@ interface LaporanItem {
   idRelawan: string;
   namaLengkap: string;
   divisi: string;
+  status: string;
   tanggal: string;
   jamMasuk: string;
   jamPulang: string;
@@ -55,6 +56,7 @@ export default function LaporanPage() {
             idRelawan: r.idRelawan || 'SPPG-000',
             namaLengkap: r.namaLengkap || 'Unknown',
             divisi: r.divisi || '-',
+            status: r.status || '-',
             tanggal: r.tanggalAbsen,
             jamMasuk: '',
             jamPulang: '',
@@ -93,7 +95,7 @@ export default function LaporanPage() {
     const aggregateMap = new Map();
     filteredForExport.forEach(r => {
       if (!aggregateMap.has(r.idRelawan)) {
-        aggregateMap.set(r.idRelawan, { 'ID Relawan': r.idRelawan, 'Nama Lengkap': r.namaLengkap, 'Divisi': r.divisi, 'Total Hari Kerja (Hari)': 0 });
+        aggregateMap.set(r.idRelawan, { 'ID Relawan': r.idRelawan, 'Nama Lengkap': r.namaLengkap, 'Divisi': r.divisi, 'Status': r.status, 'Total Hari Kerja (Hari)': 0 });
       }
       if (r.statusMasuk === 'valid') {
         aggregateMap.get(r.idRelawan)['Total Hari Kerja (Hari)'] += 1;
@@ -107,7 +109,7 @@ export default function LaporanPage() {
     const wb = XLSX.utils.book_new();
 
     // Define headers explicitly so the sheet is never completely empty
-    const exportHeaders = ['ID Relawan', 'Nama Lengkap', 'Divisi', 'Total Hari Kerja (Hari)'];
+    const exportHeaders = ['ID Relawan', 'Nama Lengkap', 'Divisi', 'Status', 'Total Hari Kerja (Hari)'];
     
     // Title rows
     const titleData = [
@@ -123,13 +125,13 @@ export default function LaporanPage() {
     // Add table data starting at row 5 (index 4)
     XLSX.utils.sheet_add_json(wsAggregate, aggregateList, { origin: 'A5', header: exportHeaders });
     
-    wsAggregate['!cols'] = [ { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 25 } ];
+    wsAggregate['!cols'] = [ { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 25 } ];
     
     // Merge cells for titles
     wsAggregate['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 4 } }
     ];
 
     // Style titles
@@ -166,7 +168,7 @@ export default function LaporanPage() {
     const range = XLSX.utils.decode_range(wsAggregate['!ref'] || 'A1:A5');
     // Row 4 (index 4) is the header row
     for (let R = 4; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= 3; ++C) { // Up to column 3 (D)
+      for (let C = range.s.c; C <= 4; ++C) { // Up to column 4 (E)
         const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
         if (!wsAggregate[cellRef]) wsAggregate[cellRef] = { t: 's', v: '' }; // Ensure cell exists for border
         if (R === 4) {
@@ -203,13 +205,14 @@ export default function LaporanPage() {
     (r) => r.tanggal >= dateFrom && r.tanggal <= dateTo
   );
 
-  const summaryMap: Record<string, { idRelawan: string; namaLengkap: string; divisi: string; totalHariKerja: number }> = {};
+  const summaryMap: Record<string, { idRelawan: string; namaLengkap: string; divisi: string; status: string; totalHariKerja: number }> = {};
   filtered.forEach(r => {
     if (!summaryMap[r.idRelawan]) {
       summaryMap[r.idRelawan] = {
         idRelawan: r.idRelawan,
         namaLengkap: r.namaLengkap,
         divisi: r.divisi,
+        status: r.status,
         totalHariKerja: 0
       };
     }
@@ -285,7 +288,7 @@ export default function LaporanPage() {
           <div className="text-xs text-blue-700 space-y-0.5">
             <p className="font-semibold">Format Export Penggajian:</p>
             <p>1 Baris = 1 Relawan. Sudah diurutkan berdasarkan prioritas divisi.</p>
-            <p>Kolom: ID Relawan · Nama Lengkap · Divisi · Total Hari Kerja (Hari)</p>
+            <p>Kolom: ID Relawan · Nama Lengkap · Divisi · Status · Total Hari Kerja (Hari)</p>
           </div>
         </div>
 
@@ -330,7 +333,7 @@ export default function LaporanPage() {
           <table className="w-full text-xs">
             <thead className="bg-slate-50">
               <tr>
-                {['ID Relawan', 'Nama Lengkap', 'Divisi', 'Total Hari Kerja'].map((h) => (
+                {['ID Relawan', 'Nama Lengkap', 'Divisi', 'Status', 'Total Hari Kerja'].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                     {h}
                   </th>
@@ -340,7 +343,7 @@ export default function LaporanPage() {
             <tbody className="divide-y divide-slate-50">
               {summaryData.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
                     Tidak ada data absensi pada periode ini.
                   </td>
                 </tr>
@@ -350,6 +353,7 @@ export default function LaporanPage() {
                     <td className="px-4 py-3 font-mono text-emerald-600 font-semibold">{r.idRelawan}</td>
                     <td className="px-4 py-3 text-slate-700 font-medium whitespace-nowrap">{r.namaLengkap}</td>
                     <td className="px-4 py-3 text-slate-600 font-medium whitespace-nowrap">{r.divisi}</td>
+                    <td className="px-4 py-3 text-slate-600 font-medium whitespace-nowrap">{r.status}</td>
                     <td className="px-4 py-3">
                       <span className="px-2.5 py-1 rounded-md text-emerald-700 bg-emerald-50 font-bold border border-emerald-100">
                         {r.totalHariKerja} Hari

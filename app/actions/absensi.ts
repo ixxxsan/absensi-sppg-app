@@ -54,7 +54,7 @@ export async function getAllAbsensi() {
     id: absensi.id, userId: absensi.userId, tanggalAbsen: absensi.tanggalAbsen, waktuAbsen: absensi.waktuAbsen,
     tipe: absensi.tipe, fotoUrl: absensi.fotoUrl, latitude: absensi.latitude, longitude: absensi.longitude,
     statusValidasi: absensi.statusValidasi, catatanSistem: absensi.catatanSistem, createdAt: absensi.createdAt,
-    namaLengkap: user.name, idRelawan: user.idRelawan, divisi: user.divisi
+    namaLengkap: user.name, idRelawan: user.idRelawan, divisi: user.divisi, status: user.status
   }).from(absensi).leftJoin(user, eq(absensi.userId, user.id)).orderBy(desc(absensi.createdAt));
 }
 
