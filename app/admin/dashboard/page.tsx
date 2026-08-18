@@ -1,62 +1,25 @@
 import { Suspense } from 'react';
-import { Users, UserCheck, UserX, TrendingUp, Clock, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { formatDateLong, nowWIB } from '@/lib/utils';
 import { db } from '@/lib/db';
 import { user, absensi } from '@/lib/db/schema';
 import { eq, count, desc } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
+import DashboardClient from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
-
-interface KPICardProps {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  color: string;
-  bgColor: string;
-  trend?: string;
-}
-
-function KPICard({ title, value, icon, color, bgColor, trend }: KPICardProps) {
-  return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-11 h-11 rounded-xl ${bgColor} flex items-center justify-center`}>
-          {icon}
-        </div>
-        {trend && (
-          <span className="text-emerald-600 text-xs font-semibold bg-emerald-50 px-2 py-1 rounded-full">
-            {trend}
-          </span>
-        )}
-      </div>
-      <p className={`text-3xl font-bold ${color} leading-tight`}>{value}</p>
-      <p className="text-slate-500 text-sm mt-1 font-medium">{title}</p>
-    </div>
-  );
-}
-
-const statusIcon = {
-  valid: <CheckCircle className="w-4 h-4 text-emerald-500" />,
-  invalid: <XCircle className="w-4 h-4 text-red-500" />,
-};
-const statusLabel = {
-  valid: 'text-emerald-700 bg-emerald-50',
-  invalid: 'text-red-700 bg-red-50',
-};
 
 // --- SKELETON COMPONENT ---
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
+    <div className="space-y-8 animate-pulse">
       {/* KPI Skeletons */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white/50 rounded-2xl p-5 shadow-sm border border-slate-100 h-32 flex flex-col justify-between">
-            <div className="w-11 h-11 rounded-xl bg-slate-100" />
+          <div key={i} className="bg-white/50 rounded-[2rem] p-6 sm:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 flex flex-col justify-between h-40">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100" />
             <div>
-              <div className="w-16 h-8 bg-slate-100 rounded mt-2" />
+              <div className="w-16 h-10 bg-slate-100 rounded-md mt-2" />
               <div className="w-24 h-4 bg-slate-50 rounded mt-2" />
             </div>
           </div>
@@ -64,9 +27,9 @@ function DashboardSkeleton() {
       </div>
       
       {/* Chart & Table Skeletons */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-2 bg-white/50 rounded-2xl p-5 shadow-sm border border-slate-100 h-64" />
-        <div className="lg:col-span-3 bg-white/50 rounded-2xl shadow-sm border border-slate-100 h-64" />
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+        <div className="xl:col-span-2 bg-white/50 rounded-[2.5rem] p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 h-[300px]" />
+        <div className="xl:col-span-3 bg-white/50 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 h-[300px]" />
       </div>
     </div>
   );
@@ -128,137 +91,16 @@ async function DashboardContent() {
   const maxBar = Math.max(...chartData) || 1;
 
   return (
-    <div className="space-y-6">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          title="Total Relawan"
-          value={totalRelawan}
-          icon={<Users className="w-5 h-5 text-blue-600" />}
-          color="text-slate-800"
-          bgColor="bg-blue-50"
-        />
-        <KPICard
-          title="Hadir Hari Ini"
-          value={uniqueUsersToday}
-          icon={<UserCheck className="w-5 h-5 text-emerald-600" />}
-          color="text-emerald-600"
-          bgColor="bg-emerald-50"
-          trend="—"
-        />
-        <KPICard
-          title="Tidak Hadir"
-          value={tidakHadir}
-          icon={<UserX className="w-5 h-5 text-red-500" />}
-          color="text-red-500"
-          bgColor="bg-red-50"
-        />
-        <KPICard
-          title="Kehadiran"
-          value={`${persentase}%`}
-          icon={<TrendingUp className="w-5 h-5 text-purple-600" />}
-          color="text-purple-600"
-          bgColor="bg-purple-50"
-          trend="—"
-        />
-      </div>
-
-      {/* Chart + Recent Table */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Bar Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-slate-700 font-semibold text-sm">Kehadiran 7 Hari</h2>
-            <span className="text-slate-400 text-xs">% hadir</span>
-          </div>
-          <div className="flex items-end gap-2 h-32">
-            {chartData.map((val, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-[9px] text-slate-400">{val}%</span>
-                <div
-                  className={`w-full rounded-t-lg transition-all duration-500
-                    ${i === chartData.length - 1 ? 'bg-emerald-500' : 'bg-slate-200'}`}
-                  style={{ height: `${(val / maxBar) * 100}%`, minHeight: 4 }}
-                />
-                <span className="text-[9px] text-slate-400">{chartDaysStr[i]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Absensi Hari Ini Table */}
-        <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-slate-700 font-semibold text-sm">Absensi Hari Ini</h2>
-            <span className="text-slate-400 text-xs">{recentAbsensi.length} entri</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Nama</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Waktu</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Tipe</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {recentAbsensi.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-sm">
-                      Belum ada data absensi hari ini.
-                    </td>
-                  </tr>
-                ) : (
-                  recentAbsensi.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-slate-500">{row.idRelawan}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
-                            {row.namaLengkap?.charAt(0) || '?'}
-                          </div>
-                          <span className="text-slate-700 font-medium text-sm">{row.namaLengkap}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1 text-slate-600">
-                          <Clock className="w-3 h-3 text-slate-400" />
-                          <span className="font-mono text-xs">{row.waktuAbsen}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
-                          ${row.tipe === 'masuk' ? 'text-blue-700 bg-blue-50' : 'text-amber-700 bg-amber-50'}`}>
-                          {row.tipe === 'masuk' ? 'Masuk' : 'Pulang'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${row.statusValidasi === 'valid' ? statusLabel.valid : statusLabel.invalid}`}>
-                          {row.statusValidasi === 'valid' ? statusIcon.valid : statusIcon.invalid}
-                          {row.statusValidasi === 'valid' ? 'Valid' : 'Ditolak'}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          id={`view-absen-${row.id}`}
-                          className="text-slate-400 hover:text-slate-600 transition-colors"
-                          aria-label="Lihat detail"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DashboardClient 
+      totalRelawan={totalRelawan}
+      uniqueUsersToday={uniqueUsersToday}
+      tidakHadir={tidakHadir}
+      persentase={persentase}
+      recentAbsensi={recentAbsensi}
+      chartData={chartData}
+      chartDaysStr={chartDaysStr}
+      maxBar={maxBar}
+    />
   );
 }
 
@@ -273,16 +115,16 @@ export default async function AdminDashboard() {
   const today = formatDateLong(nowWIB());
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 lg:p-8 space-y-8 max-w-[1400px] mx-auto">
       {/* Header (Renders instantly) */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-slate-800 text-2xl font-bold">Dashboard</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{today}</p>
+          <h1 className="text-slate-800 text-3xl font-extrabold tracking-tight">Dashboard</h1>
+          <p className="text-slate-500 font-medium text-sm mt-1">{today}</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-emerald-700 text-sm font-semibold">Live</span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 rounded-xl border border-emerald-100 shadow-sm self-start sm:self-auto">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          <span className="text-emerald-700 text-xs font-bold tracking-wide uppercase">System Live</span>
         </div>
       </div>
 

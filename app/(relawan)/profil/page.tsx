@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { LogOut, Settings, Key, HelpCircle, ChevronRight, X, Camera } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { goeyToast } from 'goey-toast';
+import { motion, Variants } from 'framer-motion';
 
 export default function ProfilPage() {
   const router = useRouter();
@@ -91,12 +92,30 @@ export default function ProfilPage() {
 
   const firstName = user?.name?.split(' ')[0] ?? 'Relawan';
 
+  // Animation variants
+  const containerVars: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVars: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="min-h-dvh flex flex-col pt-safe pb-24 relative"
-         style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}>
+    <div className="min-h-[100dvh] flex flex-col pt-safe pb-24 relative bg-gradient-to-b from-slate-900 to-slate-950 text-white">
 
       {/* ── Header ── */}
-      <header className="px-5 pt-8 pb-6 flex flex-col items-center justify-center text-center">
+      <motion.header 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+        className="px-5 pt-8 pb-6 flex flex-col items-center justify-center text-center"
+      >
         <h1 className="text-white text-xl font-bold mb-6">Profil Saya</h1>
         
         {/* Avatar */}
@@ -105,8 +124,8 @@ export default function ProfilPage() {
           onClick={() => fileInputRef.current?.click()}
           style={{
             background: user?.image ? `url(${user.image}) center/cover` : 'linear-gradient(135deg, #b5e0ea, #7ec8d8)',
-            boxShadow: '0 8px 32px rgba(181,224,234,0.2)',
-            border: '4px solid rgba(7,30,73,0.8)'
+            boxShadow: '0 10px 40px -10px rgba(181,224,234,0.3)',
+            border: '4px solid rgba(255,255,255,0.1)'
           }}
         >
           {!user?.image && (
@@ -115,7 +134,7 @@ export default function ProfilPage() {
             </span>
           )}
           
-          <div className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute inset-0 bg-black/50 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
              <Camera className="w-6 h-6 text-white mb-1" />
              <span className="text-white text-[10px] font-semibold">Ubah</span>
           </div>
@@ -136,127 +155,151 @@ export default function ProfilPage() {
             {user?.divisi && ` • ${user.divisi}`}
           </p>
           {user?.status === 'Cuti' && (
-            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30">
-              Cuti
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30 mt-1">
+              Sedang Cuti
             </span>
           )}
         </div>
-      </header>
+      </motion.header>
 
       {/* ── Menu List ── */}
-      <section className="px-5 mt-4 space-y-3 flex-1">
+      <motion.section 
+        variants={containerVars}
+        initial="hidden"
+        animate="show"
+        className="px-5 mt-4 space-y-3 flex-1"
+      >
         
         {/* Pengaturan Akun */}
-        <button 
+        <motion.button 
+          variants={itemVars}
+          whileTap={{ scale: 0.96 }}
           onClick={() => router.push('/profil/pengaturan')}
-          className="w-full card flex items-center justify-between transition-colors hover:bg-white/5 active:scale-[0.98]"
+          className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-[1.5rem] p-4 flex items-center justify-between transition-colors hover:bg-white/10"
         >
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                 style={{ background: 'rgba(181,224,234,0.1)' }}>
-              <Settings className="w-5 h-5" style={{ color: '#b5e0ea' }} />
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-blue-500/20 border border-blue-500/20">
+              <Settings className="w-5 h-5 text-blue-400" />
             </div>
             <span className="text-white font-medium">Pengaturan Akun</span>
           </div>
-          <ChevronRight className="w-5 h-5" style={{ color: 'rgba(181,224,234,0.3)' }} />
-        </button>
+          <ChevronRight className="w-5 h-5 text-slate-400" />
+        </motion.button>
 
         {/* Ganti Password */}
-        <button 
+        <motion.button 
+          variants={itemVars}
+          whileTap={{ scale: 0.96 }}
           onClick={() => setShowPasswordModal(true)}
-          className="w-full card flex items-center justify-between transition-colors hover:bg-white/5 active:scale-[0.98]"
+          className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-[1.5rem] p-4 flex items-center justify-between transition-colors hover:bg-white/10"
         >
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                 style={{ background: 'rgba(181,224,234,0.1)' }}>
-              <Key className="w-5 h-5" style={{ color: '#b5e0ea' }} />
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-indigo-500/20 border border-indigo-500/20">
+              <Key className="w-5 h-5 text-indigo-400" />
             </div>
             <span className="text-white font-medium">Ganti Password</span>
           </div>
-          <ChevronRight className="w-5 h-5" style={{ color: 'rgba(181,224,234,0.3)' }} />
-        </button>
+          <ChevronRight className="w-5 h-5 text-slate-400" />
+        </motion.button>
 
         {/* Bantuan / FAQ */}
-        <button 
+        <motion.button 
+          variants={itemVars}
+          whileTap={{ scale: 0.96 }}
           onClick={() => router.push('/profil/bantuan')}
-          className="w-full card flex items-center justify-between transition-colors hover:bg-white/5 active:scale-[0.98]"
+          className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-[1.5rem] p-4 flex items-center justify-between transition-colors hover:bg-white/10"
         >
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                 style={{ background: 'rgba(181,224,234,0.1)' }}>
-              <HelpCircle className="w-5 h-5" style={{ color: '#b5e0ea' }} />
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-emerald-500/20 border border-emerald-500/20">
+              <HelpCircle className="w-5 h-5 text-emerald-400" />
             </div>
             <span className="text-white font-medium">Bantuan / FAQ</span>
           </div>
-          <ChevronRight className="w-5 h-5" style={{ color: 'rgba(181,224,234,0.3)' }} />
-        </button>
-      </section>
+          <ChevronRight className="w-5 h-5 text-slate-400" />
+        </motion.button>
+      </motion.section>
 
       {/* ── Logout Button ── */}
-      <section className="px-5 pt-8 pb-4">
-        <button onClick={handleLogout}
-                className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                style={{
-                  background: 'rgba(248,113,113,0.1)',
-                  border: '1px solid rgba(248,113,113,0.2)',
-                  color: '#f87171'
-                }}>
+      <motion.section 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, type: 'spring', stiffness: 300, damping: 24 }}
+        className="px-5 pt-8 pb-4"
+      >
+        <motion.button 
+          whileTap={{ scale: 0.96 }}
+          onClick={handleLogout}
+          className="w-full py-4 rounded-[1.5rem] font-bold flex items-center justify-center gap-2 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+        >
           <LogOut className="w-5 h-5" />
           KELUAR AKUN
-        </button>
-      </section>
+        </motion.button>
+      </motion.section>
 
       {/* ── Password Modal ── */}
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in-up">
-          <div className="bg-slate-900 rounded-2xl w-full max-w-sm overflow-hidden border border-slate-700 shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            onClick={() => setShowPasswordModal(false)}
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="bg-slate-900/90 backdrop-blur-2xl rounded-[2rem] w-full max-w-sm overflow-hidden border border-white/10 shadow-2xl relative z-10"
+          >
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
               <h3 className="text-white font-bold text-lg">Ganti Password</h3>
-              <button onClick={() => setShowPasswordModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowPasswordModal(false)} className="text-slate-400 hover:text-white transition-colors bg-white/5 p-1.5 rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleResetPassword} className="p-5 space-y-4">
+            <form onSubmit={handleResetPassword} className="p-6 space-y-4">
               <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Password Lama</label>
+                <label className="block text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wider">Password Lama</label>
                 <input 
                   type="password" 
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required 
-                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500" 
+                  className="w-full bg-black/20 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition-colors" 
                 />
               </div>
               <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Password Baru</label>
+                <label className="block text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wider">Password Baru</label>
                 <input 
                   type="password" 
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required 
-                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500" 
+                  className="w-full bg-black/20 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition-colors" 
                 />
-                <p className="text-slate-400 text-[10px] mt-1.5">Min. 8 karakter, kombinasi angka dan minimal 1 huruf kapital.</p>
+                <p className="text-slate-400 text-[10px] mt-2 leading-relaxed">Min. 8 karakter, kombinasi angka dan minimal 1 huruf kapital.</p>
               </div>
               <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-1.5 uppercase">Konfirmasi Password Baru</label>
+                <label className="block text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wider">Konfirmasi Password Baru</label>
                 <input 
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)} 
                   required 
-                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500" 
+                  className="w-full bg-black/20 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition-colors" 
                 />
               </div>
-              <button 
+              <motion.button 
+                whileTap={{ scale: 0.96 }}
                 type="submit" 
                 disabled={isChangingPassword}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl mt-2 transition-colors flex justify-center items-center"
+                className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl mt-4 transition-colors flex justify-center items-center shadow-lg shadow-indigo-500/20"
               >
                 {isChangingPassword ? 'MENYIMPAN...' : 'Simpan Password'}
-              </button>
+              </motion.button>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>

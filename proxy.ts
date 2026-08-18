@@ -11,7 +11,7 @@ const BLOCKED_USER_AGENTS = [
   'python-requests',
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
 
   // 1. Basic WAF: Block malicious user agents

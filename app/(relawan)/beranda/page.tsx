@@ -10,6 +10,7 @@ import { useCameraStore, useAbsensiStore } from '@/lib/stores';
 import { getGreeting } from '@/lib/utils';
 import { getAbsensiHariIni } from '@/app/actions/absensi';
 import { authClient } from '@/lib/auth-client';
+import { motion } from 'framer-motion';
 
 export default function BerandaPage() {
   const router = useRouter();
@@ -75,167 +76,187 @@ export default function BerandaPage() {
   const isMasukDitolak = false; // GPS auto-rejects before submission, so no rejected records in DB
   const isPulangDitolak = false;
 
-  return (
-    <div className="min-h-dvh flex flex-col"
-         style={{ background: 'radial-gradient(ellipse at top, #0c2860 0%, #071e49 60%)' }}>
+  // Animation variants
+  const containerVars: any = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
 
+  const itemVars: any = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
+  return (
+    <div className="min-h-dvh flex flex-col bg-gradient-to-b from-slate-900 to-slate-950 text-white">
+      
       {/* ── Header ── */}
       <header className="px-5 pt-safe pt-8 pb-2">
-        <div className="flex items-center justify-between">
+        <motion.div 
+          className="flex items-center justify-between"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+        >
           <div>
-            <p className="text-sm font-medium" style={{ color: 'rgba(181,224,234,0.65)' }}>
+            <p className="text-sm font-medium text-white/60">
               {greeting},
             </p>
-            <h1 className="text-white text-xl font-bold leading-tight">{firstName}</h1>
+            <h1 className="text-white text-2xl font-bold leading-tight">{firstName}</h1>
           </div>
           {/* Avatar */}
-          <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg bg-cover bg-center"
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg bg-cover bg-center border border-white/10"
                style={{
                  backgroundImage: user?.image ? `url(${user.image})` : 'linear-gradient(135deg, #b5e0ea, #7ec8d8)',
-                 boxShadow: '0 4px 16px rgba(181,224,234,0.3)',
+                 boxShadow: '0 8px 32px rgba(181,224,234,0.15)',
                }}>
             {!user?.image && (
-              <span className="font-bold text-sm" style={{ color: '#071e49' }}>
+              <span className="font-bold text-lg text-slate-900">
                 {firstName.charAt(0).toUpperCase()}
               </span>
             )}
           </div>
-        </div>
-        <p className="mt-1 text-xs font-mono" style={{ color: 'rgba(181,224,234,0.4)' }}>
+        </motion.div>
+        <motion.p 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+          className="mt-1 text-xs font-mono text-white/40"
+        >
           {user?.idRelawan ?? 'SPPG-000'}
-        </p>
+        </motion.p>
       </header>
 
-      {/* ── Clock ── */}
-      <section className="px-5 pt-6 pb-4 flex flex-col items-center">
-        <ClockWidget />
-      </section>
+      {/* ── Animated Content Container ── */}
+      <motion.div 
+        variants={containerVars}
+        initial="hidden"
+        animate="show"
+        className="flex-1 flex flex-col"
+      >
+        {/* ── Clock ── */}
+        <motion.section variants={itemVars} className="px-5 pt-6 pb-4 flex flex-col items-center">
+          <ClockWidget />
+        </motion.section>
 
-      {/* ── Status Badge ── */}
-      <div className="flex justify-center px-5 pb-6">
-        <StatusBadge status={statusHariIni} />
-      </div>
+        {/* ── Status Badge ── */}
+        <motion.div variants={itemVars} className="flex justify-center px-5 pb-6">
+          <StatusBadge status={statusHariIni} />
+        </motion.div>
 
-      {/* ── Absen Summary Cards ── */}
-      <section className="px-5 space-y-3 flex-1">
-        {/* Masuk */}
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                   style={{ background: hasMasuk ? 'rgba(181,224,234,0.15)' : 'rgba(7,30,73,0.6)' }}>
-                <LogIn className="w-5 h-5" style={{ color: hasMasuk ? '#b5e0ea' : 'rgba(181,224,234,0.35)' }} />
+        {/* ── Absen Summary Cards ── */}
+        <section className="px-5 space-y-4 flex-1">
+          {/* Masuk */}
+          <motion.div variants={itemVars} className="bg-white/5 backdrop-blur-xl rounded-[1.5rem] p-4 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${hasMasuk ? 'bg-[#b5e0ea]/20' : 'bg-slate-800/80'}`}>
+                  <LogIn className="w-6 h-6" style={{ color: hasMasuk ? '#b5e0ea' : 'rgba(255,255,255,0.4)' }} />
+                </div>
+                <div>
+                  <p className="text-white text-base font-semibold">Absen Masuk</p>
+                  {hasMasuk && masukData ? (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Clock className="w-3.5 h-3.5" style={{ color: '#b5e0ea' }} />
+                      <span className="text-xs font-semibold font-mono-clock" style={{ color: '#b5e0ea' }}>
+                        {masukData.waktuAbsen}
+                      </span>
+                      <MapPin className="w-3.5 h-3.5 ml-1.5 text-white/40" />
+                      <span className="text-[10px] font-mono text-white/40 tracking-wider">
+                        {Number(masukData.latitude).toFixed(3)}, {Number(masukData.longitude).toFixed(3)}
+                      </span>
+                    </div>
+                  ) : isMasukDitolak ? (
+                    <p className="text-xs mt-1 font-medium text-red-400">Ditolak (Di Luar Radius)</p>
+                  ) : (
+                    <p className="text-xs mt-1 font-medium text-white/40">Belum absen masuk</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p className="text-white text-sm font-semibold">Absen Masuk</p>
-                {hasMasuk && masukData ? (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Clock className="w-3 h-3" style={{ color: '#b5e0ea' }} />
-                    <span className="text-xs font-medium font-mono-clock" style={{ color: '#b5e0ea' }}>
-                      {masukData.waktuAbsen}
-                    </span>
-                    <MapPin className="w-3 h-3 ml-1" style={{ color: 'rgba(181,224,234,0.45)' }} />
-                    <span className="text-xs font-mono" style={{ color: 'rgba(181,224,234,0.45)' }}>
-                      {Number(masukData.latitude).toFixed(3)}, {Number(masukData.longitude).toFixed(3)}
-                    </span>
-                  </div>
-                ) : isMasukDitolak ? (
-                  <p className="text-xs mt-0.5" style={{ color: '#f87171' }}>Ditolak (Di Luar Radius)</p>
-                ) : (
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(181,224,234,0.4)' }}>Belum absen masuk</p>
-                )}
-              </div>
+              {hasMasuk
+                ? <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><Check className="w-5 h-5 text-white" /></div>
+                : <ChevronRight className="w-5 h-5 text-white/30" />
+              }
             </div>
-            {hasMasuk
-              ? <Check className="w-5 h-5 text-white" />
-              : <ChevronRight className="w-4 h-4" style={{ color: 'rgba(181,224,234,0.25)' }} />
-            }
-          </div>
-        </div>
+          </motion.div>
 
-        {/* Pulang */}
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                   style={{ background: isLengkap ? 'rgba(251,191,36,0.12)' : 'rgba(7,30,73,0.6)' }}>
-                <LogOut className="w-5 h-5"
-                        style={{ color: isLengkap ? '#fbbf24' : 'rgba(181,224,234,0.35)' }} />
+          {/* Pulang */}
+          <motion.div variants={itemVars} className="bg-white/5 backdrop-blur-xl rounded-[1.5rem] p-4 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isLengkap ? 'bg-amber-400/20' : 'bg-slate-800/80'}`}>
+                  <LogOut className="w-6 h-6" style={{ color: isLengkap ? '#fbbf24' : 'rgba(255,255,255,0.4)' }} />
+                </div>
+                <div>
+                  <p className="text-white text-base font-semibold">Absen Pulang</p>
+                  {isLengkap && pulangData ? (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Clock className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-xs font-semibold font-mono-clock text-amber-400">
+                        {pulangData.waktuAbsen}
+                      </span>
+                    </div>
+                  ) : isPulangDitolak ? (
+                    <p className="text-xs mt-1 font-medium text-red-400">Ditolak (Di Luar Radius)</p>
+                  ) : (
+                    <p className="text-xs mt-1 font-medium text-white/40">
+                      {hasMasuk ? 'Belum absen pulang' : 'Absen masuk dulu'}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p className="text-white text-sm font-semibold">Absen Pulang</p>
-                {isLengkap && pulangData ? (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Clock className="w-3 h-3" style={{ color: '#fbbf24' }} />
-                    <span className="text-xs font-medium font-mono-clock" style={{ color: '#fbbf24' }}>
-                      {pulangData.waktuAbsen}
-                    </span>
-                  </div>
-                ) : isPulangDitolak ? (
-                  <p className="text-xs mt-0.5" style={{ color: '#f87171' }}>Ditolak (Di Luar Radius)</p>
-                ) : (
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(181,224,234,0.4)' }}>
-                    {hasMasuk ? 'Belum absen pulang' : 'Absen masuk dulu'}
-                  </p>
-                )}
-              </div>
+              {isLengkap
+                ? <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><Check className="w-5 h-5 text-white" /></div>
+                : <ChevronRight className="w-5 h-5 text-white/30" />
+              }
             </div>
-            {isLengkap
-              ? <Check className="w-5 h-5 text-white" />
-              : <ChevronRight className="w-4 h-4" style={{ color: 'rgba(181,224,234,0.25)' }} />
-            }
-          </div>
-        </div>
-      </section>
+          </motion.div>
+        </section>
 
-      {/* ── CTA Buttons ── */}
-      <section className="px-5 pt-4 pb-4 space-y-3">
-        {!hasMasuk && (
-          <button
-            id="btn-absen-masuk"
-            onClick={handleAbsenMasuk}
-            className="w-full py-5 rounded-2xl font-bold text-lg
-                       flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.97]"
-            style={isMasukDitolak ? {
-              background: '#f87171', color: '#FFFFFF', boxShadow: '0 4px 32px rgba(248,113,113,0.3)',
-              animation: 'none'
-            } : {
-              background: '#FFFFFF', color: '#071e49', boxShadow: '0 4px 32px rgba(255,255,255,0.2)',
-              animation: 'pulse-white 2s ease-in-out infinite',
-            }}
-          >
-            <Camera className="w-7 h-7" strokeWidth={2.5} />
-            {isMasukDitolak ? 'ULANGI ABSEN MASUK' : 'ABSEN MASUK'}
-          </button>
-        )}
+        {/* ── CTA Buttons ── */}
+        <section className="px-5 pt-6 pb-6 space-y-4">
+          {!hasMasuk && (
+            <motion.button
+              variants={itemVars}
+              whileTap={{ scale: 0.96 }}
+              id="btn-absen-masuk"
+              onClick={handleAbsenMasuk}
+              className={`w-full py-5 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-3 shadow-xl ${
+                isMasukDitolak ? 'bg-red-500 text-white shadow-red-500/20' : 'bg-white text-slate-900 shadow-white/20 animate-pulse'
+              }`}
+            >
+              <Camera className="w-7 h-7" strokeWidth={2.5} />
+              {isMasukDitolak ? 'ULANGI ABSEN MASUK' : 'ABSEN MASUK'}
+            </motion.button>
+          )}
 
-        {hasMasuk && !isLengkap && (
-          <button
-            id="btn-absen-pulang"
-            onClick={handleAbsenPulang}
-            className="w-full py-5 rounded-2xl font-bold text-lg
-                       flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.97]"
-            style={isPulangDitolak ? {
-              background: '#f87171', color: '#FFFFFF', boxShadow: '0 4px 32px rgba(248,113,113,0.3)',
-              animation: 'none'
-            } : {
-              background: 'linear-gradient(135deg, #b5e0ea, #7ec8d8)', color: '#071e49', boxShadow: '0 4px 32px rgba(181,224,234,0.3)',
-              animation: 'pulse-accent 2s ease-in-out infinite',
-            }}
-          >
-            <Camera className="w-7 h-7" strokeWidth={2.5} />
-            {isPulangDitolak ? 'ULANGI ABSEN PULANG' : 'ABSEN PULANG'}
-          </button>
-        )}
+          {hasMasuk && !isLengkap && (
+            <motion.button
+              variants={itemVars}
+              whileTap={{ scale: 0.96 }}
+              id="btn-absen-pulang"
+              onClick={handleAbsenPulang}
+              className={`w-full py-5 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-3 shadow-xl ${
+                isPulangDitolak ? 'bg-red-500 text-white shadow-red-500/20' : 'bg-gradient-to-r from-[#b5e0ea] to-[#7ec8d8] text-slate-900 shadow-[#b5e0ea]/30 animate-pulse'
+              }`}
+            >
+              <Camera className="w-7 h-7" strokeWidth={2.5} />
+              {isPulangDitolak ? 'ULANGI ABSEN PULANG' : 'ABSEN PULANG'}
+            </motion.button>
+          )}
 
-        {isLengkap && (
-          <div className="w-full py-5 rounded-2xl flex items-center justify-center gap-3"
-               style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.2)' }}>
-            <CheckCircle className="w-6 h-6 text-emerald-400" />
-            <span className="font-bold text-lg text-white">Absensi Hari Ini Lengkap!</span>
-          </div>
-        )}
-      </section>
+          {isLengkap && (
+            <motion.div 
+              variants={itemVars}
+              className="w-full py-5 rounded-[1.5rem] flex items-center justify-center gap-3 bg-white/10 backdrop-blur-md border border-white/20"
+            >
+              <CheckCircle className="w-6 h-6 text-emerald-400" />
+              <span className="font-bold text-lg text-white">Absensi Hari Ini Lengkap!</span>
+            </motion.div>
+          )}
+        </section>
+      </motion.div>
 
       <PWAInstallBanner />
     </div>

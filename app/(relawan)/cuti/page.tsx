@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, CalendarIcon, FileText, Send, Clock, CheckCircle2, XCircle, UploadCloud } from 'lucide-react';
+import { ChevronLeft, ChevronDown, CalendarIcon, FileText, Send, Clock, CheckCircle2, XCircle, UploadCloud } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { submitCuti, getCutiRelawan } from '@/app/actions/cuti';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/lib/utils';
 import { goeyToast } from 'goey-toast';
+import { motion, Variants } from 'framer-motion';
 
 export default function PengajuanCutiPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function PengajuanCutiPage() {
   type CutiRecord = Awaited<ReturnType<typeof getCutiRelawan>>[number];
   const [riwayat, setRiwayat] = useState<CutiRecord[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const loadRiwayat = async () => {
     try {
       const records = await getCutiRelawan();
@@ -107,86 +109,112 @@ export default function PengajuanCutiPage() {
     }
   };
 
+  const containerVars: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVars: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="min-h-dvh flex flex-col bg-slate-50">
+    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-b from-slate-900 to-slate-950 text-white">
 
       {/* Header */}
-      <header className="px-5 pt-safe pt-6 pb-4 bg-white shadow-sm border-b border-slate-100 flex items-center justify-between sticky top-0 z-30">
+      <header className="px-5 pt-safe pt-6 pb-4 flex items-center justify-between sticky top-0 z-30 bg-slate-950/80 backdrop-blur-xl border-b border-white/10">
         <button 
           onClick={() => router.push('/profil')}
-          className="w-10 h-10 -ml-2 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-50 transition-colors"
+          className="w-10 h-10 -ml-2 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-slate-800 text-lg font-bold">Cuti & Izin</h1>
+        <h1 className="text-white text-lg font-bold">Cuti & Izin</h1>
         <div className="w-10"></div>
       </header>
 
-      <div className="p-5 space-y-8 flex-1 overflow-y-auto">
+      <motion.div 
+        variants={containerVars}
+        initial="hidden"
+        animate="show"
+        className="p-5 space-y-8 flex-1 overflow-y-auto pb-24"
+      >
         
         {/* Form Pengajuan */}
-        <section className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-            <CalendarIcon className="w-32 h-32" />
+        <motion.section 
+          variants={itemVars}
+          className="bg-white/5 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 relative overflow-hidden"
+        >
+          <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] pointer-events-none">
+            <CalendarIcon className="w-40 h-40" />
           </div>
           
-          <h2 className="text-lg font-bold text-slate-800 mb-5 relative z-10">Pengajuan Baru</h2>
+          <h2 className="text-xl font-bold text-white mb-6 relative z-10 flex items-center gap-2">
+            Pengajuan Baru
+          </h2>
           
-          <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
+          <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">Jenis Cuti/Izin</label>
-              <select 
-                value={jenisCuti}
-                onChange={(e) => setJenisCuti(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-[#071e49] focus:ring-1 focus:ring-[#071e49] appearance-none"
-              >
-                <option value="Sakit">Sakit</option>
-                <option value="Cuti Tahunan">Cuti Tahunan</option>
-                <option value="Cuti Melahirkan">Cuti Melahirkan</option>
-                <option value="Izin Penting">Izin Penting</option>
-                <option value="Lainnya">Lainnya</option>
-              </select>
+              <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider ml-1">Jenis Cuti/Izin</label>
+              <div className="relative">
+                <select 
+                  value={jenisCuti}
+                  onChange={(e) => setJenisCuti(e.target.value)}
+                  className="w-full px-4 py-3.5 bg-black/20 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 appearance-none transition-colors"
+                >
+                  <option value="Sakit" className="text-slate-900">Sakit</option>
+                  <option value="Cuti Tahunan" className="text-slate-900">Cuti Tahunan</option>
+                  <option value="Cuti Melahirkan" className="text-slate-900">Cuti Melahirkan</option>
+                  <option value="Izin Penting" className="text-slate-900">Izin Penting</option>
+                  <option value="Lainnya" className="text-slate-900">Lainnya</option>
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">Mulai</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider ml-1">Mulai</label>
                 <input 
                   type="date"
                   value={tanggalMulai}
                   onChange={(e) => setTanggalMulai(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-[#071e49] focus:ring-1 focus:ring-[#071e49]"
+                  className="w-full px-4 py-3.5 bg-black/20 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-colors [color-scheme:dark]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">Selesai</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider ml-1">Selesai</label>
                 <input 
                   type="date"
                   value={tanggalSelesai}
                   onChange={(e) => setTanggalSelesai(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-[#071e49] focus:ring-1 focus:ring-[#071e49]"
+                  className="w-full px-4 py-3.5 bg-black/20 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-colors [color-scheme:dark]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">Alasan</label>
+              <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider ml-1">Alasan</label>
               <textarea 
                 rows={3}
-                placeholder="Tuliskan alasan pengajuan cuti..."
+                placeholder="Tuliskan alasan pengajuan..."
                 value={alasan}
                 onChange={(e) => setAlasan(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-[#071e49] focus:ring-1 focus:ring-[#071e49] resize-none"
+                className="w-full px-4 py-3.5 bg-black/20 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 resize-none transition-colors placeholder:text-slate-600"
               />
             </div>
 
             {jenisCuti === 'Sakit' && (
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">Unggah Surat Dokter (Wajib)</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider ml-1">Unggah Surat Dokter (Wajib)</label>
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className={`w-full px-4 py-6 border-2 border-dashed rounded-xl text-center cursor-pointer transition-colors ${
-                    fileBukti ? 'border-[#071e49] bg-[#071e49]/5' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'
+                  className={`w-full px-4 py-8 border-2 border-dashed rounded-xl text-center cursor-pointer transition-colors ${
+                    fileBukti ? 'border-indigo-500/50 bg-indigo-500/10' : 'border-white/20 bg-black/20 hover:bg-white/5'
                   }`}
                 >
                   <input
@@ -208,63 +236,67 @@ export default function PengajuanCutiPage() {
                   />
                   {fileBukti ? (
                     <div className="flex flex-col items-center justify-center">
-                      <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-2" />
-                      <p className="text-sm font-medium text-slate-800 line-clamp-1 break-all px-4">{fileBukti.name}</p>
-                      <p className="text-xs text-slate-500 mt-1">{(fileBukti.size / 1024).toFixed(1)} KB • Klik untuk mengganti</p>
+                      <CheckCircle2 className="w-10 h-10 text-emerald-400 mb-3" />
+                      <p className="text-sm font-bold text-white line-clamp-1 break-all px-4">{fileBukti.name}</p>
+                      <p className="text-xs text-slate-400 mt-1.5">{(fileBukti.size / 1024).toFixed(1)} KB • Klik untuk mengganti</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center">
-                      <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-sm font-medium text-slate-700">Tekan untuk unggah berkas</p>
-                      <p className="text-xs text-slate-500 mt-1">JPG, PNG, WEBP, atau PDF (Max 2MB)</p>
+                      <UploadCloud className="w-10 h-10 text-slate-500 mb-3" />
+                      <p className="text-sm font-bold text-slate-300">Tekan untuk unggah berkas</p>
+                      <p className="text-xs text-slate-500 mt-1.5">JPG, PNG, WEBP, atau PDF (Max 2MB)</p>
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            <button 
+            <motion.button 
+              whileTap={{ scale: 0.96 }}
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 bg-[#071e49] text-white rounded-xl font-bold flex items-center justify-center gap-2 mt-2 shadow-lg shadow-[#071e49]/20 disabled:opacity-70"
+              className="w-full py-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 mt-4 shadow-lg shadow-indigo-500/20 disabled:opacity-70 transition-colors"
             >
               <Send className="w-4 h-4" />
               {isSubmitting ? 'Mengirim...' : 'Kirim Pengajuan'}
-            </button>
+            </motion.button>
           </form>
-        </section>
+        </motion.section>
 
         {/* Riwayat Pengajuan */}
-        <section>
-          <h2 className="text-slate-800 font-bold mb-4 ml-1">Riwayat Pengajuan</h2>
-          <div className="space-y-3">
+        <motion.section variants={itemVars}>
+          <h2 className="text-white text-lg font-bold mb-5 ml-1">Riwayat Pengajuan</h2>
+          <div className="space-y-4">
             {riwayat.length === 0 ? (
-              <div className="text-center py-8 bg-white rounded-2xl border border-slate-100 border-dashed">
-                <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                <p className="text-slate-500 text-sm font-medium">Belum ada riwayat</p>
+              <div className="text-center py-10 bg-white/5 rounded-[2rem] border border-white/5 border-dashed">
+                <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400 text-sm font-medium">Belum ada riwayat cuti</p>
               </div>
             ) : (
               riwayat.map(req => (
-                <div key={req.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-start">
+                <div key={req.id} className="bg-white/5 backdrop-blur-xl p-5 rounded-[1.5rem] border border-white/10 flex justify-between items-start">
                   <div>
-                    <h3 className="font-bold text-slate-800 text-sm">{req.jenisCuti}</h3>
-                    <p className="text-slate-500 text-xs mt-0.5">{req.tanggalMulai} s/d {req.tanggalSelesai}</p>
-                    <p className="text-slate-400 text-xs mt-1.5 line-clamp-1">{req.alasan}</p>
+                    <h3 className="font-bold text-white text-sm">{req.jenisCuti}</h3>
+                    <p className="text-slate-400 text-xs mt-1">{req.tanggalMulai} s/d {req.tanggalSelesai}</p>
+                    <p className="text-slate-500 text-xs mt-2 line-clamp-1 italic">"{req.alasan}"</p>
                   </div>
-                  <div className="shrink-0 mt-0.5">
+                  <div className="shrink-0">
                     {req.status === 'Menunggu' && (
-                      <span className="flex items-center gap-1 text-amber-600 bg-amber-50 px-2 py-1 rounded-md text-[10px] font-bold border border-amber-200">
-                        <Clock className="w-3 h-3" />
+                      <span className="flex items-center gap-1.5 text-amber-400 bg-amber-500/10 px-2.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold border border-amber-500/20">
+                        <Clock className="w-3.5 h-3.5" />
+                        Menunggu
                       </span>
                     )}
                     {req.status === 'Disetujui' && (
-                      <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md text-[10px] font-bold border border-emerald-200">
-                        <CheckCircle2 className="w-3 h-3" />
+                      <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold border border-emerald-500/20">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Disetujui
                       </span>
                     )}
                     {req.status === 'Ditolak' && (
-                      <span className="flex items-center gap-1 text-rose-600 bg-rose-50 px-2 py-1 rounded-md text-[10px] font-bold border border-rose-200">
-                        <XCircle className="w-3 h-3" />
+                      <span className="flex items-center gap-1.5 text-rose-400 bg-rose-500/10 px-2.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold border border-rose-500/20">
+                        <XCircle className="w-3.5 h-3.5" />
+                        Ditolak
                       </span>
                     )}
                   </div>
@@ -272,9 +304,9 @@ export default function PengajuanCutiPage() {
               ))
             )}
           </div>
-        </section>
+        </motion.section>
 
-      </div>
+      </motion.div>
     </div>
   );
 }

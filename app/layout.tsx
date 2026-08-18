@@ -1,6 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Outfit } from "next/font/google";
 import { Toaster } from "@/components/Toaster";
 import "./globals.css";
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Absensi Relawan SPPG",
@@ -34,7 +40,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className="antialiased">
+      <body className={`${outfit.className} antialiased text-slate-800 bg-[#f9fafb] selection:bg-emerald-500/30`}>
         <Toaster />
         {children}
       </body>

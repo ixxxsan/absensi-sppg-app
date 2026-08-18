@@ -4,9 +4,10 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, CheckSquare, FileSpreadsheet,
-  LogOut, ChevronLeft, ChevronRight, Calendar
+  LogOut, ChevronLeft, Calendar
 } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 
@@ -18,7 +19,7 @@ const navItems = [
   { href: '/admin/laporan',  icon: FileSpreadsheet,   label: 'Laporan & Export' },
 ];
 
-const APP_NAME = 'SPPG TANGERANG\nTELUKNAGA 03';
+const APP_NAME = 'SPPG\nTELUKNAGA';
 
 interface AdminSidebarProps {
   user: {
@@ -47,152 +48,137 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
     role: user.role || 'admin',
   };
 
-  const sidebarW = collapsed ? 64 : 240;
-
   return (
-    <>
-      <aside
-        style={{
-          position: 'fixed',
-          left: 0, top: 0,
-          width: sidebarW,
-          height: '100%',
-          zIndex: 40,
-          display: 'flex',
-          flexDirection: 'column',
-          background: '#071e49',
-          transition: 'width 0.3s ease',
-          overflow: 'visible',
-        }}
-      >
-        {/* Logo */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '20px 16px',
-          borderBottom: '1px solid rgba(181,224,234,0.1)',
-          justifyContent: collapsed ? 'center' : 'flex-start',
-          minHeight: 80,
-        }}>
-          {/* Icon / Logo */}
-          <div style={{
-            width: 36, height: 36,
-            borderRadius: 10,
-            overflow: 'hidden',
-            flexShrink: 0,
-            border: 'none',
-            position: 'relative',
-          }}>
-            <Image src="/icons/icon-192.png" alt="Logo" fill
-                 style={{ objectFit: 'cover' }} />
-          </div>
-
+    <motion.aside
+      initial={{ width: 260 }}
+      animate={{ width: collapsed ? 80 : 260 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className="relative flex flex-col bg-white border-r border-slate-200/60 z-40 h-full flex-shrink-0"
+    >
+      {/* Logo Area */}
+      <div className={`flex items-center gap-3 p-5 border-b border-slate-100 min-h-[88px] ${collapsed ? 'justify-center' : ''}`}>
+        <div className="relative w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-emerald-500 shadow-sm">
+          <Image src="/icons/icon-192.png" alt="Logo" fill className="object-cover" />
+        </div>
+        <AnimatePresence mode="wait">
           {!collapsed && (
-            <div style={{ overflow: 'hidden' }}>
-              <p style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 700, lineHeight: 1.2,
-                          whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden whitespace-nowrap"
+            >
+              <h1 className="text-[13px] font-bold text-slate-800 leading-tight">
                 {APP_NAME}
-              </p>
-              <p style={{ color: 'rgba(181,224,234,0.45)', fontSize: 9, marginTop: 2 }}>
+              </h1>
+              <p className="text-[9px] font-semibold text-slate-400 mt-0.5 tracking-wider uppercase">
                 Panel Manajemen
               </p>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
+      </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {navItems.map(({ href, icon: Icon, label }) => {
-            const isActive = pathname === href;
-            return (
-              <Link key={href} href={href} title={collapsed ? label : undefined}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: collapsed ? 0 : 12,
-                      justifyContent: collapsed ? 'center' : 'flex-start',
-                      padding: '10px 12px',
-                      borderRadius: 12,
-                      textDecoration: 'none',
-                      transition: 'all 0.15s',
-                      background: isActive ? 'rgba(181,224,234,0.12)' : 'transparent',
-                      border: `1px solid ${isActive ? 'rgba(181,224,234,0.25)' : 'transparent'}`,
-                      color: isActive ? '#b5e0ea' : 'rgba(181,224,234,0.45)',
-                    }}>
-                <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-6 overflow-y-auto flex flex-col gap-1.5 scrollbar-hide">
+        {navItems.map(({ href, icon: Icon, label }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              title={collapsed ? label : undefined}
+              className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
+                ${collapsed ? 'justify-center' : ''}
+                ${isActive 
+                  ? 'text-emerald-700 font-semibold' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-medium'
+                }
+              `}
+            >
+              {isActive && (
+                <motion.div 
+                  layoutId="activeNavIndicator"
+                  className="absolute inset-0 bg-emerald-50/80 rounded-xl border border-emerald-100/50"
+                  initial={false}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              <Icon className={`w-5 h-5 flex-shrink-0 relative z-10 transition-transform duration-200 ${isActive ? '' : 'group-hover:scale-110'}`} />
+              <AnimatePresence mode="wait">
                 {!collapsed && (
-                  <span style={{ fontSize: 13, fontWeight: 500, flex: 1, overflow: 'hidden',
-                                 textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-[13px] relative z-10 whitespace-nowrap overflow-hidden"
+                  >
                     {label}
-                  </span>
+                  </motion.span>
                 )}
-                {isActive && !collapsed && (
-                  <span style={{ width: 6, height: 6, borderRadius: 9999, background: '#b5e0ea', flexShrink: 0 }} />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+              </AnimatePresence>
+            </Link>
+          );
+        })}
+      </nav>
 
-        {/* User + Logout */}
-        <div style={{ padding: '12px 8px', borderTop: '1px solid rgba(181,224,234,0.1)' }}>
+      {/* User Profile & Logout */}
+      <div className="p-4 border-t border-slate-100">
+        <div className={`flex items-center gap-3 mb-2 px-2 ${collapsed ? 'justify-center' : ''}`}>
           {!collapsed && (
-            <div style={{ padding: '4px 12px 8px' }}>
-              <p style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 600,
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 overflow-hidden"
+            >
+              <p className="text-[13px] font-semibold text-slate-800 truncate">
                 {displayUser.namaLengkap}
               </p>
-              <p style={{ color: 'rgba(181,224,234,0.4)', fontSize: 10 }}>
-                {displayUser.role === 'super_admin' ? 'Super Admin' : 'Koordinator'}
+              <p className="text-[10px] font-medium text-slate-400 capitalize truncate">
+                {displayUser.role.replace('_', ' ')}
               </p>
-            </div>
+            </motion.div>
           )}
-          <button onClick={handleLogout} id="admin-logout-btn"
-                  title={collapsed ? 'Keluar' : undefined}
-                  style={{
-                    display: 'flex', alignItems: 'center',
-                    gap: collapsed ? 0 : 12,
-                    justifyContent: collapsed ? 'center' : 'flex-start',
-                    width: '100%', padding: '10px 12px',
-                    borderRadius: 12, border: 'none',
-                    background: 'transparent', cursor: 'pointer',
-                    color: 'rgba(181,224,234,0.45)',
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget).style.background = 'rgba(248,113,113,0.1)';
-                    (e.currentTarget).style.color = '#f87171';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget).style.background = 'transparent';
-                    (e.currentTarget).style.color = 'rgba(181,224,234,0.45)';
-                  }}>
-            <LogOut style={{ width: 18, height: 18, flexShrink: 0 }} />
-            {!collapsed && <span style={{ fontSize: 13, fontWeight: 500 }}>Keluar</span>}
-          </button>
         </div>
-
-        {/* Collapse toggle */}
-        <button onClick={() => setCollapsed(!collapsed)} id="sidebar-collapse-btn"
-                aria-label={collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
-                style={{
-                  position: 'absolute', right: -12, top: 88,
-                  width: 24, height: 24, borderRadius: 9999,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: '#0c2860',
-                  border: '1px solid rgba(181,224,234,0.25)',
-                  color: '#b5e0ea', cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                }}>
-          {collapsed
-            ? <ChevronRight style={{ width: 12, height: 12 }} />
-            : <ChevronLeft  style={{ width: 12, height: 12 }} />}
+        
+        <button
+          onClick={handleLogout}
+          title={collapsed ? 'Keluar' : undefined}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 group active:scale-95
+            ${collapsed ? 'justify-center' : ''}
+          `}
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-200" />
+          <AnimatePresence mode="wait">
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="text-[13px] font-medium whitespace-nowrap overflow-hidden"
+              >
+                Keluar
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
-      </aside>
-      
-      {/* Spacer to push content to the right */}
-      <div style={{ width: sidebarW, flexShrink: 0, transition: 'width 0.3s ease' }} />
-    </>
+      </div>
+
+      {/* Collapse Toggle */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="absolute -right-3.5 top-9 w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 shadow-sm transition-colors z-50 active:scale-90"
+      >
+        <motion.div
+          animate={{ rotate: collapsed ? 180 : 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </motion.div>
+      </button>
+    </motion.aside>
   );
 }
