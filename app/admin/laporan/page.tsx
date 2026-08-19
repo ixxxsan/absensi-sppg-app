@@ -16,7 +16,7 @@ interface LaporanItem {
 
 const DIVISI_OPTIONS = [
   'ASISTEN LAPANGAN', 'ADMIN', 'STOCKIST', 'SECURITY', 'DRIVER', 
-  'CLEANING SERVICE', 'PERSIAPAN', 'PENGOLAHAN', 'PEMORSIAN', 'PENCUCI TRAY'
+  'CLEANING SERVICE', 'PERSIAPAN', 'PENGOLAHAN', 'PEMORSIAN', 'PENCUCI TRAY', 'HEAD CHEF'
 ];
 
 const getDivisiRank = (divisi: string | null | undefined) => {
