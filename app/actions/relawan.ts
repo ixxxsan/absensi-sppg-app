@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { randomBytes } from 'crypto';
 import { Resend } from 'resend';
@@ -215,6 +215,41 @@ export async function resetPasswordRelawan(userId: string) {
       emailSuccess: emailResult?.success ?? false,
       emailError: emailResult?.error
     };
+  } catch (err: unknown) {
+    const error = err as Error;
+    return { success: false, error: error.message };
+  }
+}
+
+export async function bulkResetPasswords(userIds: string[]) {
+  const session = await getServerSession();
+  if (!isAdmin(session?.user?.role)) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const targetUsers = await db.select().from(user).where(inArray(user.id, userIds));
+    const results = [];
+    
+    for (const u of targetUsers) {
+      const pass = randomBytes(4).toString('hex');
+      
+      await auth.api.setUserPassword({
+        body: {
+          userId: u.id,
+          newPassword: pass
+        }
+      });
+      
+      await sendPasswordEmail(u.email, pass, u.name);
+      
+      results.push({ 
+        'ID Relawan': u.idRelawan, 
+        'Nama Lengkap': u.name, 
+        'Email': u.email, 
+        'Password Baru': pass 
+      });
+    }
+
+    return { success: true, data: results };
   } catch (err: unknown) {
     const error = err as Error;
     return { success: false, error: error.message };

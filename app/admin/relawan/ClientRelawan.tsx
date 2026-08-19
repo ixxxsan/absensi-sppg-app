@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useTransition, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, ChevronDown, CheckCircle, Clock, AlertCircle, Loader2, Users, Upload, KeyRound } from 'lucide-react';
-import { createRelawan, updateRelawan, deleteRelawan, bulkImportRelawan, resetPasswordRelawan, BulkImportRow } from '@/app/actions/relawan';
+import { Search, Plus, Edit2, Trash2, ChevronDown, CheckCircle, Clock, AlertCircle, Loader2, Users, Upload, KeyRound, Download } from 'lucide-react';
+import { createRelawan, updateRelawan, deleteRelawan, bulkImportRelawan, resetPasswordRelawan, bulkResetPasswords, BulkImportRow } from '@/app/actions/relawan';
 import { useRouter } from 'next/navigation';
 import { goeyToast } from 'goey-toast';
 
@@ -278,6 +278,36 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
     }
   };
 
+  const handleBulkReset = async () => {
+    if (!confirm('PERHATIAN: Tindakan ini akan MERESET (mengubah) password SEMUA relawan yang tampil di tabel ini, dan mendownloadnya dalam bentuk file Excel. Apakah Anda yakin ingin melanjutkan?')) return;
+    
+    setLoadingAction(true);
+    try {
+      const idsToReset = filtered.map(r => r.id);
+      if (idsToReset.length === 0) {
+        goeyToast.error('Tidak ada data relawan untuk di-reset');
+        setLoadingAction(false);
+        return;
+      }
+      
+      const res = await bulkResetPasswords(idsToReset);
+      if (res.success && res.data) {
+        const XLSX = await import('xlsx');
+        const worksheet = XLSX.utils.json_to_sheet(res.data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Kredensial Relawan');
+        XLSX.writeFile(workbook, `Kredensial_Relawan_${new Date().toISOString().slice(0,10)}.xlsx`);
+        goeyToast.success('Password massal berhasil di-reset dan didownload!');
+      } else {
+        goeyToast.error(res?.error || 'Gagal mereset password massal');
+      }
+    } catch (e) {
+      goeyToast.error('Terjadi kesalahan sistem saat mereset password');
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-5">
       {/* Header */}
@@ -302,6 +332,16 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
           >
             <Upload className="w-4 h-4" />
             Import Excel
+          </button>
+          <button
+            onClick={handleBulkReset}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700
+                       font-semibold text-sm hover:bg-amber-100 transition-colors shadow-sm disabled:opacity-50"
+            disabled={loadingAction || isPending || isImporting}
+            title="Reset password relawan di tabel ini & download Excel"
+          >
+            <Download className="w-4 h-4" />
+            Export Password
           </button>
           <button
             id="btn-tambah-relawan"
