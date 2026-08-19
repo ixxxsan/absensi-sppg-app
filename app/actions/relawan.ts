@@ -9,15 +9,56 @@ import { revalidatePath } from 'next/cache';
 import { randomBytes } from 'crypto';
 import { Resend } from 'resend';
 
-// ponytail: simplified template to the bare minimum that works and reads well.
+// ponytail: template updated with uniform design matching reset password
 async function sendPasswordEmail(email: string, pass: string, name: string) {
   if (!process.env.RESEND_API_KEY) return;
+  
+  const htmlTemplate = `
+<!DOCTYPE html>
+<html lang="id">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#071e49 0%,#0c2860 100%);padding:32px 24px;text-align:center;">
+      <img src="https://absensi-sppg-teluknaga03.id/logo-bgn.png" alt="Logo SPPG" style="width:64px;height:auto;margin-bottom:12px;" />
+      <h1 style="color:#ffffff;font-size:20px;margin:0;">Selamat Datang!</h1>
+      <p style="color:#b5e0ea;font-size:14px;margin:8px 0 0;">SPPG Tangerang Teluknaga 03</p>
+    </div>
+    <!-- Body -->
+    <div style="padding:32px 24px;">
+      <p style="color:#333;font-size:15px;line-height:1.6;">Halo <strong>${name}</strong>,</p>
+      <p style="color:#555;font-size:14px;line-height:1.6;">Akun relawan Anda telah berhasil dibuat oleh tim administrasi. Gunakan kredensial berikut untuk masuk ke aplikasi absensi:</p>
+      
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:24px 0;">
+        <p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">EMAIL</p>
+        <p style="margin:0 0 20px;font-size:15px;font-weight:600;"><a href="mailto:${email}" style="color:#0c2860;text-decoration:none;">${email}</a></p>
+        
+        <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">PASSWORD</p>
+        <div style="display:inline-block;background:#0c2860;color:#ffffff;padding:10px 16px;border-radius:6px;font-size:16px;font-weight:700;letter-spacing:1px;">${pass}</div>
+      </div>
+
+      <div style="text-align:center;margin:32px 0;">
+        <a href="https://absensi-sppg-teluknaga03.id/login" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#0c2860,#1a3a70);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:0.3px;">Masuk ke Aplikasi</a>
+      </div>
+      
+      <p style="color:#888;font-size:13px;line-height:1.5;">Catatan: Demi keamanan, segera <strong>ubah password</strong> Anda setelah berhasil masuk melalui menu Profil &gt; Pengaturan.</p>
+      <p style="color:#888;font-size:13px;line-height:1.5;">Jika Anda memiliki pertanyaan, silakan hubungi tim administrasi SPPG Teluknaga 03.</p>
+      
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+      <p style="color:#aaa;font-size:12px;text-align:center;">© 2026 SPPG Tangerang Teluknaga 03<br/>Email ini dikirim secara otomatis, mohon tidak membalas.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
   try {
     await new Resend(process.env.RESEND_API_KEY).emails.send({
-      from: 'SPPG <no-reply@absensi-sppg-teluknaga03.id>',
+      from: 'SPPG Teluknaga 03 <no-reply@absensi-sppg-teluknaga03.id>',
       to: email,
-      subject: 'Akun SPPG Teluknaga 03 Anda Dibuat',
-      html: `<p>Halo ${name},</p><p>Email: <b>${email}</b><br/>Password: <b>${pass}</b></p><p><a href="https://absensi-sppg-teluknaga03.id/login">Masuk</a></p>`,
+      subject: 'Akun Relawan SPPG Teluknaga 03 Anda Telah Dibuat',
+      html: htmlTemplate,
     });
   } catch (e) {
     console.error('Email error:', e);
