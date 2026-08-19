@@ -67,9 +67,10 @@ async function sendPasswordEmail(email: string, pass: string, name: string) {
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (e: any) {
-    console.error('Email error:', e);
-    return { success: false, error: e.message || 'Unknown error' };
+  } catch (e: unknown) {
+    const error = e as Error;
+    console.error('Email error:', error);
+    return { success: false, error: error.message || 'Unknown error' };
   }
 }
 

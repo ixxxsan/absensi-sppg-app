@@ -40,12 +40,50 @@ export async function submitAbsensi(fotoUrl: string, lat: number, lon: number, t
   if (!session?.user) return { success: false, error: 'Unauthorized' };
 
   // Server-side validation against race conditions and double submission
-  const currentState = await getAbsensiHariIni();
+  let currentState = await getAbsensiHariIni();
+
+  // Auto-checkout for old active sessions (>20 hours) when attempting new check-in
+  if (tipe === 'masuk' && currentState.hasMasuk && currentState.masuk) {
+    const msElapsed = Date.now() - new Date(currentState.masuk.createdAt).getTime();
+    const hoursElapsed = msElapsed / (1000 * 60 * 60);
+    
+    if (hoursElapsed >= 20) {
+      const autoPulangTime = new Date(new Date(currentState.masuk.createdAt).getTime() + 8 * 60 * 60 * 1000); // 8 hours later
+      
+      await db.insert(absensi).values({
+        userId: session.user.id,
+        tanggalAbsen: currentState.masuk.tanggalAbsen,
+        waktuAbsen: `${autoPulangTime.getHours().toString().padStart(2, '0')}:${autoPulangTime.getMinutes().toString().padStart(2, '0')}:${autoPulangTime.getSeconds().toString().padStart(2, '0')}`,
+        tipe: 'pulang',
+        fotoUrl: currentState.masuk.fotoUrl,
+        latitude: currentState.masuk.latitude,
+        longitude: currentState.masuk.longitude,
+        statusValidasi: 'valid',
+        catatanSistem: 'Auto-checkout setelah melewati 20 jam'
+      });
+      
+      // Refresh state after auto-checkout
+      currentState = await getAbsensiHariIni();
+    }
+  }
+
   if (tipe === 'masuk' && currentState.hasMasuk) {
     return { success: false, error: 'Anda masih dalam sesi aktif. Harap absen pulang terlebih dahulu.' };
   }
-  if (tipe === 'pulang' && !currentState.hasMasuk) {
-    return { success: false, error: 'Anda belum absen masuk.' };
+  
+  if (tipe === 'pulang') {
+    if (!currentState.hasMasuk) {
+      return { success: false, error: 'Anda belum absen masuk.' };
+    }
+    
+    if (currentState.masuk) {
+      const msElapsed = Date.now() - new Date(currentState.masuk.createdAt).getTime();
+      const hoursElapsed = msElapsed / (1000 * 60 * 60);
+      
+      if (hoursElapsed < 8) {
+        return { success: false, error: 'Anda belum memenuhi minimal waktu kerja 8 jam. Silakan kembali lagi nanti.' };
+      }
+    }
   }
 
   if (tipe === 'masuk' && haversineDistance(lat, lon, GEOFENCE.lat, GEOFENCE.lon) > GEOFENCE.radiusMeters) {

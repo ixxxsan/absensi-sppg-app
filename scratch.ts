@@ -1,2 +1,2 @@
-const { auth } = require('./lib/auth');
+import { auth } from './lib/auth';
 console.log(Object.keys(auth.api));

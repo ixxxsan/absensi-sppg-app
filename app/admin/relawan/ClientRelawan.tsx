@@ -142,7 +142,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
         } else {
           goeyToast.error(res?.error || 'Gagal reset password');
         }
-      } catch (err) {
+      } catch {
         goeyToast.error('Terjadi kesalahan saat reset password');
       } finally {
         setLoadingAction(false);
@@ -320,7 +320,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
       } else {
         goeyToast.error(res?.error || 'Gagal mereset password massal');
       }
-    } catch (e) {
+    } catch {
       goeyToast.error('Terjadi kesalahan sistem saat mereset password');
     } finally {
       setLoadingAction(false);

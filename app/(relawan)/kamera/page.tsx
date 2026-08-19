@@ -40,7 +40,7 @@ export default function KameraPage() {
     setUiState('preview');
   };
 
-  const { gpsStatus, tipeAbsen, latitude, longitude, reset } = useCameraStore();
+  const { gpsStatus, tipeAbsen, latitude, longitude, addressName, reset } = useCameraStore();
   const { data: session } = authClient.useSession();
   
   const [dbUser, setDbUser] = useState<{ idRelawan?: string, namaLengkap?: string, divisi?: string } | null>(null);
@@ -67,9 +67,11 @@ export default function KameraPage() {
 
   // For absen masuk: ONLY allow shooting when inside geofence radius (gpsStatus === 'found')
   // For absen pulang: allow shooting from anywhere with GPS lock
-  const canShoot = tipeAbsen === 'masuk'
+  // AND wait for addressName to be resolved to prevent coordinates-only watermark
+  const isGpsValid = tipeAbsen === 'masuk'
     ? gpsStatus === 'found'
     : (gpsStatus === 'found' || gpsStatus === 'out_of_range');
+  const canShoot = isGpsValid && addressName !== null;
 
   const handleCapture = useCallback(async (blob: Blob) => {
     // Force GPS validation for Absen Masuk
@@ -229,7 +231,7 @@ export default function KameraPage() {
                     {formatDateLong()}
                   </span>
                   <span className="text-slate-200 font-medium text-xs leading-relaxed max-w-[90%] drop-shadow-md">
-                    {useCameraStore.getState().addressName || 
+                    {addressName || 
                      (latitude !== null && longitude !== null ? formatCoords(latitude, longitude) : 
                       gpsStatus === 'error' ? 'Lokasi tidak tersedia' : 'Mencari lokasi...')}
                   </span>
@@ -246,7 +248,9 @@ export default function KameraPage() {
                               justify-center gap-2 glass rounded-xl px-4 py-3 bg-black/40 backdrop-blur-md">
                 <Info className="w-4 h-4 text-amber-400 flex-shrink-0" />
                 <p className="text-amber-300 text-sm text-center">
-                  Tunggu GPS terkunci sebelum mengambil foto
+                  {!isGpsValid 
+                    ? 'Tunggu GPS terkunci sebelum mengambil foto' 
+                    : 'Mendapatkan data alamat lokasi...'}
                 </p>
               </div>
             )}
