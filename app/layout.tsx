@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import { Toaster } from "@/components/Toaster";
+import 'goey-toast/styles.css';
 import "./globals.css";
 
 const outfit = Outfit({
