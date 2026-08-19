@@ -54,14 +54,20 @@ async function sendPasswordEmail(email: string, pass: string, name: string) {
   `;
 
   try {
-    await new Resend(process.env.RESEND_API_KEY).emails.send({
+    const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
       from: 'SPPG Teluknaga 03 <no-reply@absensi-sppg-teluknaga03.id>',
       to: email,
       subject: 'Akun Relawan SPPG Teluknaga 03 Anda Telah Dibuat',
       html: htmlTemplate,
     });
-  } catch (e) {
+    if (error) {
+      console.error('Email error:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (e: any) {
     console.error('Email error:', e);
+    return { success: false, error: e.message || 'Unknown error' };
   }
 }
 
@@ -89,9 +95,14 @@ export async function createRelawan(fd: FormData) {
       statusAktif: status === 'Aktif'
     }).where(eq(user.id, res.user.id));
 
-    await sendPasswordEmail(email, pass, namaLengkap);
+    const emailResult = await sendPasswordEmail(email, pass, namaLengkap);
     revalidatePath('/admin/relawan');
-    return { success: true };
+    return { 
+      success: true, 
+      password: pass, 
+      emailSuccess: emailResult?.success ?? false, 
+      emailError: emailResult?.error 
+    };
   } catch (err: unknown) {
     const error = err as Error;
     return { success: false, error: error.message };
@@ -154,8 +165,14 @@ export async function bulkImportRelawan(rows: BulkImportRow[]) {
         role: 'relawan', nik: r.nik, divisi: r.divisi, status: r.status || 'Aktif',
         idRelawan: `SPPG-${String(next + i).padStart(3, '0')}`, noTelepon: r.noTelepon, statusAktif: r.status !== 'Cuti'
       }).where(eq(user.id, res.user.id));
-      await sendPasswordEmail(r.email, pass, r.namaLengkap);
-      return { success: true, email: r.email };
+      const emailResult = await sendPasswordEmail(r.email, pass, r.namaLengkap);
+      return { 
+        success: true, 
+        email: r.email, 
+        password: pass,
+        emailSuccess: emailResult?.success ?? false,
+        emailError: emailResult?.error
+      };
     } catch (e: unknown) {
       const err = e as Error;
       return { success: false, email: r.email, error: err.message };
@@ -164,4 +181,37 @@ export async function bulkImportRelawan(rows: BulkImportRow[]) {
 
   revalidatePath('/admin/relawan');
   return { success: true, results };
+}
+
+export async function resetPasswordRelawan(userId: string) {
+  const session = await getServerSession();
+  if (!isAdmin(session?.user?.role)) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const targetUser = await db.select().from(user).where(eq(user.id, userId)).limit(1);
+    if (targetUser.length === 0) throw new Error('User not found');
+    
+    const pass = randomBytes(4).toString('hex');
+    
+    // We can use the admin setUserPassword API if available, 
+    // but better auth requires passing Headers normally. Let's just use it directly.
+    await auth.api.setUserPassword({
+      body: {
+        userId: userId,
+        password: pass
+      }
+    });
+
+    const emailResult = await sendPasswordEmail(targetUser[0].email, pass, targetUser[0].name);
+    
+    return { 
+      success: true, 
+      password: pass,
+      emailSuccess: emailResult?.success ?? false,
+      emailError: emailResult?.error
+    };
+  } catch (err: unknown) {
+    const error = err as Error;
+    return { success: false, error: error.message };
+  }
 }

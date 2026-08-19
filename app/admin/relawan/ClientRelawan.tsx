@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useTransition, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, ChevronDown, CheckCircle, Clock, AlertCircle, Loader2, Users, Upload } from 'lucide-react';
-import { createRelawan, updateRelawan, deleteRelawan, bulkImportRelawan, BulkImportRow } from '@/app/actions/relawan';
+import { Search, Plus, Edit2, Trash2, ChevronDown, CheckCircle, Clock, AlertCircle, Loader2, Users, Upload, KeyRound } from 'lucide-react';
+import { createRelawan, updateRelawan, deleteRelawan, bulkImportRelawan, resetPasswordRelawan, BulkImportRow } from '@/app/actions/relawan';
 import { useRouter } from 'next/navigation';
 import { goeyToast } from 'goey-toast';
 
@@ -47,6 +47,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [importReport, setImportReport] = useState<{ success: number, failed: number, details: ImportFailedDetail[] } | null>(null);
+  const [createdPasswordInfo, setCreatedPasswordInfo] = useState<{name: string, email: string, password: string, emailSuccess: boolean, emailError?: string} | null>(null);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -105,6 +106,30 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
     }
   };
 
+  const handleResetPassword = async (r: RelawanItem) => {
+    if (confirm(`Reset password untuk ${r.name}? Password baru akan digenerate dan dikirim via email.`)) {
+      setLoadingAction(true);
+      try {
+        const res = await resetPasswordRelawan(r.id);
+        if (res?.success) {
+          setCreatedPasswordInfo({
+            name: r.name,
+            email: r.email,
+            password: res.password as string,
+            emailSuccess: res.emailSuccess || false,
+            emailError: res.emailError as string | undefined
+          });
+        } else {
+          goeyToast.error(res?.error || 'Gagal reset password');
+        }
+      } catch (err) {
+        goeyToast.error('Terjadi kesalahan saat reset password');
+      } finally {
+        setLoadingAction(false);
+      }
+    }
+  };
+
   const generateNewIdRelawan = () => {
     // Cari angka terkecil yang belum dipakai
     const usedNumbers = initialData
@@ -141,7 +166,17 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
         startTransition(() => {
           router.refresh();
         });
-        goeyToast.success('Data berhasil disimpan');
+        if (!editTarget && res.password) {
+          setCreatedPasswordInfo({
+            name: fd.get('namaLengkap') as string,
+            email: fd.get('email') as string,
+            password: res.password,
+            emailSuccess: res.emailSuccess || false,
+            emailError: res.emailError
+          });
+        } else {
+          goeyToast.success('Data berhasil disimpan');
+        }
       } else {
         goeyToast.error(res?.error || 'Gagal menyimpan data');
       }
@@ -202,17 +237,20 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
         const res = await bulkImportRelawan(batch);
         
         if (res.success && res.results) {
-          res.results.forEach((r: { success: boolean, email: string, error?: string }) => {
+          res.results.forEach((r: { success: boolean, email: string, error?: string, password?: string, emailSuccess?: boolean, emailError?: string }) => {
             if (r.success) {
               totalSuccess++;
+              if (!r.emailSuccess) {
+                failedDetails.push({ email: r.email, error: `Email gagal. Password: ${r.password}. Err: ${r.emailError || 'Unknown'}` });
+              }
             } else {
               totalFailed++;
-              failedDetails.push(r);
+              failedDetails.push({ email: r.email, error: r.error });
             }
           });
         } else {
           totalFailed += batch.length;
-          failedDetails.push({ email: 'Batch Failed', error: res.error });
+          failedDetails.push({ email: 'Batch Failed', error: res.error as string | undefined });
         }
 
         const currentProgress = Math.min(100, Math.round(((i + batchSize) / mappedRows.length) * 100));
@@ -381,6 +419,16 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleResetPassword(r)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50
+                                   transition-colors"
+                        aria-label="Reset Password"
+                        disabled={loadingAction}
+                        title="Reset Password"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                      </button>
                       <button
                         id={`edit-relawan-${r.id}`}
                         onClick={() => handleEdit(r)}
@@ -628,6 +676,50 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
               className="w-full py-2.5 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900 transition-colors"
             >
               Tutup Laporan
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal — Informasi Password */}
+      {createdPasswordInfo && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${createdPasswordInfo.emailSuccess ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+              <KeyRound className="w-6 h-6" />
+            </div>
+            <h2 className="text-slate-800 text-lg font-bold mb-2">Password Berhasil Digenerate</h2>
+            
+            {createdPasswordInfo.emailSuccess ? (
+              <p className="text-sm text-slate-600 mb-4">Email berisi password telah berhasil dikirim ke <strong>{createdPasswordInfo.email}</strong>.</p>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-amber-800 font-semibold mb-1">⚠️ Gagal mengirim email</p>
+                <p className="text-xs text-amber-700">Email ke <strong>{createdPasswordInfo.email}</strong> gagal terkirim ({createdPasswordInfo.emailError}). Harap berikan password berikut secara manual kepada relawan.</p>
+              </div>
+            )}
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Password untuk {createdPasswordInfo.name}</p>
+              <div className="flex items-center justify-between">
+                <code className="text-lg font-mono font-bold text-slate-800">{createdPasswordInfo.password}</code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(createdPasswordInfo.password);
+                    goeyToast.success('Password disalin ke clipboard');
+                  }}
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50"
+                >
+                  Salin
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setCreatedPasswordInfo(null)}
+              className="w-full py-2.5 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900 transition-colors"
+            >
+              Tutup
             </button>
           </div>
         </div>
