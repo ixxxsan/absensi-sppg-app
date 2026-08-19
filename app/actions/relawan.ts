@@ -121,7 +121,12 @@ export async function updateRelawan(id: string, fd: FormData) {
   }).where(eq(user.id, id));
 
   revalidatePath('/admin/relawan');
-  return { success: true };
+  return { 
+    success: true,
+    password: undefined,
+    emailSuccess: undefined,
+    emailError: undefined
+  };
 }
 
 export async function deleteRelawan(id: string) {
@@ -198,7 +203,7 @@ export async function resetPasswordRelawan(userId: string) {
     await auth.api.setUserPassword({
       body: {
         userId: userId,
-        password: pass
+        newPassword: pass
       }
     });
 
