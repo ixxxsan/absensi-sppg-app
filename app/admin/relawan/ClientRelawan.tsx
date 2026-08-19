@@ -42,6 +42,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<RelawanItem | null>(null);
   const [loadingAction, setLoadingAction] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -62,6 +63,25 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
   const handleFilterDivisi = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterDivisi(e.target.value);
     setCurrentPage(1);
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const newSelected = new Set(selectedIds);
+      paginatedData.forEach(r => newSelected.add(r.id));
+      setSelectedIds(Array.from(newSelected));
+    } else {
+      const currentPaginatedIds = paginatedData.map(r => r.id);
+      setSelectedIds(selectedIds.filter(id => !currentPaginatedIds.includes(id)));
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(i => i !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
   };
 
   const filtered = initialData.filter((r) => {
@@ -279,25 +299,24 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
   };
 
   const handleBulkReset = async () => {
-    if (!confirm('PERHATIAN: Tindakan ini akan MERESET (mengubah) password SEMUA relawan yang tampil di tabel ini, dan mendownloadnya dalam bentuk file Excel. Apakah Anda yakin ingin melanjutkan?')) return;
+    if (selectedIds.length === 0) {
+      goeyToast.error('Pilih setidaknya satu relawan (centang checkbox)');
+      return;
+    }
+
+    if (!confirm(`PERHATIAN: Tindakan ini akan MERESET (mengubah) password untuk ${selectedIds.length} relawan yang dipilih, dan mendownloadnya dalam bentuk file Excel. Apakah Anda yakin ingin melanjutkan?`)) return;
     
     setLoadingAction(true);
     try {
-      const idsToReset = filtered.map(r => r.id);
-      if (idsToReset.length === 0) {
-        goeyToast.error('Tidak ada data relawan untuk di-reset');
-        setLoadingAction(false);
-        return;
-      }
-      
-      const res = await bulkResetPasswords(idsToReset);
+      const res = await bulkResetPasswords(selectedIds);
       if (res.success && res.data) {
         const XLSX = await import('xlsx');
         const worksheet = XLSX.utils.json_to_sheet(res.data);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Kredensial Relawan');
         XLSX.writeFile(workbook, `Kredensial_Relawan_${new Date().toISOString().slice(0,10)}.xlsx`);
-        goeyToast.success('Password massal berhasil di-reset dan didownload!');
+        goeyToast.success(`Password ${selectedIds.length} relawan berhasil di-reset dan didownload!`);
+        setSelectedIds([]);
       } else {
         goeyToast.error(res?.error || 'Gagal mereset password massal');
       }
@@ -337,11 +356,11 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
             onClick={handleBulkReset}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700
                        font-semibold text-sm hover:bg-amber-100 transition-colors shadow-sm disabled:opacity-50"
-            disabled={loadingAction || isPending || isImporting}
-            title="Reset password relawan di tabel ini & download Excel"
+            disabled={loadingAction || isPending || isImporting || selectedIds.length === 0}
+            title="Reset password relawan yang dicentang & download Excel"
           >
             <Download className="w-4 h-4" />
-            Export Password
+            Export Password {selectedIds.length > 0 && `(${selectedIds.length})`}
           </button>
           <button
             id="btn-tambah-relawan"
@@ -414,6 +433,14 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide w-10">
+                  <input 
+                    type="checkbox" 
+                    checked={paginatedData.length > 0 && paginatedData.every(r => selectedIds.includes(r.id))}
+                    onChange={handleSelectAll}
+                    className="rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                  />
+                </th>
                 {['ID Relawan', 'NIK', 'Nama Lengkap', 'Email', 'No. HP', 'Divisi', 'Status', 'Aksi'].map((h) => (
                   <th key={h} className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
                     {h}
@@ -424,6 +451,14 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
             <tbody className="divide-y divide-slate-50">
               {paginatedData.map((r) => (
                 <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-4 py-3.5">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.includes(r.id)}
+                      onChange={() => handleSelectOne(r.id)}
+                      className="rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                    />
+                  </td>
                   <td className="px-4 py-3.5 font-mono text-xs font-semibold text-emerald-600">
                     {r.idRelawan}
                   </td>
