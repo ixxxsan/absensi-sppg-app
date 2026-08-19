@@ -68,7 +68,9 @@ export const auth = betterAuth({
         },
     },
     plugins: [
-        admin()
+        admin({
+            adminRoles: ["admin", "super_admin", "SuperAdmin"]
+        })
     ],
     // Extending user session to include custom fields
     user: {
