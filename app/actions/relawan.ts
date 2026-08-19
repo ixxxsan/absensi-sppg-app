@@ -8,6 +8,7 @@ import { eq, asc, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { randomBytes } from 'crypto';
 import { Resend } from 'resend';
+import { headers } from 'next/headers';
 
 // ponytail: template updated with uniform design matching reset password
 async function sendPasswordEmail(email: string, pass: string, name: string) {
@@ -204,7 +205,8 @@ export async function resetPasswordRelawan(userId: string) {
       body: {
         userId: userId,
         newPassword: pass
-      }
+      },
+      headers: await headers()
     });
 
     const emailResult = await sendPasswordEmail(targetUser[0].email, pass, targetUser[0].name);
@@ -236,7 +238,8 @@ export async function bulkResetPasswords(userIds: string[]) {
         body: {
           userId: u.id,
           newPassword: pass
-        }
+        },
+        headers: await headers()
       });
       
       await sendPasswordEmail(u.email, pass, u.name);
