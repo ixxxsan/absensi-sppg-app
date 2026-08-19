@@ -1,9 +1,21 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin } from "better-auth/plugins";
+import { createAccessControl } from "better-auth/plugins/access";
+import { nextCookies } from "better-auth/next-js";
 import { Resend } from "resend";
 import { db } from "./db";
 import * as schema from "./db/schema";
+
+const defaultStatements = {
+    user: ["create", "list", "set-role", "ban", "impersonate", "impersonate-admins", "delete", "set-password", "set-email", "get", "update"],
+    session: ["list", "revoke", "delete"]
+} as const;
+const defaultAc = createAccessControl(defaultStatements);
+const adminAc = defaultAc.newRole({
+    user: ["create", "list", "set-role", "ban", "impersonate", "delete", "set-password", "set-email", "get", "update"],
+    session: ["list", "revoke", "delete"]
+});
 
 export const auth = betterAuth({
     baseURL: process.env.BETTER_AUTH_URL || process.env.FRONTEND_URL || "https://absensi-sppg-teluknaga03.id",
@@ -68,7 +80,15 @@ export const auth = betterAuth({
         },
     },
     plugins: [
-        admin()
+        admin({
+            adminRoles: ["admin", "super_admin", "SuperAdmin"],
+            defaultRole: "user",
+            roles: {
+                admin: adminAc,
+                super_admin: adminAc,
+                SuperAdmin: adminAc
+            }
+        })
     ],
     // Extending user session to include custom fields
     user: {
