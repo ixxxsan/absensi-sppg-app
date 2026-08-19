@@ -4,7 +4,7 @@ import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { absensi, user } from '@/lib/db/schema';
 import { eq, and, desc, ilike, sql } from 'drizzle-orm';
-import { nowWIB, haversineDistance } from '@/lib/utils';
+import { nowWIB, haversineDistance, isAdminRole } from '@/lib/utils';
 import { GEOFENCE } from '@/lib/config';
 
 export async function getAbsensiHariIni() {
@@ -78,7 +78,7 @@ export async function getAllAbsensi(options?: {
   dateTo?: string;
 }) {
   const session = await getServerSession();
-  if (!session?.user?.role?.includes('admin')) return [];
+  if (!isAdminRole(session?.user?.role)) return [];
 
   const baseQuery = db.select({
     id: absensi.id, userId: absensi.userId, tanggalAbsen: absensi.tanggalAbsen, waktuAbsen: absensi.waktuAbsen,
@@ -132,7 +132,7 @@ export async function getAbsensiCount(options?: {
   dateTo?: string;
 }) {
   const session = await getServerSession();
-  if (!session?.user?.role?.includes('admin')) return 0;
+  if (!isAdminRole(session?.user?.role)) return 0;
 
   const conditions = [];
   
@@ -162,7 +162,7 @@ export async function getAbsensiCount(options?: {
 
 export async function updateAbsensiStatus(id: string, statusValidasi: 'valid' | 'invalid' | 'menunggu' | 'flagged' | 'ditolak') {
   const session = await getServerSession();
-  if (!session?.user?.role?.includes('admin')) return { success: false, error: 'Unauthorized' };
+  if (!isAdminRole(session?.user?.role)) return { success: false, error: 'Unauthorized' };
 
   await db.update(absensi).set({ statusValidasi }).where(eq(absensi.id, id));
   return { success: true };

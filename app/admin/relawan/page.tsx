@@ -5,6 +5,7 @@ import { user } from '@/lib/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
+import { isAdminRole } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +51,7 @@ async function RelawanDataFetcher() {
 export default async function RelawanPage() {
   // Server-side auth guard — prevent unauthorized access to relawan data
   const session = await getServerSession();
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
+  if (!session?.user || !isAdminRole(session.user.role)) {
     redirect('/admin/login');
   }
 

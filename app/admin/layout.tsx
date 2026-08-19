@@ -1,5 +1,6 @@
 import { getServerSession } from '@/lib/auth-server';
 import AdminSidebar from './AdminSidebar';
+import { isAdminRole } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await getServerSession();
 
   // Basic check for admin role
-  const isAdmin = session?.user && (session.user.role === 'admin' || session.user.role === 'super_admin');
+  const isAdmin = session?.user && isAdminRole(session.user.role);
 
   if (!isAdmin) {
     return (

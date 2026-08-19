@@ -286,3 +286,13 @@ export const compressImage = (file: File, quality: number = 0.7): Promise<Blob> 
 };
 
 
+
+
+/**
+ * Check if a role string is an admin role (case-insensitive)
+ */
+export const isAdminRole = (role?: string | null) => {
+  if (!role) return false;
+  const lower = role.toLowerCase();
+  return lower === 'admin' || lower === 'super_admin' || lower === 'superadmin';
+};

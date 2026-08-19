@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache';
 import { randomBytes } from 'crypto';
 import { Resend } from 'resend';
 import { headers } from 'next/headers';
+import { isAdminRole } from '@/lib/utils';
 
 // ponytail: template updated with uniform design matching reset password
 async function sendPasswordEmail(email: string, pass: string, name: string) {
@@ -72,7 +73,7 @@ async function sendPasswordEmail(email: string, pass: string, name: string) {
   }
 }
 
-const isAdmin = (role?: string) => role === 'admin' || role === 'super_admin';
+const isAdmin = isAdminRole;
 
 export async function getRelawans() {
   const session = await getServerSession();

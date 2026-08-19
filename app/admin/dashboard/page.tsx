@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { formatDateLong, nowWIB } from '@/lib/utils';
+import { formatDateLong, nowWIB, isAdminRole } from '@/lib/utils';
 import { db } from '@/lib/db';
 import { user, absensi } from '@/lib/db/schema';
 import { eq, count, desc, inArray } from 'drizzle-orm';
@@ -105,7 +105,7 @@ async function DashboardContent() {
 export default async function AdminDashboard() {
   // Server-side auth guard
   const session = await getServerSession();
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
+  if (!session?.user || !isAdminRole(session.user.role)) {
     redirect('/admin/login');
   }
 

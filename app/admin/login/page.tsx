@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
+import { isAdminRole } from '@/lib/utils';
 
 const adminLoginSchema = z.object({
   email: z.string().min(1, 'Username / Email tidak boleh kosong'),
@@ -52,7 +53,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      if (signInData.user.role === 'admin' || signInData.user.role === 'super_admin') {
+      if (isAdminRole(signInData.user.role)) {
         // Better Auth handles cookie setting.
         // We use router.push and router.refresh() to navigate and get fresh cookies.
         router.push('/admin/dashboard');

@@ -4,7 +4,7 @@ import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { cuti, user } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { nowWIB } from '@/lib/utils';
+import { nowWIB, isAdminRole } from '@/lib/utils';
 
 export async function submitCuti(jenis: string, mulai: string, selesai: string, alasan: string, urlBukti?: string) {
   const session = await getServerSession();
@@ -30,7 +30,7 @@ export async function getCutiRelawan() {
 
 export async function getAllCutiAdmin() {
   const session = await getServerSession();
-  if (!session?.user?.role?.includes('admin')) return [];
+  if (!isAdminRole(session?.user?.role)) return [];
 
   return db.select({
     id: cuti.id, userId: cuti.userId, jenisCuti: cuti.jenisCuti, tanggalMulai: cuti.tanggalMulai,
@@ -42,7 +42,7 @@ export async function getAllCutiAdmin() {
 
 export async function updateCutiStatus(id: string, status: 'Disetujui' | 'Ditolak' | 'Menunggu') {
   const session = await getServerSession();
-  if (!session?.user?.role?.includes('admin')) return { success: false, error: 'Unauthorized' };
+  if (!isAdminRole(session?.user?.role)) return { success: false, error: 'Unauthorized' };
 
   await db.update(cuti).set({ status }).where(eq(cuti.id, id));
   return { success: true };
