@@ -467,7 +467,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600
+                      <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600
                                       flex items-center justify-center text-white text-xs font-bold">
                         {r.name?.charAt(0)}
                       </div>
