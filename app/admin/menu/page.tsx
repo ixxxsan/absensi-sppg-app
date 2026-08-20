@@ -157,9 +157,9 @@ export default function AdminMenuPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <NutritionCard title="Porsi Kecil" namePrefix="giziPorsiKecil" filePrefix="fotoPorsiKecil" register={register} existingPhoto={existingMenu?.fotoPorsiKecilUrl} />
-          <NutritionCard title="Porsi Besar" namePrefix="giziPorsiBesar" filePrefix="fotoPorsiBesar" register={register} existingPhoto={existingMenu?.fotoPorsiBesarUrl} />
-          <NutritionCard title="Bumil / Busui" namePrefix="giziBumil" filePrefix="fotoBumil" register={register} existingPhoto={existingMenu?.fotoBumilUrl} />
+          <NutritionCard title="Porsi Kecil" namePrefix="giziPorsiKecil" filePrefix="fotoPorsiKecil" register={register} existingPhoto={existingMenu?.fotoPorsiKecilUrl} watch={watch} />
+          <NutritionCard title="Porsi Besar" namePrefix="giziPorsiBesar" filePrefix="fotoPorsiBesar" register={register} existingPhoto={existingMenu?.fotoPorsiBesarUrl} watch={watch} />
+          <NutritionCard title="Bumil / Busui" namePrefix="giziBumil" filePrefix="fotoBumil" register={register} existingPhoto={existingMenu?.fotoBumilUrl} watch={watch} />
         </div>
 
         <button disabled={loading} type="submit" className="w-full bg-emerald-600 text-white p-3 rounded-lg font-bold hover:bg-emerald-700">
@@ -170,7 +170,11 @@ export default function AdminMenuPage() {
   );
 }
 
-function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto }: any) {
+function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto, watch }: any) {
+  const fileValue = watch(filePrefix);
+  const selectedFile = fileValue && fileValue.length > 0 ? fileValue[0] : null;
+  const previewUrl = selectedFile ? URL.createObjectURL(selectedFile) : existingPhoto;
+
   return (
     <div className="bg-white p-5 border rounded-2xl shadow-sm space-y-5">
       <h3 className="font-bold text-lg text-emerald-700 border-b pb-3">{title}</h3>
@@ -189,10 +193,12 @@ function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto 
             hover:file:bg-emerald-100
             cursor-pointer" 
         />
-        {existingPhoto && (
+        {previewUrl && (
           <div className="mt-4">
-            <p className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wider">Foto Tersimpan:</p>
-            <img src={existingPhoto} alt="Existing" className="w-full h-36 object-cover rounded-xl border border-slate-200 shadow-sm" />
+            <p className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wider">
+              {selectedFile ? "Pratinjau Foto Baru:" : "Foto Tersimpan:"}
+            </p>
+            <img src={previewUrl} alt="Preview" className="w-full h-36 object-cover rounded-xl border border-slate-200 shadow-sm" />
           </div>
         )}
       </div>
