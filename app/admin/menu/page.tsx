@@ -189,7 +189,12 @@ function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto 
             hover:file:bg-emerald-100
             cursor-pointer" 
         />
-        {existingPhoto && <img src={existingPhoto} alt="Existing" className="mt-3 w-full h-36 object-cover rounded-xl border" />}
+        {existingPhoto && (
+          <div className="mt-4">
+            <p className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wider">Foto Tersimpan:</p>
+            <img src={existingPhoto} alt="Existing" className="w-full h-36 object-cover rounded-xl border border-slate-200 shadow-sm" />
+          </div>
+        )}
       </div>
 
       <div className="space-y-3 pt-2">
