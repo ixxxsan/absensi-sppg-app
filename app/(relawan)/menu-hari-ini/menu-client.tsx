@@ -115,9 +115,8 @@ export default function MenuClient({ data }: { data: MenuData }) {
             </div>
           </div>
 
-          {/* Image & Title Section */}
           <section className="mb-8">
-            <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-lg mb-4 border border-white/10 group bg-[#0c2860]">
+            <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-lg mb-4 border border-white/10 group bg-[#0c2860]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="w-full h-full object-cover transition-opacity duration-200 ease-in-out"

@@ -18,6 +18,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "SPPG Absen",
   },
+  icons: {
+    apple: "/icons/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -35,12 +38,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <head>
-        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      </head>
       <body className={`${outfit.className} antialiased text-slate-800 bg-[#f9fafb] selection:bg-emerald-500/30`}>
         <Toaster />
         {children}
