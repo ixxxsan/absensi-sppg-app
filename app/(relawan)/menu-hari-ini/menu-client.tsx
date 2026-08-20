@@ -194,7 +194,7 @@ export default function MenuClient({ data }: { data: MenuData }) {
               <NutritionRow
                 icon={<Wheat size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
                 label="Karbohidrat"
-                value={data.porsi[activeTab].nutrition.karbo}
+                value={data.porsi[activeTab].nutrition.karbohidrat}
                 unit="g"
               />
               <NutritionRow
