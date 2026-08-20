@@ -1,89 +1,89 @@
-# Product Requirements Document (PRD): Fitur Lupa Password
-
-**Informasi Proyek**
-
-* **Proyek:** PWA Absensi Relawan (SPPG TANGERANG TELUKNAGA 03)
-* **Modul:** Autentikasi Relawan
-* **Platform:** PWA (Mobile & Desktop Web)
-* **Tech Stack:** Next.js 16 (App Router), better-auth, Drizzle ORM, PostgreSQL, Resend, Tailwind CSS v4, react-hook-form + zod
-* **Status:** Draft / Perencanaan
+Berikut adalah draf PRD (*Product Requirements Document*) yang sudah disusun secara profesional, komprehensif, dan siap untuk Anda *copy-paste* ke dalam dokumentasi internal Anda (seperti Notion, Jira, atau Confluence).
 
 ---
 
-## 1. Latar Belakang & Tujuan
+# PRD Addendum: Modul Landing Page Menu & Gizi Harian Dinamis (SPPG)
 
-**Masalah:** Saat ini relawan tidak memiliki akses mandiri untuk memulihkan akun jika lupa kata sandi. Hal ini berpotensi menghambat proses absensi di lapangan dan menambah beban administratif bagi koordinator/Admin.
-**Tujuan:** Menyediakan alur *reset password* mandiri yang aman, mulus (*seamless*), dan terintegrasi dengan infrastruktur *email* (Resend) serta sistem autentikasi saat ini (better-auth) tanpa merusak pengalaman pengguna *mobile-first*.
+**Status:** Draft / In Review
+**Target Pengguna:** Relawan SPPG & Administrator SDM
+**Platform:** Mobile Web (via pemindaian QR Code) & Web Dashboard (Admin)
 
-## 2. Pembaruan UI/UX (Tailwind v4 & Framer Motion)
+---
 
-Desain harus mempertahankan estetika *dark mode* minimalis dan resmi (sesuai referensi UI).
+## 1. Ringkasan Eksekutif (Executive Summary)
 
-* **Halaman Login (`/login`):**
-* Penambahan teks/tautan **"Lupa Password?"**.
-* **Posisi:** Di bawah input password, rata kanan (sejajar dengan *checkbox* "Ingat Saya" di sebelah kiri).
-* **Styling:** `text-sm text-gray-300 hover:text-white underline text-right transition-colors`.
+Modul **Landing Page Menu & Gizi Harian** merupakan ekstensi dari Aplikasi Absensi Relawan SPPG. Fitur ini dirancang untuk memberikan informasi transparansi nilai gizi dan standar keamanan pangan (aturan konsumsi maksimal 2 jam) kepada relawan di lapangan. Sistem ini menggunakan arsitektur **Single Static QR Code** yang mengarah ke *routing* dinamis, sehingga pihak manajemen tidak perlu mencetak dan menempel stiker QR Code baru setiap harinya.
 
+## 2. Tujuan & Sasaran (Goals & Objectives)
 
-* **Halaman Permintaan Reset (`/forgot-password`):**
-* Menggunakan *layout* dan komponen *form* yang sama dengan halaman login.
-* **Input:** 1 *field* tunggal untuk "Masukkan Email atau ID Relawan".
-* **Tombol:** "Kirim Link Reset" (Tampilan memanjang *full-width* seperti tombol "Masuk").
+* **Efisiensi Logistik:** Menghilangkan kebutuhan pencetakan QR Code harian. Satu QR Code fisik berlaku selamanya.
+* **Kepatuhan Keamanan Pangan (Food Safety):** Memastikan seluruh relawan membaca peringatan batas aman konsumsi (maksimal 2 jam) untuk mencegah risiko kesehatan.
+* **Personalisasi Edukasi Gizi:** Menampilkan rincian gizi secara akurat berdasarkan 3 variasi porsi (Porsi Kecil, Porsi Besar, dan Porsi Bumil/Busui).
 
+## 3. Alur Kerja & Kebutuhan Pengguna (User Stories & Workflows)
 
-* **Halaman Buat Password Baru (`/reset-password`):**
-* **Input 1:** "Password Baru" (dengan *toggle* icon mata).
-* **Input 2:** "Konfirmasi Password Baru" (dengan *toggle* icon mata).
-* **Tombol:** "Simpan Password Baru".
+### 3.1. Alur Pengguna: Relawan (End-User)
 
+* **Memindai QR:** Relawan menggunakan kamera *smartphone* untuk memindai QR Code di area pembagian makanan.
+* **Akses Otomatis:** Relawan diarahkan ke URL statis (misal: `[https://app-sppg.com/menu/hari-ini](https://app-sppg.com/menu/hari-ini)`).
+* **Membaca Aturan:** Layar pertama kali menyorot banner peringatan wajib konsumsi di tempat.
+* **Interaksi Porsi:** Relawan melihat foto makanan hari ini, kemudian dapat menekan *Tab* (Kecil/Besar/Bumil) untuk melihat transisi angka kandungan gizi yang disesuaikan dengan jatah makanannya.
 
-* **Animasi:** Transisi antar halaman menggunakan `framer-motion` agar terasa seperti aplikasi *native*.
+### 3.2. Alur Pengguna: Administrator (Dashboard)
 
-## 3. Alur Pengguna (User Journey)
+* **Input Data Harian/Mingguan:** Admin mengakses CMS dan menjadwalkan menu untuk tanggal-tanggal ke depan.
+* **Pengisian Form:** Admin mengunggah 1 foto utama (atau 3 foto berbeda untuk tiap porsi), nama menu, dan mengisi form *input* angka (Energi, Protein, Lemak, Karbohidrat, Serat) untuk masing-masing varian porsi.
+* **Automasi Pergantian Hari:** Tepat pada pukul 00:00 WIB, halaman QR secara otomatis memperbarui tampilannya sesuai data tanggal hari itu.
 
-1. **Akses:** Relawan menekan tautan "Lupa Password?" pada halaman Login.
-2. **Permintaan:** Relawan diarahkan ke `/forgot-password`, lalu memasukkan Email atau ID Relawan (misal: SPPG-001) dan menekan tombol kirim.
-3. **Sistem Notifikasi:** Layar menampilkan pesan konfirmasi: *"Jika Email/ID terdaftar, tautan reset telah dikirim ke email Anda."* (Pesan ambigu untuk mencegah *User Enumeration*).
-4. **Aksi Email:** Relawan membuka email dan menekan tombol CTA "Reset Kata Sandi" di dalam email.
-5. **Pembuatan Sandi:** Relawan diarahkan kembali ke PWA rute `/reset-password?token=...`.
-6. **Penyelesaian:** Relawan memasukkan kata sandi baru, sistem memvalidasi, dan mengarahkan relawan ke halaman `/login` dengan notifikasi "Kata sandi berhasil diubah".
+## 4. Spesifikasi Antarmuka (UI/UX Specifications)
 
-## 4. Kebutuhan Teknis (Technical Requirements)
+Desain mengusung tema **Dark Mode / Deep Navy** yang modern dan responsif (*Mobile-First*).
 
-### A. Frontend (Next.js 16 & React 19)
-
-* **Validasi (Zod + React Hook Form):**
-* `/forgot-password`: Input tidak boleh kosong, validasi format *string* fleksibel (menerima format email atau string ID).
-* `/reset-password`: Minimum 8 karakter, wajib mencocokkan input *Password Baru* dan *Konfirmasi Password* menggunakan `zod.refine`.
+* **Header (Fixed Top):** Efek *backdrop-blur*, menampilkan Logo SPPG dan teks "SPPG TELUKNAGA 03".
+* **Warning Banner (Prioritas Visual):**
+* Warna latar amber/kuning transparan dengan efek *glow*.
+* Teks peringatan: "WAJIB DIKONSUMSI DI TEMPAT!", "Dilarang dibawa pulang", dan "MAKSIMAL 2 JAM SETELAH DISAJIKAN" (ditebalkan).
 
 
-* **Pemrosesan:** Gunakan **Server Actions** Next.js untuk memproses *form submission* guna menjaga keamanan kredensial.
+* **Hero Section:**
+* Foto sajian (*full-width*, *rounded corners*). Memiliki efek transisi *fade-in-out* 0.5 detik jika gambar antar porsi berbeda.
+* Judul menu dan tanggal otomatis terisi (Format: Hari, DD Bulan YYYY).
 
-### B. Backend & Database (better-auth & Drizzle ORM)
 
-* **Lookup Database:** Drizzle ORM mencari *user* di tabel `users` berdasarkan input (menggunakan klausa `OR` untuk `email` atau `idRelawan`).
-* **Manajemen Token:** Integrasikan modul *password reset* bawaan dari `better-auth` untuk men-*generate* token *reset* aman, menyimpannya di tabel verifikasi/sesi sementara, dan menetapkan batas waktu kedaluwarsa (15-30 menit).
-* **Update Kredensial:** Setelah token divalidasi pada *endpoint* reset, mutasi *password hash* di database.
-* **Revoke Sesi:** Panggil fungsi `better-auth` untuk menghapus/menutup semua *session* aktif milik pengguna tersebut di perangkat lain (otomatis *logout* dari HP lama).
+* **Interactive Tabs:**
+* 3 Segmentasi: Porsi Kecil (ikon mangkuk), Porsi Besar (ikon piring besar), Bumil/Busui (ikon ibu hamil).
+* Memiliki animasi *background slider* (warna *sky-blue*) yang bergeser mengikuti tab yang aktif.
 
-### C. Pengiriman Email (Resend)
 
-* Gunakan koneksi/API `Resend` yang sudah dikonfigurasi pada modul Admin.
-* Buat *template HTML/React Email* khusus bertema "Badan Gizi Nasional" yang memuat nama relawan (jika ada) dan tombol CTA berisikan tautan token: `https://[domain-app]/reset-password?token=[generated_token]`.
+* **Nutrition Metrics List:**
+* Menampilkan 5 Baris: Energi (kkal), Protein (g), Lemak (g), Karbohidrat (g), dan Serat (g).
+* Menggunakan efek *Counter Animation*: Saat relawan memindah *tab*, angka gizi bergulir cepat (animasi berjalan 400ms) dari angka sebelumnya ke angka porsi yang baru.
 
-## 5. Keamanan & Penanganan Kasus Khusus (Edge Cases)
 
-1. **Anti User Enumeration:** Jika relawan memasukkan ID yang tidak terdaftar (atau akun tanpa email), *Server Action* harus menghentikan proses diam-diam, namun UI **tetap harus menampilkan pesan sukses yang sama**. Jangan beri tahu *user* bahwa akun tidak ada.
-2. **Token Expiration:** Jika relawan mengakses `/reset-password?token=...` yang sudah lewat dari batas waktu, kembalikan ke `/forgot-password` dengan pesan *error*: *"Tautan telah kedaluwarsa, silakan minta tautan baru."*
-3. **Rate Limiting:** Terapkan pembatasan per IP/User (misal: maks 3 kali permintaan reset per jam) untuk mencegah *spamming* dan menguras kuota API Resend.
-4. **Pencegahan 재사용 (Reuse):** Token hanya berlaku *one-time use*. Setelah berhasil dipakai untuk *reset*, token harus segera dihapus/di-invalidasi dari database.
 
-## 6. Kriteria Penerimaan (Acceptance Criteria)
+## 5. Arsitektur Data & Skema Database
 
-* [ ] Tautan "Lupa Password?" ter-render dengan sempurna di PWA (tampilan seluler) dan sejajar dengan checkbox "Ingat Saya".
-* [ ] Halaman `/forgot-password` merespons input dan mengirim request ke *Server Action*.
-* [ ] Email terkirim via Resend dan masuk ke *inbox* pengguna tanpa masuk *folder spam*.
-* [ ] Halaman `/reset-password` berhasil membaca dan memvalidasi `token` dari URL parameter.
-* [ ] Zod memblokir upaya *submit* jika password di bawah 8 karakter atau konfirmasi password tidak cocok.
-* [ ] Pengguna berhasil melakukan *login* dengan kata sandi yang baru saja dibuat.
-* [ ] Semua sesi (*sessions*) login pengguna di perangkat/browser lain otomatis terputus (*logged out*) pasca perubahan kata sandi.
+Sistem menggunakan **PostgreSQL (via Supabase) & Drizzle ORM**. Penambahan tabel baru diperlukan untuk memfasilitasi modul ini.
+
+**Tabel: `menu_harian**`
+
+| Kolom | Tipe Data | Keterangan | Aturan Validasi |
+| --- | --- | --- | --- |
+| `id` | `uuid` | Primary Key | `defaultRandom()` |
+| `tanggal_sajian` | `date` | Tanggal menu disajikan | `UNIQUE` (1 hari = 1 baris) |
+| `nama_menu` | `varchar` | Judul makanan | Maksimal 100 karakter |
+| `foto_url_kecil` | `text` | Tautan gambar S3/Supabase | Wajib diisi |
+| `foto_url_besar` | `text` | Tautan gambar S3/Supabase | Opsional (fallback ke porsi kecil) |
+| `foto_url_bumil` | `text` | Tautan gambar S3/Supabase | Opsional (fallback ke porsi kecil) |
+| `gizi_kecil` | `jsonb` | Detail nutrisi | `{energi: number, protein: number, ...}` |
+| `gizi_besar` | `jsonb` | Detail nutrisi | `{energi: number, protein: number, ...}` |
+| `gizi_bumil` | `jsonb` | Detail nutrisi | `{energi: number, protein: number, ...}` |
+| `created_at` | `timestamp` | Waktu data dibuat | *Auto-generated* |
+
+## 6. Kebutuhan Teknis & Implementasi (Tech Stack Notes)
+
+* **State Management & Animasi:** Menggunakan `useState` React bawaan. Animasi angka menggunakan `requestAnimationFrame` untuk memastikan pergerakan frame yang *smooth* tanpa membebani memori HP.
+* **Waktu Sistem (Timezone):** Validasi URL dinamis `/menu/hari-ini` WAJIB menggunakan `Day.js` yang disetel pada zona waktu **Asia/Jakarta (WIB)** di sisi Server (Next.js *Server Components*), untuk menghindari manipulasi *timezone* pada perangkat klien (relawan).
+* **Penanganan *Error / Edge Cases*:**
+* **Data Kosong:** Jika admin lupa menginput data untuk hari ini, sistem harus menampilkan halaman *fallback* yang ramah (misal: "Data menu hari ini sedang disiapkan oleh tim dapur", disertai banner peringatan 2 jam yang tetap muncul).
+* **Offline Mode:** Berhubung aplikasi utama berupa PWA, pastikan halaman QR ini dikecualikan dari *cache strict offline* agar relawan selalu mendapatkan data terbaru setiap kali terkoneksi internet.

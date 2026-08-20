@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid, decimal, time, date, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, uuid, decimal, time, date, index, jsonb } from "drizzle-orm/pg-core";
 
 // --- BETTER AUTH REQUIRED TABLES ---
 export const user = pgTable("user", {
@@ -95,4 +95,23 @@ export const cuti = pgTable("cuti", {
   return {
     userIdIdx: index("cuti_user_id_idx").on(table.userId),
   }
+});
+
+// --- MENU HARIAN ---
+export const menuHarian = pgTable("menu_harian", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tanggal: date("tanggal").notNull().unique(), // YYYY-MM-DD format
+  namaMenu: text("nama_menu").notNull(),
+  
+  fotoPorsiKecilUrl: text("foto_porsi_kecil_url").notNull(),
+  fotoPorsiBesarUrl: text("foto_porsi_besar_url").notNull(),
+  fotoBumilUrl: text("foto_bumil_url").notNull(),
+
+  // Storing { energi, protein, lemak, karbohidrat, serat }
+  giziPorsiKecil: jsonb("gizi_porsi_kecil").notNull(),
+  giziPorsiBesar: jsonb("gizi_porsi_besar").notNull(),
+  giziBumil: jsonb("gizi_bumil").notNull(),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
