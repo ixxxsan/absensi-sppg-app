@@ -69,11 +69,12 @@ export default function MenuClient({ data }: { data: MenuData }) {
       <header className="fixed top-0 w-full z-50 bg-[#071e49]/70 backdrop-blur-md border-b border-white/10 pt-[env(safe-area-inset-top)]">
         <div className="h-16 px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center relative bg-white/5 border border-white/10">
+            <div className="relative w-10 h-10 flex-shrink-0 flex items-center justify-center">
+              <div className="absolute inset-2 bg-white/40 blur-md rounded-full" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt="Badan Gizi Nasional Logo"
-                className="w-8 h-8 object-contain"
+                className="w-8 h-8 object-contain drop-shadow-lg relative z-10"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5rRPuIqR_zY69ixBv3dLeTCEpm7nkKaa-1HfBEOQtO99LoabysE4drvEUU7JbxrdiVdPZRxspedo1r8QNsPmjeOhPaMMXZi70wWxzoHGb6L5J_SRNxRZ4OPghdT_HVfmUCom4PcVDXMuvlTof_UUr7uRLmtUw20jPuPQoyNjgcorJ0oIpPpj6xXuHzedQccs2qSgt-ADsieKmaFDc7v7UUeK1fIjCvfwl23SLNe9AkJNderHD9xGNorNUYMEXjo2V"
               />
             </div>
