@@ -172,20 +172,34 @@ export default function AdminMenuPage() {
 
 function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto }: any) {
   return (
-    <div className="bg-white p-4 border rounded-xl shadow-sm space-y-4">
-      <h3 className="font-bold text-lg text-emerald-700 border-b pb-2">{title}</h3>
+    <div className="bg-white p-5 border rounded-2xl shadow-sm space-y-5">
+      <h3 className="font-bold text-lg text-emerald-700 border-b pb-3">{title}</h3>
       
       <div>
-        <label className="block text-sm mb-1">Foto Menu</label>
-        <input type="file" accept="image/*" {...register(filePrefix)} className="text-sm" />
-        {existingPhoto && <img src={existingPhoto} alt="Existing" className="mt-2 w-full h-32 object-cover rounded-lg" />}
+        <label className="block text-sm font-semibold mb-2">Foto Menu</label>
+        <input 
+          type="file" 
+          accept="image/*" 
+          {...register(filePrefix)} 
+          className="block w-full text-sm text-slate-500
+            file:mr-4 file:py-2 file:px-4
+            file:rounded-full file:border-0
+            file:text-sm file:font-semibold
+            file:bg-emerald-50 file:text-emerald-700
+            hover:file:bg-emerald-100
+            cursor-pointer" 
+        />
+        {existingPhoto && <img src={existingPhoto} alt="Existing" className="mt-3 w-full h-36 object-cover rounded-xl border" />}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3 pt-2">
         {["energi", "protein", "lemak", "karbohidrat", "serat"].map((field) => (
           <div key={field} className="flex items-center justify-between">
-            <span className="text-sm capitalize">{field}</span>
-            <input type="number" {...register(`${namePrefix}.${field}`, { valueAsNumber: true })} className="w-20 p-1 border rounded text-right text-sm" />
+            <span className="text-sm font-medium capitalize text-slate-700">{field}</span>
+            <div className="flex items-center gap-2">
+              <input type="number" {...register(`${namePrefix}.${field}`, { valueAsNumber: true })} className="w-24 p-2 border rounded-lg text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
+              <span className="text-xs text-slate-400 w-8">{field === 'energi' ? 'kkal' : 'g'}</span>
+            </div>
           </div>
         ))}
       </div>
