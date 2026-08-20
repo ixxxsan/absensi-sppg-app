@@ -7,7 +7,7 @@ import * as z from "zod";
 import { supabase } from "@/lib/supabase";
 import { upsertMenu, getMenuByDate } from "@/app/actions/menu";
 import dayjs from "dayjs";
-import { toast } from "goey-toast";
+import { goeyToast } from "goey-toast";
 
 const nutritionSchema = z.object({
   energi: z.number().min(0),
@@ -53,7 +53,7 @@ export default function AdminMenuPage() {
     
     const day = dayjs(selectedDate).day();
     if (day === 0 || day === 6) {
-      toast.error("Sabtu dan Minggu libur. Silakan pilih tanggal lain.");
+      goeyToast.error("Sabtu dan Minggu libur. Silakan pilih tanggal lain.");
       return;
     }
 
@@ -64,7 +64,7 @@ export default function AdminMenuPage() {
         setValue("giziPorsiKecil", data.giziPorsiKecil as any);
         setValue("giziPorsiBesar", data.giziPorsiBesar as any);
         setValue("giziBumil", data.giziBumil as any);
-        toast.success("Memuat menu yang sudah ada untuk tanggal ini.");
+        goeyToast.success("Memuat menu yang sudah ada untuk tanggal ini.");
       } else {
         setExistingMenu(null);
         setValue("namaMenu", "");
@@ -93,7 +93,7 @@ export default function AdminMenuPage() {
       setLoading(true);
       const day = dayjs(data.tanggal).day();
       if (day === 0 || day === 6) {
-        toast.error("Tidak dapat mengatur menu pada hari libur.");
+        goeyToast.error("Tidak dapat mengatur menu pada hari libur.");
         return;
       }
 
@@ -101,7 +101,7 @@ export default function AdminMenuPage() {
       if (data.fotoPorsiKecil && data.fotoPorsiKecil[0]) {
         fotoPorsiKecilUrl = await handleUpload(data.fotoPorsiKecil[0]);
       } else if (!fotoPorsiKecilUrl) {
-        toast.error("Foto Porsi Kecil wajib diisi.");
+        goeyToast.error("Foto Porsi Kecil wajib diisi.");
         return;
       }
 
@@ -109,7 +109,7 @@ export default function AdminMenuPage() {
       if (data.fotoPorsiBesar && data.fotoPorsiBesar[0]) {
         fotoPorsiBesarUrl = await handleUpload(data.fotoPorsiBesar[0]);
       } else if (!fotoPorsiBesarUrl) {
-        toast.error("Foto Porsi Besar wajib diisi.");
+        goeyToast.error("Foto Porsi Besar wajib diisi.");
         return;
       }
 
@@ -117,7 +117,7 @@ export default function AdminMenuPage() {
       if (data.fotoBumil && data.fotoBumil[0]) {
         fotoBumilUrl = await handleUpload(data.fotoBumil[0]);
       } else if (!fotoBumilUrl) {
-        toast.error("Foto Bumil wajib diisi.");
+        goeyToast.error("Foto Bumil wajib diisi.");
         return;
       }
 
@@ -133,9 +133,9 @@ export default function AdminMenuPage() {
       };
 
       await upsertMenu(input);
-      toast.success("Berhasil menyimpan menu!");
+      goeyToast.success("Berhasil menyimpan menu!");
     } catch (err: any) {
-      toast.error(err.message || "Terjadi kesalahan.");
+      goeyToast.error(err.message || "Terjadi kesalahan.");
     } finally {
       setLoading(false);
     }
