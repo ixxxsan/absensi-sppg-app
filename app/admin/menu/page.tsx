@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormRegister, UseFormWatch, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/lib/supabase";
 import { upsertMenu, getMenuByDate } from "@/app/actions/menu";
 import dayjs from "dayjs";
 import { goeyToast } from "goey-toast";
+
+import { QrCode, X, Download } from "lucide-react";
 
 const nutritionSchema = z.object({
   energi: z.number().min(0),
@@ -34,7 +36,19 @@ type MenuForm = z.infer<typeof menuSchema>;
 
 export default function AdminMenuPage() {
   const [loading, setLoading] = useState(false);
-  const [existingMenu, setExistingMenu] = useState<any>(null);
+  const [showQR, setShowQR] = useState(false);
+  const [qrUrl, setQrUrl] = useState("");
+  const [existingMenu, setExistingMenu] = useState<{
+    fotoPorsiKecilUrl?: string;
+    fotoPorsiBesarUrl?: string;
+    fotoBumilUrl?: string;
+  } | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      setQrUrl(`${window.location.origin}/menu-hari-ini`);
+    }
+  }, []);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<MenuForm>({
     resolver: zodResolver(menuSchema),
@@ -134,16 +148,76 @@ export default function AdminMenuPage() {
 
       await upsertMenu(input);
       goeyToast.success("Berhasil menyimpan menu!");
-    } catch (err: any) {
-      goeyToast.error(err.message || "Terjadi kesalahan.");
+    } catch (err: unknown) {
+      goeyToast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDownloadQR = async () => {
+    try {
+      const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrUrl)}`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'QR-Code-Menu-Hari-Ini.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      goeyToast.error("Gagal mengunduh QR Code");
+    }
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto text-slate-800">
-      <h1 className="text-2xl font-bold mb-6">Manajemen Menu Hari Ini</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h1 className="text-2xl font-bold">Manajemen Menu Hari Ini</h1>
+        <button 
+          onClick={() => setShowQR(true)}
+          className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+        >
+          <QrCode className="w-5 h-5" />
+          Lihat QR Code
+        </button>
+      </div>
+
+      {showQR && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center relative">
+            <button 
+              onClick={() => setShowQR(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-xl font-bold text-center mb-2 mt-2">QR Code Menu</h2>
+            <p className="text-sm text-slate-500 text-center mb-6">
+              Satu QR Code ini berlaku selamanya untuk mengakses halaman <span className="font-semibold text-emerald-600">/menu-hari-ini</span>
+            </p>
+            
+            <div className="p-4 bg-white border-2 border-slate-100 rounded-xl mb-6 shadow-sm">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrUrl)}`} 
+                alt="QR Code Menu Hari Ini" 
+                className="w-48 h-48"
+              />
+            </div>
+
+            <button 
+              onClick={handleDownloadQR}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors"
+            >
+              <Download className="w-5 h-5" />
+              Unduh QR Code
+            </button>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -170,9 +244,18 @@ export default function AdminMenuPage() {
   );
 }
 
-function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto, watch }: any) {
+interface NutritionCardProps {
+  title: string;
+  namePrefix: string;
+  filePrefix: FieldPath<MenuForm>;
+  register: UseFormRegister<MenuForm>;
+  existingPhoto?: string;
+  watch: UseFormWatch<MenuForm>;
+}
+
+function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto, watch }: NutritionCardProps) {
   const fileValue = watch(filePrefix);
-  const selectedFile = fileValue && fileValue.length > 0 ? fileValue[0] : null;
+  const selectedFile = fileValue && (fileValue as FileList).length > 0 ? (fileValue as FileList)[0] : null;
   const previewUrl = selectedFile ? URL.createObjectURL(selectedFile) : existingPhoto;
 
   return (
@@ -208,7 +291,7 @@ function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto,
           <div key={field} className="flex items-center justify-between">
             <span className="text-sm font-medium capitalize text-slate-700">{field}</span>
             <div className="flex items-center gap-2">
-              <input type="number" {...register(`${namePrefix}.${field}`, { valueAsNumber: true })} className="w-24 p-2 border rounded-lg text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
+              <input type="number" {...register(`${namePrefix}.${field}` as FieldPath<MenuForm>, { valueAsNumber: true })} className="w-24 p-2 border rounded-lg text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
               <span className="text-xs text-slate-400 w-8">{field === 'energi' ? 'kkal' : 'g'}</span>
             </div>
           </div>
