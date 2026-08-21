@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, CheckSquare, FileSpreadsheet,
-  LogOut, ChevronLeft, Calendar
+  LogOut, ChevronLeft, Calendar, Utensils
 } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/admin/relawan',   icon: Users,            label: 'Manajemen Relawan' },
   { href: '/admin/absensi',  icon: CheckSquare,       label: 'Validasi Absensi' },
   { href: '/admin/cuti',     icon: Calendar,          label: 'Persetujuan Cuti' },
+  { href: '/admin/menu',     icon: Utensils,          label: 'Menu Hari Ini' },
   { href: '/admin/laporan',  icon: FileSpreadsheet,   label: 'Laporan & Export' },
 ];
 

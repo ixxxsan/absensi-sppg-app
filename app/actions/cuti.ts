@@ -10,6 +10,27 @@ export async function submitCuti(jenis: string, mulai: string, selesai: string, 
   const session = await getServerSession();
   if (!session?.user) return { success: false, error: 'Unauthorized' };
 
+  // H5 Fix: Validate date logic
+  if (!mulai || !selesai || !alasan?.trim()) {
+    return { success: false, error: 'Harap lengkapi semua field.' };
+  }
+
+  const startDate = new Date(mulai);
+  const endDate = new Date(selesai);
+  const today = new Date(nowWIB().format('YYYY-MM-DD'));
+
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    return { success: false, error: 'Format tanggal tidak valid.' };
+  }
+
+  if (startDate < today) {
+    return { success: false, error: 'Tanggal mulai tidak boleh di masa lalu.' };
+  }
+
+  if (endDate < startDate) {
+    return { success: false, error: 'Tanggal selesai harus setelah atau sama dengan tanggal mulai.' };
+  }
+
   await db.insert(cuti).values({
     userId: session.user.id,
     jenisCuti: jenis?.trim().substring(0, 100) || '',

@@ -31,6 +31,9 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
 
         const dist = haversineDistance(lat, lon, TASK_LOCATION.lat, TASK_LOCATION.lon);
         setDistanceFromTask(dist);
+        // C5 DOC: Geofence bypass untuk absen pulang adalah INTENTIONAL.
+        // Relawan mungkin sudah pindah dari lokasi tugas setelah bekerja 8+ jam.
+        // Hanya absen masuk yang wajib di dalam radius geofence.
         if (dist <= GEOFENCE_RADIUS || tipeAbsen === 'pulang') { setGpsStatus('found'); onLocationFound?.(lat, lon); }
         else { setGpsStatus('out_of_range'); }
       },

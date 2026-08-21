@@ -39,6 +39,11 @@ export async function submitAbsensi(fotoUrl: string, lat: number, lon: number, t
   const session = await getServerSession();
   if (!session?.user) return { success: false, error: 'Unauthorized' };
 
+  // C3 Fix: Runtime validation — server actions receive serialized data
+  if (tipe !== 'masuk' && tipe !== 'pulang') {
+    return { success: false, error: 'Tipe absen tidak valid.' };
+  }
+
   // Server-side validation against race conditions and double submission
   let currentState = await getAbsensiHariIni();
 
@@ -86,6 +91,9 @@ export async function submitAbsensi(fotoUrl: string, lat: number, lon: number, t
     }
   }
 
+  // C5 DOC: Geofence check hanya untuk absen MASUK — ini INTENTIONAL.
+  // Relawan boleh absen pulang dari mana saja karena setelah 8+ jam bertugas,
+  // mereka mungkin sudah berpindah lokasi (misalnya distribusi makanan).
   if (tipe === 'masuk' && haversineDistance(lat, lon, GEOFENCE.lat, GEOFENCE.lon) > GEOFENCE.radiusMeters) {
     return { success: false, error: 'Di luar radius.' };
   }
@@ -204,4 +212,29 @@ export async function updateAbsensiStatus(id: string, statusValidasi: 'valid' | 
 
   await db.update(absensi).set({ statusValidasi }).where(eq(absensi.id, id));
   return { success: true };
+}
+
+/**
+ * H2+H3 Fix: Server-side filtered riwayat absensi untuk relawan.
+ * Menggantikan pendekatan lama (fetch 50 record lalu filter client-side)
+ * dengan query database yang di-filter berdasarkan bulan dan tahun.
+ */
+export async function getRiwayatRelawan(month: number, year: number) {
+  const session = await getServerSession();
+  if (!session?.user) return [];
+
+  // Build date range for the given month (0-indexed month)
+  const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  const records = await db.select().from(absensi)
+    .where(and(
+      eq(absensi.userId, session.user.id),
+      sql`${absensi.tanggalAbsen} >= ${startDate}`,
+      sql`${absensi.tanggalAbsen} <= ${endDate}`
+    ))
+    .orderBy(desc(absensi.createdAt));
+
+  return records;
 }

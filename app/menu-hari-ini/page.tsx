@@ -1,3 +1,11 @@
+/**
+ * Halaman Menu Hari Ini — Sengaja di luar route group `(relawan)/`
+ *
+ * Alasan: halaman ini bersifat publik dan dapat diakses siapa saja
+ * tanpa login (misalnya warga atau tamu yang ingin melihat menu).
+ * Karena berada di luar `(relawan)/`, halaman ini TIDAK mendapat
+ * layout relawan (BottomNav, auth guard).
+ */
 import React from "react";
 import { getMenuHariIni } from "@/app/actions/menu";
 import dayjs from "dayjs";

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Info, Circle, AlertTriangle, Camera } from 'lucide-react';
 import CameraView from '@/components/CameraView';
@@ -10,6 +10,7 @@ import { nowWIB, haversineDistance, formatDateLong, formatCoords } from '@/lib/u
 import { GEOFENCE } from '@/lib/config';
 import { authClient } from '@/lib/auth-client';
 import { getLatestUser } from '@/app/actions/user';
+import { getAbsensiHariIni } from '@/app/actions/absensi';
 import { goeyToast } from 'goey-toast';
 
 type CameraState = 'preview' | 'processing' | 'uploading' | 'onboarding';
@@ -43,6 +44,9 @@ export default function KameraPage() {
   const { gpsStatus, tipeAbsen, latitude, longitude, addressName, reset } = useCameraStore();
   const { data: session } = authClient.useSession();
   
+  // H4 Fix: Guard against double-click / double-upload
+  const isUploadingRef = useRef(false);
+
   const [dbUser, setDbUser] = useState<{ idRelawan?: string, namaLengkap?: string, divisi?: string } | null>(null);
 
   useEffect(() => {
@@ -63,6 +67,26 @@ export default function KameraPage() {
     fetchUser();
   }, []);
 
+  // H1 Fix: Pre-check duplikasi absen saat halaman kamera dimount
+  useEffect(() => {
+    async function preCheckAbsensi() {
+      try {
+        const data = await getAbsensiHariIni();
+        if (tipeAbsen === 'masuk' && data.hasMasuk) {
+          goeyToast.error('Anda masih dalam sesi aktif. Harap absen pulang terlebih dahulu.');
+          router.push('/beranda');
+        } else if (tipeAbsen === 'pulang' && !data.hasMasuk) {
+          goeyToast.error('Anda belum absen masuk hari ini.');
+          router.push('/beranda');
+        }
+      } catch (e) {
+        console.error('Pre-check absensi gagal:', e);
+      }
+    }
+    preCheckAbsensi();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const user = dbUser || (session?.user as { name?: string, idRelawan?: string, divisi?: string } | undefined);
 
   // For absen masuk: ONLY allow shooting when inside geofence radius (gpsStatus === 'found')
@@ -74,6 +98,10 @@ export default function KameraPage() {
   const canShoot = isGpsValid && addressName !== null;
 
   const handleCapture = useCallback(async (blob: Blob) => {
+    // H4 Fix: Prevent double-upload from rapid clicks
+    if (isUploadingRef.current) return;
+    isUploadingRef.current = true;
+
     // Force GPS validation for Absen Masuk
     const dist = haversineDistance(latitude ?? 0, longitude ?? 0, GEOFENCE.lat, GEOFENCE.lon);
     if (tipeAbsen === 'masuk' && dist > GEOFENCE.radiusMeters) {
@@ -138,6 +166,8 @@ export default function KameraPage() {
       console.error('Upload error:', err);
       goeyToast.error(err instanceof Error ? err.message : "Terjadi kesalahan saat mengunggah.");
       setUiState('preview'); // Return to camera on error
+    } finally {
+      isUploadingRef.current = false;
     }
   }, [tipeAbsen, latitude, longitude, reset, router, session]);
 

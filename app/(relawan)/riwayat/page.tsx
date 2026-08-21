@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronDown, MapPin, Clock, Camera, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ChevronDown, MapPin, Clock, Camera, CheckCircle, XCircle, ClipboardList, Loader2 } from 'lucide-react';
 import { useAbsensiStore } from '@/lib/stores';
 import Image from 'next/image';
 import type { AbsenRecord } from '@/lib/stores';
+import { getRiwayatRelawan } from '@/app/actions/absensi';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 const MONTHS = [
@@ -110,23 +111,53 @@ function AttendanceCard({ record }: AttendanceCardProps) {
 }
 
 export default function RiwayatPage() {
-  const { riwayat, absenMasukToday, absenPulangToday } = useAbsensiStore();
+  const { absenMasukToday, absenPulangToday } = useAbsensiStore();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear] = useState(new Date().getFullYear());
+  const [serverRecords, setServerRecords] = useState<AbsenRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Combine today's records with historical
-  const allRecords: AbsenRecord[] = [
+  // H2+H3 Fix: Fetch riwayat from server filtered by month
+  const fetchRiwayat = useCallback(async (month: number, year: number) => {
+    setIsLoading(true);
+    try {
+      const records = await getRiwayatRelawan(month, year);
+      setServerRecords(records.map(r => ({
+        id: r.id,
+        userId: r.userId,
+        tanggalAbsen: r.tanggalAbsen,
+        waktuAbsen: r.waktuAbsen,
+        fotoUrl: r.fotoUrl,
+        latitude: Number(r.latitude),
+        longitude: Number(r.longitude),
+        tipe: r.tipe as 'masuk' | 'pulang',
+        statusValidasi: r.statusValidasi as AbsenRecord['statusValidasi'],
+      })));
+    } catch (e) {
+      console.error('Gagal fetch riwayat:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRiwayat(selectedMonth, selectedYear);
+  }, [selectedMonth, selectedYear, fetchRiwayat]);
+
+  // Merge today's records (from Zustand) with server records, dedup by id
+  const todayRecords: AbsenRecord[] = [
     ...(absenMasukToday ? [absenMasukToday] : []),
     ...(absenPulangToday ? [absenPulangToday] : []),
-    ...riwayat,
+  ].filter(r => new Date(r.tanggalAbsen).getMonth() === selectedMonth);
+
+  const existingIds = new Set(serverRecords.map(r => r.id));
+  const allRecords = [
+    ...todayRecords.filter(r => !existingIds.has(r.id)),
+    ...serverRecords,
   ];
 
-  const filteredRecords = allRecords.filter((r) => {
-    const month = new Date(r.tanggalAbsen).getMonth();
-    return month === selectedMonth;
-  });
-
   // Group by date
-  const grouped = filteredRecords.reduce<Record<string, AbsenRecord[]>>((acc, r) => {
+  const grouped = allRecords.reduce<Record<string, AbsenRecord[]>>((acc, r) => {
     const date = r.tanggalAbsen;
     if (!acc[date]) acc[date] = [];
     acc[date].push(r);
@@ -190,11 +221,11 @@ export default function RiwayatPage() {
       >
         {[
           { label: 'Total Hadir', value: sortedDates.length, color: 'text-white' },
-          { label: 'Masuk', value: filteredRecords.filter(r => r.tipe === 'masuk').length, color: 'text-blue-400' },
-          { label: 'Pulang', value: filteredRecords.filter(r => r.tipe === 'pulang').length, color: 'text-amber-400' },
+          { label: 'Masuk', value: allRecords.filter(r => r.tipe === 'masuk').length, color: 'text-blue-400' },
+          { label: 'Pulang', value: allRecords.filter(r => r.tipe === 'pulang').length, color: 'text-amber-400' },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[1.5rem] text-center py-4 flex flex-col items-center justify-center">
-            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+            <p className={`text-2xl font-bold ${color}`}>{isLoading ? '—' : value}</p>
             <p className="text-slate-400 text-[10px] uppercase tracking-wider font-semibold mt-1">{label}</p>
           </div>
         ))}
@@ -207,7 +238,12 @@ export default function RiwayatPage() {
         animate="show"
         className="px-5 space-y-6"
       >
-        {sortedDates.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+            <p className="text-slate-400 text-sm font-medium">Memuat data...</p>
+          </div>
+        ) : sortedDates.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
               <ClipboardList className="w-8 h-8 text-slate-500" />

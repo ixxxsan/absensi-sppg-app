@@ -274,9 +274,17 @@ export const compressImage = (file: File, quality: number = 0.7): Promise<Blob> 
         }
         ctx.drawImage(img, 0, 0, width, height);
 
+        // C4 Fix: Try WebP first, fall back to JPEG if browser doesn't support WebP encoding
         canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error('Canvas toBlob failed'));
+          if (blob && blob.type === 'image/webp') {
+            resolve(blob);
+          } else {
+            // Fallback: browser didn't produce WebP, try JPEG
+            canvas.toBlob((jpegBlob) => {
+              if (jpegBlob) resolve(jpegBlob);
+              else reject(new Error('Canvas toBlob failed'));
+            }, 'image/jpeg', quality);
+          }
         }, 'image/webp', quality);
       };
       img.onerror = (err) => reject(err);

@@ -51,6 +51,21 @@ export default function PengajuanCutiPage() {
       return;
     }
 
+    // H5 Fix: Validasi tanggal logis
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const mulai = new Date(tanggalMulai);
+    const selesai = new Date(tanggalSelesai);
+
+    if (mulai < today) {
+      goeyToast.error('Tanggal mulai tidak boleh sebelum hari ini!');
+      return;
+    }
+    if (selesai < mulai) {
+      goeyToast.error('Tanggal selesai harus sama atau setelah tanggal mulai!');
+      return;
+    }
+
     if (jenisCuti === 'Sakit' && !fileBukti) {
       goeyToast.error('Harap unggah surat keterangan dokter untuk cuti Sakit!');
       return;
