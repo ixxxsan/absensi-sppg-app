@@ -14,14 +14,11 @@ interface LaporanItem {
   statusMasuk: string;
 }
 
-const DIVISI_OPTIONS = [
-  'ASISTEN LAPANGAN', 'ADMIN', 'STOCKIST', 'SECURITY', 'DRIVER', 
-  'CLEANING SERVICE', 'PERSIAPAN', 'HEAD CHEF', 'PENGOLAHAN', 'PEMORSIAN', 'PENCUCI TRAY'
-];
+import { DIVISI_OPTIONS, Divisi } from '@/lib/constants';
 
 const getDivisiRank = (divisi: string | null | undefined) => {
   if (!divisi) return 999;
-  const index = DIVISI_OPTIONS.indexOf(divisi.toUpperCase());
+  const index = DIVISI_OPTIONS.indexOf(divisi.toUpperCase() as Divisi);
   return index === -1 ? 999 : index;
 };
 

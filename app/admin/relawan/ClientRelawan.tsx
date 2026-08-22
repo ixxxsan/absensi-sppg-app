@@ -6,8 +6,7 @@ import { createRelawan, updateRelawan, deleteRelawan, bulkImportRelawan, resetPa
 import { useRouter } from 'next/navigation';
 import { goeyToast } from 'goey-toast';
 
-export type Divisi = 'ASISTEN LAPANGAN' | 'ADMIN' | 'STOCKIST' | 'SECURITY' | 'DRIVER' | 'CLEANING SERVICE' | 'PERSIAPAN' | 'HEAD CHEF' | 'PENGOLAHAN' | 'PEMORSIAN' | 'PENCUCI TRAY';
-export type StatusRelawan = 'Aktif' | 'Magang' | 'Cuti';
+import { Divisi, StatusRelawan, DIVISI_OPTIONS, STATUS_RELAWAN_OPTIONS } from '@/lib/constants';
 
 export interface ImportFailedDetail {
   email: string;
@@ -25,10 +24,7 @@ export interface RelawanItem {
   status?: string | null;
 }
 
-const DIVISI_OPTIONS: Divisi[] = [
-  'ASISTEN LAPANGAN', 'ADMIN', 'STOCKIST', 'SECURITY', 'DRIVER', 
-  'CLEANING SERVICE', 'PERSIAPAN', 'HEAD CHEF', 'PENGOLAHAN', 'PEMORSIAN', 'PENCUCI TRAY'
-];
+
 
 export default function ClientRelawan({ initialData }: { initialData: RelawanItem[] }) {
   const router = useRouter();
@@ -418,9 +414,9 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
                          cursor-pointer w-[140px]"
             >
               <option value="">Semua Status</option>
-              <option value="Aktif">Aktif</option>
-              <option value="Magang">Magang</option>
-              <option value="Cuti">Cuti</option>
+              {STATUS_RELAWAN_OPTIONS.map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
           </div>
@@ -668,9 +664,9 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
                     defaultValue={editTarget?.status || 'Aktif'}
                     className="w-full appearance-none pl-3.5 pr-8 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="Aktif">Aktif</option>
-                    <option value="Magang">Magang</option>
-                    <option value="Cuti">Cuti</option>
+                    {STATUS_RELAWAN_OPTIONS.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-[34px] w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>

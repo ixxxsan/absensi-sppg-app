@@ -4,9 +4,8 @@ import { persist } from 'zustand/middleware';
 // ─── Types ────────────────────────────────────────────────
 export type UserRole = 'relawan' | 'admin' | 'super_admin';
 
-export type Divisi = 'ASISTEN LAPANGAN' | 'ADMIN' | 'STOCKIST' | 'SECURITY' | 'DRIVER' | 'CLEANING SERVICE' | 'PERSIAPAN' | 'HEAD CHEF' | 'PENGOLAHAN' | 'PEMORSIAN' | 'PENCUCI TRAY';
-export type StatusRelawan = 'Aktif' | 'Magang' | 'Cuti';
-
+import { Divisi, StatusRelawan } from './constants';
+export type { Divisi, StatusRelawan };
 // AuthStore has been removed. Use authClient.useSession() or getServerSession() instead.
 
 // ─── Types ────────────────────────────────────────────────
