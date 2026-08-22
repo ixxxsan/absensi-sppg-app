@@ -6,7 +6,7 @@ import { createRelawan, updateRelawan, deleteRelawan, bulkImportRelawan, resetPa
 import { useRouter } from 'next/navigation';
 import { goeyToast } from 'goey-toast';
 
-export type Divisi = 'ASISTEN LAPANGAN' | 'ADMIN' | 'STOCKIST' | 'SECURITY' | 'DRIVER' | 'CLEANING SERVICE' | 'PERSIAPAN' | 'PENGOLAHAN' | 'PEMORSIAN' | 'PENCUCI TRAY' | 'HEAD CHEF';
+export type Divisi = 'ASISTEN LAPANGAN' | 'ADMIN' | 'STOCKIST' | 'SECURITY' | 'DRIVER' | 'CLEANING SERVICE' | 'PERSIAPAN' | 'HEAD CHEF' | 'PENGOLAHAN' | 'PEMORSIAN' | 'PENCUCI TRAY';
 export type StatusRelawan = 'Aktif' | 'Magang' | 'Cuti';
 
 export interface ImportFailedDetail {
@@ -27,7 +27,7 @@ export interface RelawanItem {
 
 const DIVISI_OPTIONS: Divisi[] = [
   'ASISTEN LAPANGAN', 'ADMIN', 'STOCKIST', 'SECURITY', 'DRIVER', 
-  'CLEANING SERVICE', 'PERSIAPAN', 'PENGOLAHAN', 'PEMORSIAN', 'PENCUCI TRAY', 'HEAD CHEF'
+  'CLEANING SERVICE', 'PERSIAPAN', 'HEAD CHEF', 'PENGOLAHAN', 'PEMORSIAN', 'PENCUCI TRAY'
 ];
 
 export default function ClientRelawan({ initialData }: { initialData: RelawanItem[] }) {
