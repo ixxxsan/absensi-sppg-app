@@ -91,11 +91,10 @@ export default function KameraPage() {
 
   // For absen masuk: ONLY allow shooting when inside geofence radius (gpsStatus === 'found')
   // For absen pulang: allow shooting from anywhere with GPS lock
-  // AND wait for addressName to be resolved to prevent coordinates-only watermark
   const isGpsValid = tipeAbsen === 'masuk'
     ? gpsStatus === 'found'
     : (gpsStatus === 'found' || gpsStatus === 'out_of_range');
-  const canShoot = isGpsValid && addressName !== null;
+  const canShoot = isGpsValid;
 
   const handleCapture = useCallback(async (blob: Blob) => {
     // H4 Fix: Prevent double-upload from rapid clicks
