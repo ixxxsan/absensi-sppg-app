@@ -79,7 +79,7 @@ export default function MenuClient({ data }: { data: MenuData }) {
               <img
                 alt="Badan Gizi Nasional Logo"
                 className="w-8 h-8 object-contain drop-shadow-lg relative z-10"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5rRPuIqR_zY69ixBv3dLeTCEpm7nkKaa-1HfBEOQtO99LoabysE4drvEUU7JbxrdiVdPZRxspedo1r8QNsPmjeOhPaMMXZi70wWxzoHGb6L5J_SRNxRZ4OPghdT_HVfmUCom4PcVDXMuvlTof_UUr7uRLmtUw20jPuPQoyNjgcorJ0oIpPpj6xXuHzedQccs2qSgt-ADsieKmaFDc7v7UUeK1fIjCvfwl23SLNe9AkJNderHD9xGNorNUYMEXjo2V"
+                src="/logo-bgn.png"
               />
             </div>
             <span className="font-bold text-lg text-white tracking-wide">
