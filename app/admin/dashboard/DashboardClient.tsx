@@ -161,7 +161,7 @@ export default function DashboardClient({
                     initial={{ height: 0 }}
                     animate={{ height: `${Math.max((val / maxBar) * 100, 4)}%` }}
                     transition={{ type: 'spring', stiffness: 100, damping: 20, delay: 0.3 + i * 0.05 }}
-                    className={`w-full max-w-[36px] rounded-full transition-colors duration-300 ${colorClass}`}
+                    className={`w-full max-w-[36px] rounded-t-xl rounded-b-sm transition-colors duration-300 ${colorClass}`}
                   />
                 </div>
                 <span className={`text-[10px] font-semibold mt-1 ${i === chartData.length - 1 ? 'text-emerald-600' : 'text-slate-400'}`}>
