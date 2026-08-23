@@ -89,7 +89,6 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
               }
             })
             .catch(err => {
-              goeyToast.error('Gagal mendapatkan nama jalan dari GPS');
               console.error('Nominatim fallback error:', err);
               useCameraStore.getState().setAddressName('Gagal mendapatkan alamat');
             });
