@@ -12,9 +12,12 @@ export async function getServerSession() {
       mockHeaders.set('cookie', cookieString);
     }
     
-    // We only pass the cookie header. 
-    // By omitting origin, host, and referer, we avoid triggering Better Auth's CSRF
-    // protection which incorrectly blocks Server Actions on some Vercel deployments.
+    // SECURITY NOTE: We intentionally omit origin, host, and referer headers.
+    // This avoids Better Auth's CSRF protection which incorrectly blocks
+    // Server Actions on some Vercel deployments. This is a documented trade-off:
+    // - Next.js Server Actions already include built-in CSRF protection.
+    // - The session cookie is HttpOnly + SameSite, providing baseline CSRF defense.
+    // - Residual risk: reduced defense-in-depth for CSRF.
     const session = await auth.api.getSession({ headers: mockHeaders });
     return session;
   } catch (error) {

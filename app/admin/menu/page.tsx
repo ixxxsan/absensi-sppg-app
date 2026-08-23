@@ -91,7 +91,7 @@ export default function AdminMenuPage() {
 
   const handleUpload = async (file: File) => {
     const fileExt = file.name.split(".").pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `menu/${fileName}`;
 
     const { error: uploadError } = await supabase.storage.from("menu_images").upload(filePath, file);

@@ -86,7 +86,7 @@ export async function createRelawan(fd: FormData) {
   if (!isAdmin(session?.user?.role)) return { success: false, error: 'Unauthorized' };
 
   const [email, namaLengkap, status] = ['email', 'namaLengkap', 'status'].map(k => (fd.get(k) as string || '').trim());
-  const pass = randomBytes(4).toString('hex');
+  const pass = randomBytes(8).toString('hex');
 
   try {
     const res = await auth.api.signUpEmail({ body: { email, name: namaLengkap, password: pass } });
@@ -165,7 +165,7 @@ export async function bulkImportRelawan(rows: BulkImportRow[]) {
   while (nums.includes(next)) next++;
 
   const results = await Promise.all(rows.map(async (r, i) => {
-    const pass = randomBytes(4).toString('hex');
+    const pass = randomBytes(8).toString('hex');
     try {
       const res = await auth.api.signUpEmail({ body: { email: r.email, name: r.namaLengkap, password: pass } });
       if (!res?.user) throw new Error('Fail');
@@ -199,7 +199,7 @@ export async function resetPasswordRelawan(userId: string) {
     const targetUser = await db.select().from(user).where(eq(user.id, userId)).limit(1);
     if (targetUser.length === 0) throw new Error('User not found');
     
-    const pass = randomBytes(4).toString('hex');
+    const pass = randomBytes(8).toString('hex');
     
     // We can use the admin setUserPassword API if available, 
     // but better auth requires passing Headers normally. Let's just use it directly.
@@ -234,7 +234,7 @@ export async function bulkResetPasswords(userIds: string[]) {
     const results = [];
     
     for (const u of targetUsers) {
-      const pass = randomBytes(4).toString('hex');
+      const pass = randomBytes(8).toString('hex');
       
       await auth.api.setUserPassword({
         body: {

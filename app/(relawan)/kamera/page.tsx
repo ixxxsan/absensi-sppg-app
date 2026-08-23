@@ -115,7 +115,8 @@ export default function KameraPage() {
       setUploadText('Mengunggah foto...');
       
       const userId = session?.user?.id || 'unknown';
-      const fileName = `${userId}-${nowWIB().format('YYYYMMDD-HHmmss')}-${tipeAbsen}.webp`;
+      const randomSuffix = crypto.randomUUID().slice(0, 8);
+      const fileName = `${userId}-${nowWIB().format('YYYYMMDD-HHmmss')}-${randomSuffix}-${tipeAbsen}.webp`;
 
       const { supabase } = await import('@/lib/supabase');
       const { error: uploadError } = await supabase.storage

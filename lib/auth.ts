@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin } from "better-auth/plugins";
 import { createAccessControl } from "better-auth/plugins/access";
+import { ADMIN_ROLES } from './admin-roles';
 
 import { Resend } from "resend";
 import { db } from "./db";
@@ -81,7 +82,7 @@ export const auth = betterAuth({
     },
     plugins: [
         admin({
-            adminRoles: ["admin", "super_admin", "SuperAdmin"],
+            adminRoles: [...ADMIN_ROLES],
             defaultRole: "user",
             roles: {
                 admin: adminAc,
@@ -129,6 +130,5 @@ export const auth = betterAuth({
     trustedOrigins: [
         process.env.FRONTEND_URL || "https://absensi-sppg-teluknaga03.id",
         "https://absensi-sppg-teluknaga03.id",
-        "http://absensi-sppg-teluknaga03.id"
     ]
 });

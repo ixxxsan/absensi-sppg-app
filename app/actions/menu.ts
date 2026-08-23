@@ -1,5 +1,7 @@
 "use server";
 
+import { getServerSession } from '@/lib/auth-server';
+import { isAdminRole } from '@/lib/utils';
 import { db } from "@/lib/db";
 import { menuHarian } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -31,6 +33,9 @@ export type MenuInput = {
 };
 
 export async function getMenuHariIni() {
+  const session = await getServerSession();
+  if (!session?.user) return null;
+
   const today = dayjs().tz("Asia/Jakarta").format("YYYY-MM-DD");
   
   const result = await db.select().from(menuHarian).where(eq(menuHarian.tanggal, today)).limit(1);
@@ -38,11 +43,23 @@ export async function getMenuHariIni() {
 }
 
 export async function getMenuByDate(dateStr: string) {
+  const session = await getServerSession();
+  if (!session?.user) return null;
+
+  // Validate date format
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+
   const result = await db.select().from(menuHarian).where(eq(menuHarian.tanggal, dateStr)).limit(1);
   return result.length > 0 ? result[0] : null;
 }
 
 export async function upsertMenu(data: MenuInput) {
+  // Security: Only admin can modify menu
+  const session = await getServerSession();
+  if (!isAdminRole(session?.user?.role)) {
+    throw new Error('Unauthorized: Hanya admin yang dapat mengubah menu.');
+  }
+
   // Check if weekend
   const dateObj = dayjs(data.tanggal);
   const dayOfWeek = dateObj.day(); // 0 is Sunday, 6 is Saturday

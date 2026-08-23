@@ -26,7 +26,17 @@ type Session = {
     };
 };
 
-export async function proxy(request: NextRequest) {
+/**
+ * Check if a role string is an admin role (case-insensitive).
+ * Centralized check — matches isAdminRole() in lib/utils.ts
+ */
+function isAdminRoleCheck(role?: string | null): boolean {
+  if (!role) return false;
+  const lower = role.toLowerCase();
+  return lower === 'admin' || lower === 'super_admin' || lower === 'superadmin';
+}
+
+export async function middleware(request: NextRequest) {
   const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
 
   // 1. Basic WAF: Block malicious user agents
@@ -67,20 +77,20 @@ export async function proxy(request: NextRequest) {
 
   // Handle Authenticated trying to access login pages
   if (isAuthRoute) {
-      if (session.user.role === 'admin' || session.user.role === 'super_admin') {
+      if (isAdminRoleCheck(session.user.role)) {
           return NextResponse.redirect(new URL("/admin/dashboard", request.url));
       } else {
           return NextResponse.redirect(new URL("/beranda", request.url));
       }
   }
 
-  // Handle Relawan trying to access Admin pages
-  if (isAdminRoute && session.user.role === 'relawan') {
+  // Handle non-admin trying to access Admin pages
+  if (isAdminRoute && !isAdminRoleCheck(session.user.role)) {
       return NextResponse.redirect(new URL("/beranda", request.url));
   }
   
   // Handle Admin trying to access Relawan pages
-  if (isRelawanRoute && (session.user.role === 'admin' || session.user.role === 'super_admin')) {
+  if (isRelawanRoute && isAdminRoleCheck(session.user.role)) {
       return NextResponse.redirect(new URL("/admin/dashboard", request.url));
   }
 
@@ -92,5 +102,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|logo-bgn.png|api/auth).*)',
   ],
 };
-
-export default proxy;
