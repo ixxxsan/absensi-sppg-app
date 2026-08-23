@@ -26,12 +26,12 @@ export async function getAbsensiHariIni() {
   // Determine active state: if masuk is newer than pulang, they are currently working
   const isMasukActive = masuk && (!pulang || new Date(masuk.createdAt).getTime() > new Date(pulang.createdAt).getTime());
 
-  return { 
-    hasMasuk: !!isMasukActive, 
-    isLengkap: false, 
-    masuk: masuk || null, 
-    pulang: pulang || null, 
-    user: currentUser || null 
+  return {
+    hasMasuk: !!isMasukActive,
+    isLengkap: false,
+    masuk: masuk || null,
+    pulang: pulang || null,
+    user: currentUser || null
   };
 }
 
@@ -65,10 +65,10 @@ export async function submitAbsensi(formData: FormData) {
   if (tipe === 'masuk' && currentState.hasMasuk && currentState.masuk) {
     const msElapsed = Date.now() - new Date(currentState.masuk.createdAt).getTime();
     const hoursElapsed = msElapsed / (1000 * 60 * 60);
-    
+
     if (hoursElapsed >= 20) {
       const autoPulangTime = new Date(new Date(currentState.masuk.createdAt).getTime() + 8 * 60 * 60 * 1000); // 8 hours later
-      
+
       await db.insert(absensi).values({
         userId: session.user.id,
         tanggalAbsen: currentState.masuk.tanggalAbsen,
@@ -80,7 +80,7 @@ export async function submitAbsensi(formData: FormData) {
         statusValidasi: 'valid',
         catatanSistem: 'Auto-checkout setelah melewati 20 jam'
       });
-      
+
       // Refresh state after auto-checkout
       currentState = await getAbsensiHariIni();
     }
@@ -89,16 +89,16 @@ export async function submitAbsensi(formData: FormData) {
   if (tipe === 'masuk' && currentState.hasMasuk) {
     return { success: false, error: 'Anda masih dalam sesi aktif. Harap absen pulang terlebih dahulu.' };
   }
-  
+
   if (tipe === 'pulang') {
     if (!currentState.hasMasuk) {
       return { success: false, error: 'Anda belum absen masuk.' };
     }
-    
+
     if (currentState.masuk) {
       const msElapsed = Date.now() - new Date(currentState.masuk.createdAt).getTime();
       const hoursElapsed = msElapsed / (1000 * 60 * 60);
-      
+
       if (hoursElapsed < 8) {
         return { success: false, error: 'Anda belum memenuhi minimal waktu kerja 8 jam. Silakan kembali lagi nanti.' };
       }
@@ -115,30 +115,30 @@ export async function submitAbsensi(formData: FormData) {
   try {
     // 1. Upload file ke Supabase secara aman di server
     const { supabaseAdmin } = await import('@/lib/supabase-admin');
-    
+
     const arrayBuffer = await fotoBlob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-  
+
     const userId = session.user.id;
     const randomSuffix = crypto.randomUUID().slice(0, 8);
     const fileName = `${userId}-${nowWIB().format('YYYYMMDD-HHmmss')}-${randomSuffix}-${tipe}.webp`;
-  
+
     const { error: uploadError } = await supabaseAdmin.storage
       .from('absensi_fotos')
       .upload(fileName, buffer, {
         contentType: 'image/webp',
         upsert: false
       });
-  
+
     if (uploadError) {
       console.error('Supabase upload error:', uploadError);
       return { success: false, error: 'Gagal mengunggah foto ke penyimpanan.' };
     }
-  
+
     const { data: publicUrlData } = supabaseAdmin.storage
       .from('absensi_fotos')
       .getPublicUrl(fileName);
-  
+
     const fotoUrl = publicUrlData.publicUrl;
 
     // 2. Simpan record absensi ke database
@@ -178,15 +178,15 @@ export async function getAllAbsensi(options?: {
 
   // Build conditions
   const conditions = [];
-  
+
   if (options?.search) {
     conditions.push(ilike(user.name, `%${options.search}%`));
   }
-  
+
   if (options?.statusFilter && options.statusFilter !== 'semua') {
     conditions.push(eq(absensi.statusValidasi, options.statusFilter));
   }
-  
+
   if (options?.dateFrom) {
     conditions.push(sql`${absensi.tanggalAbsen} >= ${options.dateFrom}`);
   }
@@ -206,7 +206,7 @@ export async function getAllAbsensi(options?: {
   if (options?.limit) {
     finalQuery = finalQuery.limit(options.limit);
   }
-  
+
   if (options?.offset) {
     finalQuery = finalQuery.offset(options.offset);
   }
@@ -224,15 +224,15 @@ export async function getAbsensiCount(options?: {
   if (!isAdminRole(session?.user?.role)) return 0;
 
   const conditions = [];
-  
+
   if (options?.search) {
     conditions.push(ilike(user.name, `%${options.search}%`));
   }
-  
+
   if (options?.statusFilter && options.statusFilter !== 'semua') {
     conditions.push(eq(absensi.statusValidasi, options.statusFilter));
   }
-  
+
   if (options?.dateFrom) {
     conditions.push(sql`${absensi.tanggalAbsen} >= ${options.dateFrom}`);
   }
