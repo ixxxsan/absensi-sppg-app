@@ -35,9 +35,23 @@ export async function getAbsensiHariIni() {
   };
 }
 
-export async function submitAbsensi(fotoUrl: string, lat: number, lon: number, tipe: 'masuk' | 'pulang', clientTs: number) {
+export async function submitAbsensi(formData: FormData) {
   const session = await getServerSession();
   if (!session?.user) return { success: false, error: 'Unauthorized' };
+
+  const fotoBlob = formData.get('foto') as Blob | null;
+  const latStr = formData.get('lat') as string;
+  const lonStr = formData.get('lon') as string;
+  const tipe = formData.get('tipe') as 'masuk' | 'pulang';
+  const clientTsStr = formData.get('clientTs') as string;
+
+  if (!fotoBlob || !latStr || !lonStr || !tipe || !clientTsStr) {
+    return { success: false, error: 'Data absensi tidak lengkap.' };
+  }
+
+  const lat = parseFloat(latStr);
+  const lon = parseFloat(lonStr);
+  const clientTs = parseInt(clientTsStr, 10);
 
   // C3 Fix: Runtime validation — server actions receive serialized data
   if (tipe !== 'masuk' && tipe !== 'pulang') {
@@ -99,6 +113,35 @@ export async function submitAbsensi(fotoUrl: string, lat: number, lon: number, t
   }
 
   try {
+    // 1. Upload file ke Supabase secara aman di server
+    const { supabaseAdmin } = await import('@/lib/supabase-admin');
+    
+    const arrayBuffer = await fotoBlob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+  
+    const userId = session.user.id;
+    const randomSuffix = crypto.randomUUID().slice(0, 8);
+    const fileName = `${userId}-${nowWIB().format('YYYYMMDD-HHmmss')}-${randomSuffix}-${tipe}.webp`;
+  
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('absensi_fotos')
+      .upload(fileName, buffer, {
+        contentType: 'image/webp',
+        upsert: false
+      });
+  
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      return { success: false, error: 'Gagal mengunggah foto ke penyimpanan.' };
+    }
+  
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from('absensi_fotos')
+      .getPublicUrl(fileName);
+  
+    const fotoUrl = publicUrlData.publicUrl;
+
+    // 2. Simpan record absensi ke database
     const isSpoof = Math.abs(Date.now() - clientTs) > 300000;
     const [record] = await db.insert(absensi).values({
       userId: session.user.id,

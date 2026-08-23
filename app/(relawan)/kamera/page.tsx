@@ -112,32 +112,18 @@ export default function KameraPage() {
 
     try {
       setUploadText('Mengunggah foto...');
-      
-      const userId = session?.user?.id || 'unknown';
-      const randomSuffix = crypto.randomUUID().slice(0, 8);
-      const fileName = `${userId}-${nowWIB().format('YYYYMMDD-HHmmss')}-${randomSuffix}-${tipeAbsen}.webp`;
 
-      const { supabase } = await import('@/lib/supabase');
-      const { error: uploadError } = await supabase.storage
-        .from('absensi_fotos')
-        .upload(fileName, blob, {
-          contentType: 'image/webp',
-          upsert: false
-        });
+      // Buat FormData untuk dikirim ke Server Action
+      const formData = new FormData();
+      formData.append('foto', blob);
+      formData.append('lat', (latitude ?? 0).toString());
+      formData.append('lon', (longitude ?? 0).toString());
+      formData.append('tipe', tipeAbsen);
+      formData.append('clientTs', Date.now().toString());
 
-      if (uploadError) {
-        console.error('Supabase upload error:', uploadError);
-        throw new Error('Gagal mengunggah foto ke penyimpanan.');
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from('absensi_fotos')
-        .getPublicUrl(fileName);
-
-      setUploadText('Menyimpan data absensi...');
-      
       const { submitAbsensi } = await import('@/app/actions/absensi');
-      const res = await submitAbsensi(publicUrlData.publicUrl, latitude ?? 0, longitude ?? 0, tipeAbsen, Date.now());
+      const res = await submitAbsensi(formData);
+      
       if (!res || !res.success || !res.record) {
         throw new Error(res?.error || 'Gagal mengirim absensi.');
       }
