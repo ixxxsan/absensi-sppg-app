@@ -291,7 +291,7 @@ function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto,
           <div key={field} className="flex items-center justify-between">
             <span className="text-sm font-medium capitalize text-slate-700">{field}</span>
             <div className="flex items-center gap-2">
-              <input type="number" {...register(`${namePrefix}.${field}` as FieldPath<MenuForm>, { valueAsNumber: true })} className="w-24 p-2 border rounded-lg text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
+              <input type="number" step="any" {...register(`${namePrefix}.${field}` as FieldPath<MenuForm>, { valueAsNumber: true })} className="w-24 p-2 border rounded-lg text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
               <span className="text-xs text-slate-400 w-8">{field === 'energi' ? 'kkal' : 'g'}</span>
             </div>
           </div>

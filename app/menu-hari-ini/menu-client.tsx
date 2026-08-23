@@ -39,13 +39,17 @@ export type MenuData = {
 function AnimatedNumber({ value }: { value: number }) {
   const motionValue = useMotionValue(value);
   const springValue = useSpring(motionValue, { stiffness: 300, damping: 30 });
-  const rounded = useTransform(springValue, (latest) => Math.round(latest));
+  
+  const hasDecimal = value % 1 !== 0;
+  const display = useTransform(springValue, (latest) => {
+    return hasDecimal ? latest.toFixed(1) : Math.round(latest).toString();
+  });
 
   useEffect(() => {
     motionValue.set(value);
   }, [value, motionValue]);
 
-  return <motion.span>{rounded}</motion.span>;
+  return <motion.span>{display}</motion.span>;
 }
 
 export default function MenuClient({ data }: { data: MenuData }) {
