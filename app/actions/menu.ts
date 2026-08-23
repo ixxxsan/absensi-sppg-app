@@ -33,8 +33,6 @@ export type MenuInput = {
 };
 
 export async function getMenuHariIni() {
-  const session = await getServerSession();
-  if (!session?.user) return null;
 
   const today = dayjs().tz("Asia/Jakarta").format("YYYY-MM-DD");
   
