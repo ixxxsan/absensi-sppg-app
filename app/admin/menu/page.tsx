@@ -10,6 +10,7 @@ import dayjs from "dayjs";
 import { goeyToast } from "goey-toast";
 
 import { QrCode, X, Download } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 
 const nutritionSchema = z.object({
   energi: z.number().min(0),
@@ -155,18 +156,17 @@ export default function AdminMenuPage() {
     }
   };
 
-  const handleDownloadQR = async () => {
+  const handleDownloadQR = () => {
     try {
-      const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrUrl)}`);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const canvas = document.getElementById("qr-canvas") as HTMLCanvasElement;
+      if (!canvas) throw new Error("Canvas not found");
+      const url = canvas.toDataURL("image/png");
       const link = document.createElement('a');
       link.href = url;
       link.download = 'QR-Code-Menu-Hari-Ini.png';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
     } catch (error) {
       goeyToast.error("Gagal mengunduh QR Code");
     }
@@ -199,12 +199,18 @@ export default function AdminMenuPage() {
               Satu QR Code ini berlaku selamanya untuk mengakses halaman <span className="font-semibold text-emerald-600">/menu-hari-ini</span>
             </p>
             
-            <div className="p-4 bg-white border-2 border-slate-100 rounded-xl mb-6 shadow-sm">
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrUrl)}`} 
-                alt="QR Code Menu Hari Ini" 
-                className="w-48 h-48"
-              />
+            <div className="p-4 bg-white border-2 border-slate-100 rounded-xl mb-6 shadow-sm flex items-center justify-center">
+              {qrUrl ? (
+                <QRCodeCanvas 
+                  id="qr-canvas"
+                  value={qrUrl}
+                  size={192}
+                  level={"H"}
+                  includeMargin={true}
+                />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center text-slate-400">Loading...</div>
+              )}
             </div>
 
             <button 
