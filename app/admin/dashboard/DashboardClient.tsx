@@ -134,23 +134,25 @@ export default function DashboardClient({
         {/* Bar Chart */}
         <motion.div 
           variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
-          className="xl:col-span-2 bg-white rounded-[2.5rem] p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 flex flex-col"
+          className="xl:col-span-2 bg-white rounded-[2.5rem] p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 flex flex-col min-h-[300px]"
         >
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-slate-800 font-bold text-lg tracking-tight">Tren 7 Hari</h2>
             <span className="text-slate-400 font-semibold text-xs tracking-wider uppercase bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">% hadir</span>
           </div>
-          <div className="flex items-end justify-between flex-1 gap-2 pt-4">
+          <div className="flex justify-between flex-1 gap-2 pt-4 items-stretch h-full">
             {chartData.map((val, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+              <div key={i} className="flex-1 flex flex-col justify-end items-center gap-2 group h-full">
                 <span className="text-[10px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">{val}%</span>
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${Math.max((val / maxBar) * 100, 4)}%` }}
-                  transition={{ type: 'spring', stiffness: 100, damping: 20, delay: 0.3 + i * 0.05 }}
-                  className={`w-full rounded-full transition-colors duration-300
-                    ${i === chartData.length - 1 ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-slate-100 group-hover:bg-slate-200'}`}
-                />
+                <div className="w-full flex-1 flex flex-col justify-end">
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: `${Math.max((val / maxBar) * 100, 4)}%` }}
+                    transition={{ type: 'spring', stiffness: 100, damping: 20, delay: 0.3 + i * 0.05 }}
+                    className={`w-full rounded-full transition-colors duration-300
+                      ${i === chartData.length - 1 ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-slate-200 group-hover:bg-slate-300'}`}
+                  />
+                </div>
                 <span className={`text-[10px] font-semibold mt-1 ${i === chartData.length - 1 ? 'text-emerald-600' : 'text-slate-400'}`}>
                   {i === chartData.length - 1 ? 'HARI INI' : chartDaysStr[i].substring(0,3).toUpperCase()}
                 </span>
