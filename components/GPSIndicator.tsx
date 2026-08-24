@@ -52,10 +52,8 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
       const last = lastFetchedCoords.current;
       if (!last || haversineDistance(latitude, longitude, last.lat, last.lon) > 50) {
         lastFetchedCoords.current = { lat: latitude, lon: longitude };
-        const tomtomKey = process.env.NEXT_PUBLIC_TOMTOM_API_KEY || '';
-        const fetchUrl = `https://api.tomtom.com/search/2/reverseGeocode/${latitude},${longitude}.json?key=${tomtomKey}`;
         
-        const fallbackToNominatim = () => {
+        const fetchLocationName = () => {
           fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`)
             .then(r => r.json())
             .then(data => {
@@ -74,10 +72,13 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
               const kotaKab = addr.city || addr.county || addr.town || '';
               const provinsi = addr.state || '';
               let kodepos = addr.postcode || '';
+              
+              // Custom logic
               const fullArea = (jalanLengkap + ' ' + desa + ' ' + kecamatan + ' ' + kotaKab).toLowerCase();
               if (fullArea.includes('teluknaga')) {
                   kodepos = '15510';
               }
+              
               const provPos = [provinsi, kodepos].filter(Boolean).join(' ');
               const parts = [jalanLengkap, desa, kecamatan, kotaKab, provPos].filter(Boolean);
               const finalParts = parts.filter((item, pos, self) => self.indexOf(item) === pos);
@@ -89,66 +90,12 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
               }
             })
             .catch(err => {
-              console.error('Nominatim fallback error:', err);
+              console.error('Nominatim fetch error:', err);
               useCameraStore.getState().setAddressName('Gagal mendapatkan alamat');
             });
         };
 
-        if (tomtomKey) {
-          fetch(fetchUrl)
-            .then(async r => {
-              if (!r.ok) throw new Error(`TomTom API error: ${r.status}`);
-              return r.json();
-            })
-            .then(data => {
-              const addrData = data.addresses && data.addresses[0] ? data.addresses[0].address : null;
-              
-              // Jika TomTom tidak memiliki data nama jalan untuk koordinat ini, 
-              // kita fallback ke Nominatim yang seringkali memiliki data gang/jalan kecil dari komunitas OSM.
-              if (!addrData || !addrData.streetName) {
-                console.warn('TomTom tidak memiliki nama jalan. Mencoba Nominatim...');
-                fallbackToNominatim();
-                return;
-              }
-              
-              let jalan = addrData.streetName || '';
-              if (jalan && !jalan.toLowerCase().startsWith('jl') && !jalan.toLowerCase().startsWith('jalan')) {
-                  jalan = `Jl. ${jalan}`;
-              }
-              
-              const no = addrData.streetNumber ? `No.${addrData.streetNumber}` : '';
-              const jalanLengkap = [jalan, no].filter(Boolean).join(' ');
-              
-              const desa = addrData.municipalitySubdivision || '';
-              
-              let kecamatan = addrData.municipalitySecondarySubdivision || '';
-              if (kecamatan && !kecamatan.toLowerCase().startsWith('kec')) {
-                  kecamatan = `Kec. ${kecamatan}`;
-              }
-              
-              const kotaKab = addrData.municipality || '';
-              const provinsi = addrData.countrySubdivision || '';
-              let kodepos = addrData.postalCode || '';
-              const fullArea = (jalanLengkap + ' ' + desa + ' ' + kecamatan + ' ' + kotaKab).toLowerCase();
-              if (fullArea.includes('teluknaga')) {
-                  kodepos = '15510';
-              }
-              const provPos = [provinsi, kodepos].filter(Boolean).join(' ');
-              
-              const parts = [jalanLengkap, desa, kecamatan, kotaKab, provPos].filter(Boolean);
-              const finalParts = parts.filter((item, pos, self) => self.indexOf(item) === pos);
-              
-              useCameraStore.getState().setAddressName(finalParts.join(', '));
-            })
-            .catch(err => {
-              console.warn('TomTom gagal/limit habis. Menggunakan Nominatim (OSM)...', err);
-              fallbackToNominatim();
-            });
-        } else {
-          fallbackToNominatim();
-        }
-
-
+        fetchLocationName();
       }
     }
   }, [latitude, longitude, gpsStatus]);

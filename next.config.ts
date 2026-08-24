@@ -13,9 +13,9 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' https://*.supabase.co https://*.supabase.in data: blob:",
+      "img-src 'self' https://*.supabase.co https://*.supabase.in data: blob: https://*.tile.openstreetmap.org",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co https://api.tomtom.com",
+      "connect-src 'self' https://*.supabase.co https://nominatim.openstreetmap.org",
       "frame-ancestors 'self'",
     ].join('; ')
   },
