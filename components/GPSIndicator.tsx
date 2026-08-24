@@ -54,8 +54,11 @@ export default function GPSIndicator({ onLocationFound }: GPSIndicatorProps) {
         lastFetchedCoords.current = { lat: latitude, lon: longitude };
         
         const fetchLocationName = () => {
-          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`)
-            .then(r => r.json())
+          fetch(`/api/geocode?lat=${latitude}&lon=${longitude}`)
+            .then(r => {
+              if (!r.ok) throw new Error(`API error: ${r.status}`);
+              return r.json();
+            })
             .then(data => {
               const addr = data.address || {};
               let jalan = addr.road || addr.pedestrian || addr.path || '';
