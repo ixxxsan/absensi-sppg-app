@@ -51,7 +51,7 @@ export default function AdminMenuPage() {
     }
   }, []);
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<MenuForm>({
+  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<MenuForm>({
     resolver: zodResolver(menuSchema),
     defaultValues: {
       tanggal: dayjs().format("YYYY-MM-DD"),
@@ -75,20 +75,26 @@ export default function AdminMenuPage() {
     getMenuByDate(selectedDate).then((data) => {
       if (data) {
         setExistingMenu(data);
-        setValue("namaMenu", data.namaMenu);
-        setValue("giziPorsiKecil", data.giziPorsiKecil as any);
-        setValue("giziPorsiBesar", data.giziPorsiBesar as any);
-        setValue("giziBumil", data.giziBumil as any);
+        reset({
+          tanggal: selectedDate,
+          namaMenu: data.namaMenu,
+          giziPorsiKecil: data.giziPorsiKecil as any,
+          giziPorsiBesar: data.giziPorsiBesar as any,
+          giziBumil: data.giziBumil as any,
+        });
         goeyToast.success("Memuat menu yang sudah ada untuk tanggal ini.");
       } else {
         setExistingMenu(null);
-        setValue("namaMenu", "");
-        setValue("giziPorsiKecil", { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 });
-        setValue("giziPorsiBesar", { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 });
-        setValue("giziBumil", { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 });
+        reset({
+          tanggal: selectedDate,
+          namaMenu: "",
+          giziPorsiKecil: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
+          giziPorsiBesar: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
+          giziBumil: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
+        });
       }
     });
-  }, [selectedDate, setValue]);
+  }, [selectedDate, reset]);
 
   const handleUpload = async (file: File) => {
     const fileExt = file.name.split(".").pop();
