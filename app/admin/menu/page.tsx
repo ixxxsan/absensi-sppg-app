@@ -49,6 +49,7 @@ export default function AdminMenuPage() {
   const [showQR, setShowQR] = useState(false);
   const [qrUrl, setQrUrl] = useState("");
   const [existingMenu, setExistingMenu] = useState<{
+    id?: string;
     fotoPorsiKecilUrl?: string;
     fotoPorsiBesarUrl?: string;
     fotoBumilUrl?: string;
@@ -274,6 +275,20 @@ export default function AdminMenuPage() {
         </div>
       )}
 
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs gap-2 mb-6">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-slate-700">Tanggal Terpilih: {dayjs(selectedDate).format("dddd, DD MMMM YYYY")}</span>
+          {existingMenu ? (
+            <span className="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full">Menu Ditemukan di Database</span>
+          ) : (
+            <span className="bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full">Belum Ada Menu (Form Kosong)</span>
+          )}
+        </div>
+        {existingMenu && existingMenu.id && (
+          <span className="text-slate-400 font-mono text-[11px]">ID: {existingMenu.id}</span>
+        )}
+      </div>
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -281,15 +296,30 @@ export default function AdminMenuPage() {
               <span>Tanggal Menu</span>
               {fetchingMenu && <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />}
             </label>
-            <input type="date" {...register("tanggal")} className="w-full p-2 border rounded" />
+            <input 
+              type="date" 
+              {...register("tanggal")} 
+              onChange={(e) => {
+                setValue("tanggal", e.target.value);
+                loadMenuForDate(e.target.value);
+              }}
+              className="w-full p-2 border rounded" 
+            />
           </div>
           <div>
             <label className="block mb-2 font-semibold">Nama Menu</label>
-            <input type="text" {...register("namaMenu")} className="w-full p-2 border rounded" placeholder="Contoh: Nasi Ayam Bakar" />
+            <input 
+              key={`nama-${selectedDate}`} 
+              type="text" 
+              {...register("namaMenu")} 
+              defaultValue={watch("namaMenu")}
+              className="w-full p-2 border rounded" 
+              placeholder="Contoh: Nasi Ayam Bakar" 
+            />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div key={`cards-${selectedDate}`} className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <NutritionCard title="Porsi Kecil" namePrefix="giziPorsiKecil" filePrefix="fotoPorsiKecil" register={register} existingPhoto={existingMenu?.fotoPorsiKecilUrl} watch={watch} />
           <NutritionCard title="Porsi Besar" namePrefix="giziPorsiBesar" filePrefix="fotoPorsiBesar" register={register} existingPhoto={existingMenu?.fotoPorsiBesarUrl} watch={watch} />
           <NutritionCard title="Bumil / Busui" namePrefix="giziBumil" filePrefix="fotoBumil" register={register} existingPhoto={existingMenu?.fotoBumilUrl} watch={watch} />
@@ -350,7 +380,13 @@ function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto,
           <div key={field} className="flex items-center justify-between">
             <span className="text-sm font-medium capitalize text-slate-700">{field}</span>
             <div className="flex items-center gap-2">
-              <input type="number" step="any" {...register(`${namePrefix}.${field}` as FieldPath<MenuForm>, { valueAsNumber: true })} className="w-24 p-2 border rounded-lg text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
+              <input 
+                type="number" 
+                step="any" 
+                {...register(`${namePrefix}.${field}` as FieldPath<MenuForm>, { valueAsNumber: true })} 
+                defaultValue={watch(`${namePrefix}.${field}` as FieldPath<MenuForm>) ?? 0}
+                className="w-24 p-2 border rounded-lg text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" 
+              />
               <span className="text-xs text-slate-400 w-8">{field === 'energi' ? 'kkal' : 'g'}</span>
             </div>
           </div>
