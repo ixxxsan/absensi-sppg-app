@@ -34,13 +34,20 @@ export const auth = betterAuth({
         autoSignIn: true,
         resetPasswordTokenExpiresIn: 1800, // 30 menit
         revokeSessionsOnPasswordReset: true,
-        sendResetPassword: async ({ user, url }) => {
+        sendResetPassword: async ({ user, url, token }: { user: any; url: string; token?: string }) => {
             if (!process.env.RESEND_API_KEY) {
                 console.warn("[AUTH] RESEND_API_KEY tidak ditemukan, email reset di-skip.");
                 return;
             }
             const resend = new Resend(process.env.RESEND_API_KEY);
             const userName = user.name || "Relawan";
+
+            // Pastikan URL reset password mengarah ke web yang berjalan dan tidak mengarah ke localhost
+            const appUrl = (process.env.FRONTEND_URL || process.env.BETTER_AUTH_URL || "https://absensi-sppg-teluknaga03.id").replace(/\/+$/, "");
+            let resetUrl = token ? `${appUrl}/reset-password?token=${token}` : url;
+            if (resetUrl.includes("localhost") || resetUrl.includes("127.0.0.1")) {
+                resetUrl = resetUrl.replace(/^https?:\/\/[^\/]+/, appUrl);
+            }
 
             try {
                 await resend.emails.send({
@@ -55,7 +62,7 @@ export const auth = betterAuth({
   <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <!-- Header -->
     <div style="background:linear-gradient(135deg,#071e49 0%,#0c2860 100%);padding:32px 24px;text-align:center;">
-      <img src="https://absensi-sppg-teluknaga03.id/logo-bgn.png" alt="Logo SPPG" style="width:64px;height:auto;margin-bottom:12px;" />
+      <img src="${appUrl}/logo-bgn.png" alt="Logo SPPG" style="width:64px;height:auto;margin-bottom:12px;" />
       <h1 style="color:#ffffff;font-size:20px;margin:0;">Reset Kata Sandi</h1>
       <p style="color:#b5e0ea;font-size:14px;margin:8px 0 0;">SPPG Tangerang Teluknaga 03</p>
     </div>
@@ -64,7 +71,7 @@ export const auth = betterAuth({
       <p style="color:#333;font-size:15px;line-height:1.6;">Halo <strong>${userName}</strong>,</p>
       <p style="color:#555;font-size:14px;line-height:1.6;">Kami menerima permintaan untuk mereset kata sandi akun Anda. Klik tombol di bawah ini untuk membuat kata sandi baru:</p>
       <div style="text-align:center;margin:28px 0;">
-        <a href="${url}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#0c2860,#1a3a70);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:0.3px;">Reset Kata Sandi</a>
+        <a href="${resetUrl}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#0c2860,#1a3a70);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:0.3px;">Reset Kata Sandi</a>
       </div>
       <p style="color:#888;font-size:13px;line-height:1.5;">Tautan ini hanya berlaku selama <strong>30 menit</strong> dan hanya dapat digunakan satu kali. Jika Anda tidak meminta reset password, abaikan email ini.</p>
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />

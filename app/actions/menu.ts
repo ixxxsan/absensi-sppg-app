@@ -41,14 +41,16 @@ export async function getMenuHariIni() {
 }
 
 export async function getMenuByDate(dateStr: string) {
-  const session = await getServerSession();
-  if (!session?.user) return null;
-
   // Validate date format
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
 
-  const result = await db.select().from(menuHarian).where(eq(menuHarian.tanggal, dateStr)).limit(1);
-  return result.length > 0 ? result[0] : null;
+  try {
+    const result = await db.select().from(menuHarian).where(eq(menuHarian.tanggal, dateStr)).limit(1);
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error("Error getMenuByDate:", error);
+    return null;
+  }
 }
 
 export async function upsertMenu(data: MenuInput) {

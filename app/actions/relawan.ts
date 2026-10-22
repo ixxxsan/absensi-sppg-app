@@ -12,9 +12,16 @@ import { headers } from 'next/headers';
 import { isAdminRole } from '@/lib/utils';
 
 // ponytail: template updated with uniform design matching reset password
-async function sendPasswordEmail(email: string, pass: string, name: string) {
+async function sendPasswordEmail(email: string, pass: string, name: string, isReset = false) {
   if (!process.env.RESEND_API_KEY) return;
   
+  const appUrl = (process.env.FRONTEND_URL || process.env.BETTER_AUTH_URL || 'https://absensi-sppg-teluknaga03.id').replace(/\/+$/, '');
+  const title = isReset ? 'Password Akun Di-reset' : 'Selamat Datang!';
+  const subject = isReset ? 'Reset Kata Sandi Akun Relawan — SPPG Teluknaga 03' : 'Akun Relawan SPPG Teluknaga 03 Anda Telah Dibuat';
+  const desc = isReset
+    ? 'Password akun relawan Anda telah di-reset oleh tim administrasi. Gunakan kredensial baru berikut untuk masuk ke aplikasi absensi:'
+    : 'Akun relawan Anda telah berhasil dibuat oleh tim administrasi. Gunakan kredensial berikut untuk masuk ke aplikasi absensi:';
+
   const htmlTemplate = `
 <!DOCTYPE html>
 <html lang="id">
@@ -23,14 +30,14 @@ async function sendPasswordEmail(email: string, pass: string, name: string) {
   <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <!-- Header -->
     <div style="background:linear-gradient(135deg,#071e49 0%,#0c2860 100%);padding:32px 24px;text-align:center;">
-      <img src="https://absensi-sppg-teluknaga03.id/logo-bgn.png" alt="Logo SPPG" style="width:64px;height:auto;margin-bottom:12px;" />
-      <h1 style="color:#ffffff;font-size:20px;margin:0;">Selamat Datang!</h1>
+      <img src="${appUrl}/logo-bgn.png" alt="Logo SPPG" style="width:64px;height:auto;margin-bottom:12px;" />
+      <h1 style="color:#ffffff;font-size:20px;margin:0;">${title}</h1>
       <p style="color:#b5e0ea;font-size:14px;margin:8px 0 0;">SPPG Tangerang Teluknaga 03</p>
     </div>
     <!-- Body -->
     <div style="padding:32px 24px;">
       <p style="color:#333;font-size:15px;line-height:1.6;">Halo <strong>${name}</strong>,</p>
-      <p style="color:#555;font-size:14px;line-height:1.6;">Akun relawan Anda telah berhasil dibuat oleh tim administrasi. Gunakan kredensial berikut untuk masuk ke aplikasi absensi:</p>
+      <p style="color:#555;font-size:14px;line-height:1.6;">${desc}</p>
       
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:24px 0;">
         <p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">EMAIL</p>
@@ -41,7 +48,7 @@ async function sendPasswordEmail(email: string, pass: string, name: string) {
       </div>
 
       <div style="text-align:center;margin:32px 0;">
-        <a href="https://absensi-sppg-teluknaga03.id/login" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#0c2860,#1a3a70);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:0.3px;">Masuk ke Aplikasi</a>
+        <a href="${appUrl}/login" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#0c2860,#1a3a70);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:0.3px;">Masuk ke Aplikasi</a>
       </div>
       
       <p style="color:#888;font-size:13px;line-height:1.5;">Catatan: Demi keamanan, segera <strong>ubah password</strong> Anda setelah berhasil masuk melalui menu Profil &gt; Pengaturan.</p>
@@ -59,7 +66,7 @@ async function sendPasswordEmail(email: string, pass: string, name: string) {
     const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
       from: 'SPPG Teluknaga 03 <no-reply@absensi-sppg-teluknaga03.id>',
       to: email,
-      subject: 'Akun Relawan SPPG Teluknaga 03 Anda Telah Dibuat',
+      subject: subject,
       html: htmlTemplate,
     });
     if (error) {
@@ -211,7 +218,7 @@ export async function resetPasswordRelawan(userId: string) {
       headers: await headers()
     });
 
-    const emailResult = await sendPasswordEmail(targetUser[0].email, pass, targetUser[0].name);
+    const emailResult = await sendPasswordEmail(targetUser[0].email, pass, targetUser[0].name, true);
     
     return { 
       success: true, 
@@ -244,7 +251,7 @@ export async function bulkResetPasswords(userIds: string[]) {
         headers: await headers()
       });
       
-      await sendPasswordEmail(u.email, pass, u.name);
+      await sendPasswordEmail(u.email, pass, u.name, true);
       
       results.push({ 
         'ID Relawan': u.idRelawan, 

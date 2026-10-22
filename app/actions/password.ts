@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
 import { eq, or } from 'drizzle-orm';
+import { headers } from 'next/headers';
 
 // ponytail: rely on better-auth or host (Vercel) for generic rate limiting.
 // In-memory Maps leak or reset arbitrarily on serverless.
@@ -13,6 +14,16 @@ export async function requestPasswordReset(identifier: string) {
     const trimmed = (identifier || '').trim().toLowerCase();
     if (!trimmed) return { success: false, error: 'Wajib diisi.' };
 
+    const headerList = await headers();
+    const host = headerList.get('x-forwarded-host') || headerList.get('host');
+    const proto = headerList.get('x-forwarded-proto') || (host && !host.includes('localhost') && !host.includes('127.0.0.1') ? 'https' : 'http');
+
+    let appUrl = process.env.FRONTEND_URL || process.env.BETTER_AUTH_URL || 'https://absensi-sppg-teluknaga03.id';
+    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+      appUrl = `${proto}://${host}`;
+    }
+    appUrl = appUrl.replace(/\/+$/, '');
+
     const [found] = await db
       .select({ email: user.email })
       .from(user)
@@ -21,11 +32,13 @@ export async function requestPasswordReset(identifier: string) {
 
     if (found?.email) {
       await auth.api.requestPasswordReset({
-        body: { email: found.email, redirectTo: `${process.env.FRONTEND_URL || 'https://absensi-sppg-teluknaga03.id'}/reset-password` },
+        body: { email: found.email, redirectTo: `${appUrl}/reset-password` },
+        headers: headerList,
       });
     }
     return { success: true };
-  } catch {
+  } catch (err) {
+    console.error('requestPasswordReset error:', err);
     return { success: true };
   }
 }

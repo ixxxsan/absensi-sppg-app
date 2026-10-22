@@ -7,10 +7,18 @@ import * as z from "zod";
 import { supabase } from "@/lib/supabase";
 import { upsertMenu, getMenuByDate } from "@/app/actions/menu";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import { goeyToast } from "goey-toast";
 
-import { QrCode, X, Download } from "lucide-react";
+import { QrCode, X, Download, Loader2 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault("Asia/Jakarta");
+
+const getTodayWib = () => dayjs().tz("Asia/Jakarta").format("YYYY-MM-DD");
 
 const nutritionSchema = z.object({
   energi: z.number().min(0),
@@ -37,6 +45,7 @@ type MenuForm = z.infer<typeof menuSchema>;
 
 export default function AdminMenuPage() {
   const [loading, setLoading] = useState(false);
+  const [fetchingMenu, setFetchingMenu] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [qrUrl, setQrUrl] = useState("");
   const [existingMenu, setExistingMenu] = useState<{
@@ -54,7 +63,8 @@ export default function AdminMenuPage() {
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<MenuForm>({
     resolver: zodResolver(menuSchema),
     defaultValues: {
-      tanggal: dayjs().format("YYYY-MM-DD"),
+      tanggal: getTodayWib(),
+      namaMenu: "",
       giziPorsiKecil: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
       giziPorsiBesar: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
       giziBumil: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
@@ -63,38 +73,71 @@ export default function AdminMenuPage() {
 
   const selectedDate = watch("tanggal");
 
-  React.useEffect(() => {
-    if (!selectedDate) return;
+  const loadMenuForDate = React.useCallback(async (dateStr: string) => {
+    if (!dateStr) return;
     
-    const day = dayjs(selectedDate).day();
+    const day = dayjs(dateStr).day();
     if (day === 0 || day === 6) {
       goeyToast.error("Sabtu dan Minggu libur. Silakan pilih tanggal lain.");
+      setExistingMenu(null);
+      reset({
+        tanggal: dateStr,
+        namaMenu: "",
+        giziPorsiKecil: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
+        giziPorsiBesar: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
+        giziBumil: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
+      });
       return;
     }
 
-    getMenuByDate(selectedDate).then((data) => {
+    setFetchingMenu(true);
+    try {
+      const data = await getMenuByDate(dateStr);
       if (data) {
         setExistingMenu(data);
         reset({
-          tanggal: selectedDate,
+          tanggal: dateStr,
           namaMenu: data.namaMenu,
           giziPorsiKecil: data.giziPorsiKecil as any,
           giziPorsiBesar: data.giziPorsiBesar as any,
           giziBumil: data.giziBumil as any,
         });
+        setValue("namaMenu", data.namaMenu);
+        const nutrientKeys = ["energi", "protein", "lemak", "karbohidrat", "serat"] as const;
+        nutrientKeys.forEach((key) => {
+          setValue(`giziPorsiKecil.${key}`, Number((data.giziPorsiKecil as any)?.[key]) || 0);
+          setValue(`giziPorsiBesar.${key}`, Number((data.giziPorsiBesar as any)?.[key]) || 0);
+          setValue(`giziBumil.${key}`, Number((data.giziBumil as any)?.[key]) || 0);
+        });
         goeyToast.success("Memuat menu yang sudah ada untuk tanggal ini.");
       } else {
         setExistingMenu(null);
         reset({
-          tanggal: selectedDate,
+          tanggal: dateStr,
           namaMenu: "",
           giziPorsiKecil: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
           giziPorsiBesar: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
           giziBumil: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
         });
+        setValue("namaMenu", "");
+        const nutrientKeys = ["energi", "protein", "lemak", "karbohidrat", "serat"] as const;
+        nutrientKeys.forEach((key) => {
+          setValue(`giziPorsiKecil.${key}`, 0);
+          setValue(`giziPorsiBesar.${key}`, 0);
+          setValue(`giziBumil.${key}`, 0);
+        });
       }
-    });
-  }, [selectedDate, reset]);
+    } catch (err) {
+      console.error("Gagal mengambil menu:", err);
+      goeyToast.error("Gagal memuat menu.");
+    } finally {
+      setFetchingMenu(false);
+    }
+  }, [reset, setValue]);
+
+  React.useEffect(() => {
+    loadMenuForDate(selectedDate);
+  }, [selectedDate, loadMenuForDate]);
 
   const handleUpload = async (file: File) => {
     const fileExt = file.name.split(".").pop();
@@ -154,6 +197,7 @@ export default function AdminMenuPage() {
       };
 
       await upsertMenu(input);
+      setExistingMenu(input);
       goeyToast.success("Berhasil menyimpan menu!");
     } catch (err: unknown) {
       goeyToast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
@@ -233,7 +277,10 @@ export default function AdminMenuPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block mb-2 font-semibold">Tanggal Menu</label>
+            <label className="block mb-2 font-semibold flex items-center gap-2">
+              <span>Tanggal Menu</span>
+              {fetchingMenu && <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />}
+            </label>
             <input type="date" {...register("tanggal")} className="w-full p-2 border rounded" />
           </div>
           <div>
