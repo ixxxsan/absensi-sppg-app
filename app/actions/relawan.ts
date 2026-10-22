@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, getAppUrl } from '@/lib/auth';
 import { getServerSession } from '@/lib/auth-server';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
@@ -15,7 +15,7 @@ import { isAdminRole } from '@/lib/utils';
 async function sendPasswordEmail(email: string, pass: string, name: string, isReset = false) {
   if (!process.env.RESEND_API_KEY) return;
   
-  const appUrl = (process.env.FRONTEND_URL || process.env.BETTER_AUTH_URL || 'https://absensi-sppg-teluknaga03.id').replace(/\/+$/, '');
+  const appUrl = getAppUrl();
   const title = isReset ? 'Password Akun Di-reset' : 'Selamat Datang!';
   const subject = isReset ? 'Reset Kata Sandi Akun Relawan — SPPG Teluknaga 03' : 'Akun Relawan SPPG Teluknaga 03 Anda Telah Dibuat';
   const desc = isReset
@@ -30,7 +30,7 @@ async function sendPasswordEmail(email: string, pass: string, name: string, isRe
   <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <!-- Header -->
     <div style="background:linear-gradient(135deg,#071e49 0%,#0c2860 100%);padding:32px 24px;text-align:center;">
-      <img src="${appUrl}/logo-bgn.png" alt="Logo SPPG" style="width:64px;height:auto;margin-bottom:12px;" />
+      <img src="${appUrl}/logo-bgn.png" width="64" height="64" alt="Logo SPPG" style="width:64px;max-width:64px;height:auto;margin:0 auto 12px;display:block;border:0;outline:none;" />
       <h1 style="color:#ffffff;font-size:20px;margin:0;">${title}</h1>
       <p style="color:#b5e0ea;font-size:14px;margin:8px 0 0;">SPPG Tangerang Teluknaga 03</p>
     </div>

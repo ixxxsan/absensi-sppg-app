@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useForm, UseFormRegister, UseFormWatch, type FieldPath } from "react-hook-form";
+import { useForm, UseFormRegister, UseFormWatch, UseFormSetValue, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/lib/supabase";
@@ -309,20 +309,20 @@ export default function AdminMenuPage() {
           <div>
             <label className="block mb-2 font-semibold">Nama Menu</label>
             <input 
-              key={`nama-${selectedDate}`} 
               type="text" 
               {...register("namaMenu")} 
-              defaultValue={watch("namaMenu")}
+              value={watch("namaMenu") || ""}
+              onChange={(e) => setValue("namaMenu", e.target.value, { shouldDirty: true, shouldValidate: true })}
               className="w-full p-2 border rounded" 
               placeholder="Contoh: Nasi Ayam Bakar" 
             />
           </div>
         </div>
 
-        <div key={`cards-${selectedDate}`} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <NutritionCard title="Porsi Kecil" namePrefix="giziPorsiKecil" filePrefix="fotoPorsiKecil" register={register} existingPhoto={existingMenu?.fotoPorsiKecilUrl} watch={watch} />
-          <NutritionCard title="Porsi Besar" namePrefix="giziPorsiBesar" filePrefix="fotoPorsiBesar" register={register} existingPhoto={existingMenu?.fotoPorsiBesarUrl} watch={watch} />
-          <NutritionCard title="Bumil / Busui" namePrefix="giziBumil" filePrefix="fotoBumil" register={register} existingPhoto={existingMenu?.fotoBumilUrl} watch={watch} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <NutritionCard title="Porsi Kecil" namePrefix="giziPorsiKecil" filePrefix="fotoPorsiKecil" register={register} setValue={setValue} existingPhoto={existingMenu?.fotoPorsiKecilUrl} watch={watch} />
+          <NutritionCard title="Porsi Besar" namePrefix="giziPorsiBesar" filePrefix="fotoPorsiBesar" register={register} setValue={setValue} existingPhoto={existingMenu?.fotoPorsiBesarUrl} watch={watch} />
+          <NutritionCard title="Bumil / Busui" namePrefix="giziBumil" filePrefix="fotoBumil" register={register} setValue={setValue} existingPhoto={existingMenu?.fotoBumilUrl} watch={watch} />
         </div>
 
         <button disabled={loading} type="submit" className="w-full bg-emerald-600 text-white p-3 rounded-lg font-bold hover:bg-emerald-700">
@@ -335,14 +335,15 @@ export default function AdminMenuPage() {
 
 interface NutritionCardProps {
   title: string;
-  namePrefix: string;
+  namePrefix: "giziPorsiKecil" | "giziPorsiBesar" | "giziBumil";
   filePrefix: FieldPath<MenuForm>;
   register: UseFormRegister<MenuForm>;
+  setValue: UseFormSetValue<MenuForm>;
   existingPhoto?: string;
   watch: UseFormWatch<MenuForm>;
 }
 
-function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto, watch }: NutritionCardProps) {
+function NutritionCard({ title, namePrefix, filePrefix, register, setValue, existingPhoto, watch }: NutritionCardProps) {
   const fileValue = watch(filePrefix);
   const selectedFile = fileValue && (fileValue as FileList).length > 0 ? (fileValue as FileList)[0] : null;
   const previewUrl = selectedFile ? URL.createObjectURL(selectedFile) : existingPhoto;
@@ -376,21 +377,29 @@ function NutritionCard({ title, namePrefix, filePrefix, register, existingPhoto,
       </div>
 
       <div className="space-y-3 pt-2">
-        {["energi", "protein", "lemak", "karbohidrat", "serat"].map((field) => (
-          <div key={field} className="flex items-center justify-between">
-            <span className="text-sm font-medium capitalize text-slate-700">{field}</span>
-            <div className="flex items-center gap-2">
-              <input 
-                type="number" 
-                step="any" 
-                {...register(`${namePrefix}.${field}` as FieldPath<MenuForm>, { valueAsNumber: true })} 
-                defaultValue={watch(`${namePrefix}.${field}` as FieldPath<MenuForm>) ?? 0}
-                className="w-24 p-2 border rounded-lg text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" 
-              />
-              <span className="text-xs text-slate-400 w-8">{field === 'energi' ? 'kkal' : 'g'}</span>
+        {["energi", "protein", "lemak", "karbohidrat", "serat"].map((field) => {
+          const fieldName = `${namePrefix}.${field}` as FieldPath<MenuForm>;
+          const val = watch(fieldName);
+          return (
+            <div key={field} className="flex items-center justify-between">
+              <span className="text-sm font-medium capitalize text-slate-700">{field}</span>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  step="any" 
+                  {...register(fieldName, { valueAsNumber: true })} 
+                  value={val !== undefined && val !== null ? val : 0}
+                  onChange={(e) => {
+                    const parsed = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                    setValue(fieldName, isNaN(parsed) ? 0 : parsed, { shouldDirty: true, shouldValidate: true });
+                  }}
+                  className="w-24 p-2 border rounded-lg text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" 
+                />
+                <span className="text-xs text-slate-400 w-8">{field === 'energi' ? 'kkal' : 'g'}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

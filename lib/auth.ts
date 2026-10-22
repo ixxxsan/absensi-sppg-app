@@ -18,8 +18,22 @@ const adminAc = defaultAc.newRole({
     session: ["list", "revoke", "delete"]
 });
 
+const PRODUCTION_DOMAIN = "https://absensi-sppg-teluknaga03.id";
+
+export function getAppUrl(): string {
+    const envUrl = process.env.FRONTEND_URL || process.env.BETTER_AUTH_URL || "";
+    const trimmed = envUrl.trim().replace(/\/+$/, "");
+    if (!trimmed || trimmed.includes("localhost") || trimmed.includes("127.0.0.1") || process.env.VERCEL || process.env.NODE_ENV === "production") {
+        if (trimmed.startsWith("https://") && !trimmed.includes("localhost") && !trimmed.includes("127.0.0.1")) {
+            return trimmed;
+        }
+        return PRODUCTION_DOMAIN;
+    }
+    return trimmed;
+}
+
 export const auth = betterAuth({
-    baseURL: process.env.BETTER_AUTH_URL || process.env.FRONTEND_URL || "https://absensi-sppg-teluknaga03.id",
+    baseURL: getAppUrl(),
     database: drizzleAdapter(db, {
         provider: "pg",
         schema: {
@@ -42,11 +56,15 @@ export const auth = betterAuth({
             const resend = new Resend(process.env.RESEND_API_KEY);
             const userName = user.name || "Relawan";
 
-            // Pastikan URL reset password mengarah ke web yang berjalan dan tidak mengarah ke localhost
-            const appUrl = (process.env.FRONTEND_URL || process.env.BETTER_AUTH_URL || "https://absensi-sppg-teluknaga03.id").replace(/\/+$/, "");
-            let resetUrl = token ? `${appUrl}/reset-password?token=${token}` : url;
+            // Pastikan URL reset password mengarah ke web produksi dan tidak pernah mengarah ke localhost
+            const appUrl = getAppUrl();
+            let resetUrl = token ? `${appUrl}/reset-password?token=${token}` : (url || `${appUrl}/reset-password`);
             if (resetUrl.includes("localhost") || resetUrl.includes("127.0.0.1")) {
-                resetUrl = resetUrl.replace(/^https?:\/\/[^\/]+/, appUrl);
+                if (token) {
+                    resetUrl = `${appUrl}/reset-password?token=${token}`;
+                } else {
+                    resetUrl = resetUrl.replace(/^https?:\/\/[^\/]+/, appUrl);
+                }
             }
 
             try {
@@ -62,7 +80,7 @@ export const auth = betterAuth({
   <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <!-- Header -->
     <div style="background:linear-gradient(135deg,#071e49 0%,#0c2860 100%);padding:32px 24px;text-align:center;">
-      <img src="${appUrl}/logo-bgn.png" alt="Logo SPPG" style="width:64px;height:auto;margin-bottom:12px;" />
+      <img src="${appUrl}/logo-bgn.png" width="64" height="64" alt="Logo SPPG" style="width:64px;max-width:64px;height:auto;margin:0 auto 12px;display:block;border:0;outline:none;" />
       <h1 style="color:#ffffff;font-size:20px;margin:0;">Reset Kata Sandi</h1>
       <p style="color:#b5e0ea;font-size:14px;margin:8px 0 0;">SPPG Tangerang Teluknaga 03</p>
     </div>
@@ -81,7 +99,7 @@ export const auth = betterAuth({
 </body>
 </html>`,
                 });
-                console.log(`[AUTH] Email reset password terkirim ke: ${user.email}`);
+                console.log(`[AUTH] Email reset password terkirim ke: ${user.email} (URL: ${resetUrl})`);
             } catch (error) {
                 console.error(`[AUTH] Gagal mengirim email reset ke: ${user.email}`, error);
             }

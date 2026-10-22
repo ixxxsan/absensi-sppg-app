@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, getAppUrl } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
 import { eq, or } from 'drizzle-orm';
@@ -16,9 +16,9 @@ export async function requestPasswordReset(identifier: string) {
 
     const headerList = await headers();
     const host = headerList.get('x-forwarded-host') || headerList.get('host');
-    const proto = headerList.get('x-forwarded-proto') || (host && !host.includes('localhost') && !host.includes('127.0.0.1') ? 'https' : 'http');
+    const proto = headerList.get('x-forwarded-proto') || 'https';
 
-    let appUrl = process.env.FRONTEND_URL || process.env.BETTER_AUTH_URL || 'https://absensi-sppg-teluknaga03.id';
+    let appUrl = getAppUrl();
     if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
       appUrl = `${proto}://${host}`;
     }
