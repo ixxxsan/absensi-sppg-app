@@ -12,9 +12,26 @@ import {
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import { getWeeklyReportMenuData } from '@/app/actions/laporan-mingguan';
-import { DAFTAR_SASARAN_DEFAULT, DayReportData } from '@/lib/constants/laporan-mingguan';
+import {
+  DAFTAR_SASARAN_DEFAULT,
+  DayReportData,
+  PERSIAPAN_DESCRIPTIONS,
+  PENGOLAHAN_DESCRIPTIONS,
+  PEMORSIAN_DESCRIPTIONS,
+  PENCUCIAN_STEPS,
+  DISTRIBUSI_PHOTOS,
+  SURAT_JALAN_PHOTOS,
+} from '@/lib/constants/laporan-mingguan';
 
 dayjs.locale('id');
+
+const DEFAULT_MENU_DOCX = [
+  'Nasi Putih, Chicken Teriyaki, Tahu Cabai Garam, Capcay, Semangka',
+  'Nasi Putih, Sate Taichan, Tahu Crispy, Tumis Wortel & Jagung, Kelengkeng',
+  'Nasi Putih, Ayam Lada Hitam, Steam Tofu, Sup Kimlo, Semangka',
+  'Nasi Putih, Steam Fuyunghai, Tempe Crispy, Nutrijell Strawberry, Anggur Hitam',
+  'Kentang Goreng, Dimsum, Kacang Polong, Mix Vegetables, Anggur Merah, Susu Full Cream',
+];
 
 export default function LaporanMingguanPage() {
   // Compute default Monday - Friday
@@ -33,7 +50,6 @@ export default function LaporanMingguanPage() {
   };
 
   // State: 5 operational dates (Hari Ke-1 s/d Hari Ke-5)
-  // Non-consecutive operational days supported (e.g. holiday on Tuesday -> Day 2 can be Wednesday)
   const [dates, setDates] = useState<string[]>(getDefaultDates());
   const [exportingDocx, setExportingDocx] = useState<boolean>(false);
 
@@ -45,7 +61,7 @@ export default function LaporanMingguanPage() {
     { revalidateOnFocus: false }
   );
 
-  // Fallback days map so UI always has 5 rows even during loading/initialization
+  // Map 5 operational report days
   const reportDays: DayReportData[] = useMemo(() => {
     return dates.map((d, idx) => {
       const fetched = rawReportDays.find(r => r.dateStr === d);
@@ -65,7 +81,7 @@ export default function LaporanMingguanPage() {
     });
   }, [dates, rawReportDays]);
 
-  // Update a single operational day
+  // Update a single operational day (supports skipping holidays)
   const handleDayChange = (index: number, newDate: string) => {
     if (!newDate) return;
     setDates(prev => {
@@ -80,7 +96,7 @@ export default function LaporanMingguanPage() {
     setDates(prev => prev.map(d => dayjs(d).add(offsetDays, 'day').format('YYYY-MM-DD')));
   };
 
-  // Reset to current week Monday-Friday
+  // Reset to current week
   const handleResetCurrentWeek = () => {
     setDates(getDefaultDates());
   };
@@ -98,7 +114,7 @@ export default function LaporanMingguanPage() {
     ]);
   };
 
-  // Export DOCX
+  // Export DOCX directly using master template
   const handleExportDocx = async () => {
     setExportingDocx(true);
     try {
@@ -129,7 +145,6 @@ export default function LaporanMingguanPage() {
     }
   };
 
-  // Print PDF
   const handlePrint = () => {
     window.print();
   };
@@ -139,11 +154,21 @@ export default function LaporanMingguanPage() {
   const fullDateRangeStr = `${startFormatted} – ${endFormatted}`;
   const closingDateStr = dates[4] ? dayjs(dates[4]).locale('id').format('DD MMMM YYYY') : '';
 
+  // Chunk surat jalan photos into rows of 5
+  const suratJalanRows = useMemo(() => {
+    const rows: string[][] = [];
+    for (let i = 0; i < SURAT_JALAN_PHOTOS.length; i += 5) {
+      rows.push(SURAT_JALAN_PHOTOS.slice(i, i + 5));
+    }
+    return rows;
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 print:p-0 print:bg-white print:text-black">
-      {/* Non-Printable Header & Controls */}
+      {/* ======================================================== */}
+      {/* NON-PRINTABLE TOP CONTROLS & DATE CONFIGURATION          */}
+      {/* ======================================================== */}
       <div className="max-w-6xl mx-auto mb-8 print:hidden">
-        {/* Breadcrumb / Top Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <Link
@@ -159,12 +184,11 @@ export default function LaporanMingguanPage() {
                 Laporan Mingguan SPPG
               </h1>
               <p className="text-sm text-slate-400">
-                Pilih 5 hari operasional (fleksibel jika ada libur). Menu &amp; foto otomatis terisi dari Menu Hari Ini.
+                Pilih 5 hari operasional (fleksibel jika ada libur). Format &amp; layout 1:1 identik dengan Master Word.
               </p>
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
@@ -189,7 +213,7 @@ export default function LaporanMingguanPage() {
           </div>
         </div>
 
-        {/* 5-Day Operational Date Config Card */}
+        {/* 5 Operational Days Selectors */}
         <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-5 backdrop-blur-md shadow-xl mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-white/10">
             <div className="flex items-center gap-2">
@@ -200,7 +224,6 @@ export default function LaporanMingguanPage() {
               </span>
             </div>
 
-            {/* Quick Week Controls */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleShiftWeek(-7)}
@@ -240,7 +263,6 @@ export default function LaporanMingguanPage() {
             </div>
           </div>
 
-          {/* Individual 5-Day Selectors */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {dates.map((dateStr, idx) => {
               const dayObj = dayjs(dateStr).locale('id');
@@ -266,16 +288,14 @@ export default function LaporanMingguanPage() {
                     </span>
                   </div>
 
-                  {/* Individual Date Picker */}
                   <input
                     type="date"
                     value={dateStr}
                     onChange={(e) => handleDayChange(idx, e.target.value)}
                     className="w-full bg-slate-900 border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 mb-2 font-mono"
-                    title={`Ubah tanggal Hari Ke-${idx + 1} (bisa lewati hari libur)`}
+                    title={`Ubah tanggal Hari Ke-${idx + 1}`}
                   />
 
-                  {/* Status Indicator */}
                   <div className="pt-2 border-t border-white/5">
                     <div className="flex items-center justify-between text-[11px] mb-1">
                       <span className="text-slate-400">Menu Hari Ini:</span>
@@ -289,8 +309,8 @@ export default function LaporanMingguanPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-white font-medium line-clamp-1" title={reportInfo?.namaMenu || 'Belum diisi'}>
-                      {reportInfo?.namaMenu || <span className="text-slate-500 italic">Belum diinput</span>}
+                    <p className="text-[11px] text-white font-medium line-clamp-1" title={reportInfo?.namaMenu || DEFAULT_MENU_DOCX[idx]}>
+                      {reportInfo?.namaMenu || <span className="text-slate-500 italic">Default Docx</span>}
                     </p>
                   </div>
                 </div>
@@ -304,9 +324,6 @@ export default function LaporanMingguanPage() {
               Tabel 2.3 (Sekolah): <strong>Porsi Besar</strong>.
               <span className="w-2 h-2 rounded-full bg-pink-400 ml-2"></span>
               Tabel 2.4 (Posyandu): <strong>Porsi Bumil/Busui</strong>.
-              <span className="text-slate-500 ml-2 hidden md:inline">
-                (Setiap Hari Ke-1 s/d Ke-5 bebas diatur jika ada hari libur di tengah minggu)
-              </span>
             </span>
             <Link
               href="/admin/menu"
@@ -334,539 +351,692 @@ export default function LaporanMingguanPage() {
         )}
       </div>
 
-      {/* PRINTABLE / PREVIEW CANVAS */}
-      <div className="max-w-4xl mx-auto bg-white text-slate-900 shadow-2xl rounded-2xl p-8 md:p-14 border border-slate-200 print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:text-black">
-        {/* DOCUMENT HEADER */}
-        <div className="text-center pb-6 border-b-2 border-slate-900/80 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-20 h-20 relative flex items-center justify-center">
+      {/* ======================================================== */}
+      {/* 1:1 MASTER DOCX PRINTABLE CANVAS                         */}
+      {/* Exactly mirrors Laporan_Pelaksanaan_Program_MBG_Master   */}
+      {/* ======================================================== */}
+      <div
+        className="max-w-[210mm] mx-auto bg-white text-black shadow-2xl p-[20mm] border border-slate-300 print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none"
+        style={{ fontFamily: 'Calibri, "Segoe UI", Arial, sans-serif' }}
+      >
+        {/* ==================== COVER / HEADER ==================== */}
+        <div className="text-center mb-10">
+          <p className="font-bold text-[14pt] leading-snug uppercase">
+            LAPORAN PELAKSANAAN PROGRAM MAKAN BERGIZI GRATIS
+          </p>
+          <p className="font-bold text-[14pt] leading-snug uppercase mt-1">
+            SATUAN PELAYANAN PEMENUHAN GIZI – YAYASAN AL-FRUQON PANTURA TANGERANG – BANTEN
+          </p>
+
+          {/* Centered Single Badan Gizi Nasional Logo */}
+          <div className="my-8 flex justify-center">
+            <div className="w-[140px] h-[140px] relative">
               <Image
-                src="/logo-bgn.png"
+                src="/images/laporan/image1.png"
                 alt="Logo Badan Gizi Nasional"
-                width={80}
-                height={80}
-                className="object-contain max-h-20"
+                width={140}
+                height={140}
+                className="object-contain"
                 priority
               />
             </div>
-            <div className="flex-1 px-4">
-              <h1 className="text-base md:text-lg font-black tracking-wide uppercase text-slate-950">
-                LAPORAN PELAKSANAAN PROGRAM MAKAN BERGIZI GRATIS
-              </h1>
-              <h2 className="text-xs md:text-sm font-bold tracking-wide uppercase text-slate-800 mt-1">
-                SATUAN PELAYANAN PEMENUHAN GIZI – YAYASAN AL-FRUQON PANTURA TANGERANG – BANTEN
-              </h2>
-              <div className="mt-2 inline-block bg-slate-100 border border-slate-300 text-slate-900 font-extrabold text-xs md:text-sm px-4 py-1 rounded">
-                LAPORAN MINGGUAN {fullDateRangeStr.toUpperCase()}
-              </div>
-            </div>
-            <div className="w-20 h-20 relative flex items-center justify-center">
-              <Image
-                src="/logo-yayasan.png"
-                alt="Logo Yayasan Al-Fruqon"
-                width={80}
-                height={80}
-                className="object-contain max-h-20"
-                priority
-              />
+          </div>
+
+          {/* Centered Subtitle */}
+          <p className="font-bold text-[12pt] leading-snug">
+            LAPORAN MINGGUAN {fullDateRangeStr}
+          </p>
+        </div>
+
+        {/* ==================== BAB 1 PENDAHULUAN ==================== */}
+        <div className="mb-6">
+          <p className="font-bold text-[14pt] uppercase mb-3">
+            BAB 1 PENDAHULUAN
+          </p>
+
+          <p className="font-bold text-[12pt] mb-1.5">
+            A. Latar Belakang
+          </p>
+          <p className="text-[11pt] text-justify leading-relaxed mb-3">
+            Masalah gizi buruk masih menjadi tantangan besar di berbagai daerah, terutama di desa terpencil yang memiliki akses terbatas terhadap makanan bergizi. Kondisi ini dapat berdampak negatif pada kesehatan dan perkembangan anak-anak serta produktivitas masyarakat. Oleh karena itu, diperlukan langkah nyata untuk memberikan akses makanan bergizi kepada masyarakat yang membutuhkan, sekaligus meningkatkan kesadaran akan pentingnya pola makan sehat.
+          </p>
+          <p className="text-[11pt] text-justify leading-relaxed mb-3">
+            Indonesia sebagai negara berkembang menghadapi berbagai tantangan di bidang kesehatan masyarakat, salah satunya adalah prevalensi stunting yang tinggi akibat kekurangan gizi kronis. Data dari Kementrian Kesehatan menunjukan bahwa anak-anak di bawah usia lima tahun di beberapa wilayah mengalami kekurangan gizi, yang berdampak pada tingkat kecerdasan dan daya saing mereka di masa depan. Program intervensi yang terfokus pada penyediaan makanan bergizi menjadi solusi yang mendesak untuk diterapkan. Selain itu, kesadaran masyarakat tentang pentingnya pola makan sehat masih rendah. Banyak keluarga, terutama di wilayah pedesaan, belum memahami pentingnya asupan makanan bergizi untuk menunjang kesehatan. Hal ini diperparah oleh keterbatasan ekonomi yang membuat sebagian besar keluarga hanya mampu menyediakan makanan pokok tanpa memikirkan kandungan nutrisi nya.
+          </p>
+          <p className="text-[11pt] text-justify leading-relaxed mb-4">
+            Program ini dirancang untuk memberikan dampak jangka pendek dan jangka panjang. Dalam jangka pendek, diharapkan masyarakat dapat merasakan manfaat langsung dari makanan bergizi yang disediakan. Dalam jangka panjang, program ini bertujuan untuk meningkatkan kualitas hidup masyarakat melalui edukasi berkelanjutan tentang pentingnya pola makan yang sehat.
+          </p>
+
+          <p className="font-bold text-[12pt] mb-1.5">
+            B. Tujuan
+          </p>
+          <p className="text-[11pt] mb-1">
+            Program ini bertujuan untuk:
+          </p>
+          <p className="text-[11pt] mb-1">
+            Memberikan makanan bergizi secara gratis kepada masyarakat yang membutuhkan.
+          </p>
+          <p className="text-[11pt] mb-1">
+            Meningkatkan kesadaran masyarakat akan pentingnya pola makan sehat.
+          </p>
+          <p className="text-[11pt] mb-4">
+            Memperbaiki akses makanan gizi seimbang dan di lokasi sasaran.
+          </p>
+
+          <p className="font-bold text-[12pt] mb-1.5">
+            C. Sasaran
+          </p>
+          <p className="text-[11pt] mb-2">
+            Sasaran kegiatan ini adalah:
+          </p>
+          <table className="w-full text-[11pt] mb-6 border-none">
+            <tbody>
+              <tr>
+                <td className="w-64 py-0.5">1. Siswa TK/PAUD/RA</td>
+                <td className="py-0.5">: 95 Siswa</td>
+              </tr>
+              <tr>
+                <td className="py-0.5">2. Siswa SD/MI</td>
+                <td className="py-0.5">: 1.921 Siswa</td>
+              </tr>
+              <tr>
+                <td className="py-0.5">3. 3 B (Bumil, Busui, Balita)</td>
+                <td className="py-0.5">: 578 Orang</td>
+              </tr>
+              <tr>
+                <td className="py-0.5">4. Kader</td>
+                <td className="py-0.5">: 21 Orang</td>
+              </tr>
+              <tr>
+                <td className="py-0.5">5. Guru &amp; Tenaga Pendidik</td>
+                <td className="py-0.5">: 93 Orang</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* ==================== BAB II PELAKSANAAN KEGIATAN ==================== */}
+        <div className="mb-6">
+          <p className="font-bold text-[14pt] uppercase mb-3">
+            BAB II PELAKSANAAN KEGIATAN
+          </p>
+
+          <p className="font-bold text-[12pt] mb-1.5">
+            A. Persiapan (Koordinasi Lintas Sektor)
+          </p>
+          <p className="text-[11pt] mb-1">
+            Koordinasi lintas sektor melibatkan berbagai instansi terkait, sebagai berikut:
+          </p>
+          <p className="text-[11pt] mb-1">
+            Dinas pendidikan Kabupaten Tangerang
+          </p>
+          <p className="text-[11pt] mb-1">
+            Dinas Kesehatan Kabupaten Tangerang
+          </p>
+          <p className="text-[11pt] mb-1">
+            Kodim 0510 Kabupaten Tangerang
+          </p>
+          <p className="text-[11pt] mb-6">
+            Koramil Teluk Naga
+          </p>
+
+          <p className="font-bold text-[12pt] mb-2">
+            B. Lampiran Kegiatan
+          </p>
+
+          {/* 1. Persiapan */}
+          <p className="font-bold text-[11pt] mb-2">
+            1. Persiapan
+          </p>
+          <table className="w-full text-[10.5pt] border-collapse border border-black mb-6">
+            <tbody>
+              {reportDays.map((d, i) => (
+                <tr key={`persiapan-${i}`} className="border border-black">
+                  <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
+                    <div className="w-[110px] h-[146px] mx-auto relative">
+                      <Image
+                        src={`/images/laporan/image${2 + i}.jpeg`}
+                        alt={`Persiapan ${d.hariTanggalLengkap}`}
+                        fill
+                        sizes="120px"
+                        className="object-cover"
+                      />
+                    </div>
+                  </td>
+                  <td className="p-3 border border-black align-top text-justify leading-relaxed">
+                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PERSIAPAN_DESCRIPTIONS[i]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* 2. Pengolahan */}
+          <p className="font-bold text-[11pt] mb-2">
+            2. Pengolahan
+          </p>
+          <table className="w-full text-[10.5pt] border-collapse border border-black mb-6">
+            <tbody>
+              {reportDays.map((d, i) => (
+                <tr key={`pengolahan-${i}`} className="border border-black">
+                  <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
+                    <div className="w-[110px] h-[146px] mx-auto relative">
+                      <Image
+                        src={`/images/laporan/image${7 + i}.jpeg`}
+                        alt={`Pengolahan ${d.hariTanggalLengkap}`}
+                        fill
+                        sizes="120px"
+                        className="object-cover"
+                      />
+                    </div>
+                  </td>
+                  <td className="p-3 border border-black align-top text-justify leading-relaxed">
+                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PENGOLAHAN_DESCRIPTIONS[i]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* 3. Pemorsian dan Packing */}
+          <p className="font-bold text-[11pt] mb-2">
+            3. Pemorsian dan Packing
+          </p>
+          <table className="w-full text-[10.5pt] border-collapse border border-black mb-6">
+            <tbody>
+              {reportDays.map((d, i) => (
+                <tr key={`pemorsian-${i}`} className="border border-black">
+                  <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
+                    <div className="w-[110px] h-[146px] mx-auto relative">
+                      <Image
+                        src={`/images/laporan/image${12 + i}.jpeg`}
+                        alt={`Pemorsian ${d.hariTanggalLengkap}`}
+                        fill
+                        sizes="120px"
+                        className="object-cover"
+                      />
+                    </div>
+                  </td>
+                  <td className="p-3 border border-black align-top text-justify leading-relaxed">
+                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PEMORSIAN_DESCRIPTIONS[i]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* 4. Distribusi */}
+          <p className="font-bold text-[11pt] mb-1">
+            4. Distribusi
+          </p>
+          <p className="text-[11pt] mb-2">
+            Minggu ini pendistribusian Makan Bergizi dimulai pukul 08:00 WIB untuk sekolah, dilanjut dengan pukul 09:00 WIB untuk Posyandu.
+          </p>
+          <table className="w-full border-collapse border border-black mb-6">
+            <tbody>
+              <tr className="border border-black">
+                <td className="w-1/2 p-2 border border-black text-center align-middle">
+                  <div className="w-full h-[180px] relative">
+                    <Image
+                      src="/images/laporan/image17.jpeg"
+                      alt="Distribusi Sekolah"
+                      fill
+                      sizes="350px"
+                      className="object-cover"
+                    />
+                  </div>
+                </td>
+                <td className="w-1/2 p-2 border border-black text-center align-middle">
+                  <div className="w-full h-[180px] relative">
+                    <Image
+                      src="/images/laporan/image18.jpeg"
+                      alt="Distribusi Posyandu"
+                      fill
+                      sizes="350px"
+                      className="object-cover"
+                    />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* 5. Pencucian Ompreng */}
+          <p className="font-bold text-[11pt] mb-2">
+            5. Pencucian Ompreng
+          </p>
+          <table className="w-full text-[10.5pt] border-collapse border border-black mb-6">
+            <tbody>
+              {PENCUCIAN_STEPS.map((step, idx) => (
+                <tr key={`cuci-${idx}`} className="border border-black">
+                  <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
+                    <div className="w-[110px] h-[146px] mx-auto relative">
+                      <Image
+                        src={step.image}
+                        alt={step.title}
+                        fill
+                        sizes="120px"
+                        className="object-cover"
+                      />
+                    </div>
+                  </td>
+                  <td className="p-3 border border-black align-top text-justify leading-relaxed">
+                    <span className="font-bold">{step.title}</span><br />
+                    {step.desc}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* ==================== C. Pelaksaan ==================== */}
+          <p className="font-bold text-[12pt] mb-3">
+            C. Pelaksaan
+          </p>
+
+          {/* Tabel 2.1 */}
+          <p className="text-center font-bold text-[11pt] mb-0.5">
+            Tabel 2.1
+          </p>
+          <p className="text-center font-bold text-[11pt] mb-3">
+            Penerima Menu MBG
+          </p>
+          <table className="w-full text-[10pt] border-collapse border border-black mb-8">
+            <thead>
+              <tr className="border border-black font-bold text-center">
+                <th className="border border-black p-1.5 w-10">No.</th>
+                <th className="border border-black p-1.5 w-40">Kabupaten/Kota</th>
+                <th className="border border-black p-1.5">Nama Sekolah</th>
+                <th className="border border-black p-1.5">Alamat Sekolah</th>
+                <th className="border border-black p-1.5 w-36">
+                  Jumlah Siswa/Kel Sasaran lain yang mendapat MBG
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {DAFTAR_SASARAN_DEFAULT.map((item) => (
+                <tr key={item.no} className="border border-black">
+                  <td className="border border-black p-1.5 text-center">{item.no}.</td>
+                  <td className="border border-black p-1.5">{item.kabupaten}</td>
+                  <td className="border border-black p-1.5 font-medium">{item.nama}</td>
+                  <td className="border border-black p-1.5">{item.alamat}</td>
+                  <td className="border border-black p-1.5 text-center">{item.jumlah}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Tabel 2.2 */}
+          <p className="text-center font-bold text-[11pt] mb-0.5">
+            Tabel 2.2
+          </p>
+          <p className="text-center font-bold text-[11pt] mb-3">
+            Jenis Menu MBG yang Diberikan
+          </p>
+          <table className="w-full text-[9.5pt] border-collapse border border-black mb-8">
+            <thead>
+              <tr className="border border-black font-bold text-center">
+                <th className="border border-black p-1.5 w-32">Kabupaten/Kota</th>
+                <th className="border border-black p-1.5 w-36">Nama Sekolah</th>
+                <th className="border border-black p-1.5 w-16">Pemberian Ke-</th>
+                <th className="border border-black p-1.5 w-40">Hari/Tanggal Pemberian</th>
+                <th className="border border-black p-1.5">Jenis Menu MBG</th>
+                <th className="border border-black p-1.5 w-12">Ket.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reportDays.map((d, dIdx) => {
+                const currentMenu = d.namaMenu || DEFAULT_MENU_DOCX[dIdx];
+                return (
+                  <tr key={`t22-group-${dIdx}`} className="contents">
+                    {/* 1. PAUD */}
+                    <tr className="border border-black">
+                      <td className="border border-black p-1">Kabupaten Tangerang</td>
+                      <td className="border border-black p-1">PAUD Mathlaul Huda</td>
+                      <td className="border border-black p-1 text-center">{d.pemberianKe}</td>
+                      <td className="border border-black p-1">{d.hariTanggalLengkap}</td>
+                      <td className="border border-black p-1 font-medium">{currentMenu}</td>
+                      <td className="border border-black p-1 text-center"></td>
+                    </tr>
+                    {/* 2. MI */}
+                    <tr className="border border-black">
+                      <td className="border border-black p-1">Kabupaten Tangerang</td>
+                      <td className="border border-black p-1">MI Mathlaul Huda</td>
+                      <td className="border border-black p-1 text-center">{d.pemberianKe}</td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1 text-center"></td>
+                    </tr>
+                    {/* 3. SD 1 */}
+                    <tr className="border border-black">
+                      <td className="border border-black p-1">Kabupaten Tangerang</td>
+                      <td className="border border-black p-1">SD Kebon Cau I</td>
+                      <td className="border border-black p-1 text-center">{d.pemberianKe}</td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1 text-center"></td>
+                    </tr>
+                    {/* 4. SD 2 */}
+                    <tr className="border border-black">
+                      <td className="border border-black p-1">Kabupaten Tangerang</td>
+                      <td className="border border-black p-1">SD Kebon Cau II</td>
+                      <td className="border border-black p-1 text-center">{d.pemberianKe}</td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1 text-center"></td>
+                    </tr>
+                    {/* 5. Posyandu 4 */}
+                    <tr className="border border-black">
+                      <td className="border border-black p-1">Kabupaten Tangerang</td>
+                      <td className="border border-black p-1">Posyandu Teratai 4</td>
+                      <td className="border border-black p-1 text-center">{d.pemberianKe}</td>
+                      <td className="border border-black p-1">{d.hariTanggalLengkap}</td>
+                      <td className="border border-black p-1 font-medium">{currentMenu}</td>
+                      <td className="border border-black p-1 text-center"></td>
+                    </tr>
+                    {/* 6. Posyandu 5 */}
+                    <tr className="border border-black">
+                      <td className="border border-black p-1">Kabupaten Tangerang</td>
+                      <td className="border border-black p-1">Posyandu Teratai 5</td>
+                      <td className="border border-black p-1 text-center">{d.pemberianKe}</td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1 text-center"></td>
+                    </tr>
+                    {/* 7. Posyandu 6 */}
+                    <tr className="border border-black">
+                      <td className="border border-black p-1">Kabupaten Tangerang</td>
+                      <td className="border border-black p-1">Posyandu Teratai 6</td>
+                      <td className="border border-black p-1 text-center">{d.pemberianKe}</td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1 text-center"></td>
+                    </tr>
+                    {/* 8. Posyandu 7 */}
+                    <tr className="border border-black">
+                      <td className="border border-black p-1">Kabupaten Tangerang</td>
+                      <td className="border border-black p-1">Posyandu Teratai 7</td>
+                      <td className="border border-black p-1 text-center">{d.pemberianKe}</td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1 text-center"></td>
+                    </tr>
+                    {/* 9. Posyandu 8 */}
+                    <tr className="border border-black">
+                      <td className="border border-black p-1">Kabupaten Tangerang</td>
+                      <td className="border border-black p-1">Posyandu Teratai 8</td>
+                      <td className="border border-black p-1 text-center">{d.pemberianKe}</td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1 text-center"></td>
+                    </tr>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* Tabel 2.3: Dokumentasi Kegiatan Sekolah */}
+          <p className="text-center font-bold text-[11pt] mb-0.5">
+            Tabel 2.3
+          </p>
+          <p className="text-center font-bold text-[11pt] mb-3">
+            Dokumentasi Kegiatan Sekolah
+          </p>
+          <table className="w-full text-[10pt] border-collapse border border-black mb-8">
+            <thead>
+              <tr className="border border-black font-bold text-center">
+                <th className="border border-black p-2 w-[35%]">MBG TK/RA, SD/I</th>
+                <th className="border border-black p-2 w-[22%]">Hari/Tanggal</th>
+                <th className="border border-black p-2 w-[43%]">Menu</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reportDays.map((d, i) => {
+                const currentMenu = d.namaMenu || DEFAULT_MENU_DOCX[i];
+                return (
+                  <tr key={`sek-${i}`} className="border border-black">
+                    <td className="border border-black p-2.5 align-middle leading-relaxed font-medium">
+                      {currentMenu}.
+                    </td>
+                    <td className="border border-black p-2.5 align-middle text-center font-medium whitespace-nowrap">
+                      {d.hariTanggalSingkat}
+                    </td>
+                    <td className="border border-black p-2 align-middle text-center">
+                      <div className="w-[180px] h-[120px] mx-auto relative bg-slate-50">
+                        {d.fotoPorsiBesarUrl ? (
+                          <Image
+                            src={d.fotoPorsiBesarUrl}
+                            alt={`Menu Sekolah ${d.hariTanggalSingkat}`}
+                            fill
+                            sizes="200px"
+                            unoptimized
+                            className="object-cover"
+                          />
+                        ) : (
+                          <Image
+                            src={`/images/laporan/image${27 + i}.png`}
+                            alt={`Menu Sekolah ${i + 1}`}
+                            fill
+                            sizes="200px"
+                            className="object-cover"
+                          />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* Tabel 2.4: Dokumentasi Kegiatan Posyandu (3B) */}
+          <p className="text-center font-bold text-[11pt] mb-0.5">
+            Tabel 2.4
+          </p>
+          <p className="text-center font-bold text-[11pt] mb-3">
+            Dokumentasi Kegiatan Posyandu (3B)
+          </p>
+          <table className="w-full text-[10pt] border-collapse border border-black mb-8">
+            <thead>
+              <tr className="border border-black font-bold text-center">
+                <th className="border border-black p-2 w-[35%]">Posyandu</th>
+                <th className="border border-black p-2 w-[22%]">Hari/Tanggal</th>
+                <th className="border border-black p-2 w-[43%]">Menu</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reportDays.map((d, i) => {
+                const currentMenu = d.namaMenu || DEFAULT_MENU_DOCX[i];
+                const fallbackImg = i === 4 ? '/images/laporan/image32.png' : `/images/laporan/image${27 + i}.png`;
+                return (
+                  <tr key={`pos-${i}`} className="border border-black">
+                    <td className="border border-black p-2.5 align-middle leading-relaxed font-medium">
+                      {currentMenu}.
+                    </td>
+                    <td className="border border-black p-2.5 align-middle text-center font-medium whitespace-nowrap">
+                      {d.hariTanggalSingkat}
+                    </td>
+                    <td className="border border-black p-2 align-middle text-center">
+                      <div className="w-[180px] h-[120px] mx-auto relative bg-slate-50">
+                        {d.fotoBumilUrl ? (
+                          <Image
+                            src={d.fotoBumilUrl}
+                            alt={`Menu Posyandu ${d.hariTanggalSingkat}`}
+                            fill
+                            sizes="200px"
+                            unoptimized
+                            className="object-cover"
+                          />
+                        ) : (
+                          <Image
+                            src={fallbackImg}
+                            alt={`Menu Posyandu ${i + 1}`}
+                            fill
+                            sizes="200px"
+                            className="object-cover"
+                          />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* Dokumentasi Distribusi Sekolah dan Posyandu */}
+          <p className="font-bold text-[11pt] mb-2">
+            Dokumentasi Distribusi Sekolah dan Posyandu
+          </p>
+          <table className="w-full border-collapse border border-black mb-8">
+            <tbody>
+              <tr className="border border-black">
+                {DISTRIBUSI_PHOTOS.slice(0, 4).map((img, idx) => (
+                  <td key={`dist-r1-${idx}`} className="w-1/4 p-1.5 border border-black text-center align-middle">
+                    <div className="w-full h-[110px] relative">
+                      <Image
+                        src={`/images/laporan/${img}`}
+                        alt={`Distribusi ${idx + 1}`}
+                        fill
+                        sizes="180px"
+                        className="object-cover"
+                      />
+                    </div>
+                  </td>
+                ))}
+              </tr>
+              <tr className="border border-black">
+                {DISTRIBUSI_PHOTOS.slice(4, 8).map((img, idx) => (
+                  <td key={`dist-r2-${idx}`} className="w-1/4 p-1.5 border border-black text-center align-middle">
+                    <div className="w-full h-[110px] relative">
+                      <Image
+                        src={`/images/laporan/${img}`}
+                        alt={`Distribusi ${idx + 5}`}
+                        fill
+                        sizes="180px"
+                        className="object-cover"
+                      />
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Dokumentasi Surat Jalan Sekolah dan Posyandu */}
+          <p className="font-bold text-[11pt] mb-2">
+            Dokumentasi Surat Jalan Sekolah dan Posyandu
+          </p>
+          <table className="w-full border-collapse border border-black mb-8">
+            <tbody>
+              {suratJalanRows.map((row, rIdx) => (
+                <tr key={`sj-row-${rIdx}`} className="border border-black">
+                  {row.map((img, cIdx) => (
+                    <td key={`sj-col-${cIdx}`} className="w-1/5 p-1 border border-black text-center align-middle">
+                      <div className="w-full h-[130px] relative">
+                        <Image
+                          src={`/images/laporan/${img}`}
+                          alt={`Surat Jalan ${rIdx * 5 + cIdx + 1}`}
+                          fill
+                          sizes="150px"
+                          className="object-cover"
+                        />
+                      </div>
+                    </td>
+                  ))}
+                  {/* Fill empty cells in last row if less than 5 */}
+                  {row.length < 5 && Array.from({ length: 5 - row.length }).map((_, emptyIdx) => (
+                    <td key={`sj-empty-${emptyIdx}`} className="w-1/5 p-1 border border-black"></td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ==================== BAB III PERMASALAHAN & KENDALA ==================== */}
+        <div className="mb-6">
+          <p className="font-bold text-[14pt] uppercase mb-3">
+            BAB III PERMASALAHAN &amp; KENDALA
+          </p>
+
+          <p className="font-bold text-[11pt] mb-1">
+            Permasalahan &amp; Kendala
+          </p>
+          <p className="font-bold text-[11pt] mb-3">
+            -
+          </p>
+
+          <p className="font-bold text-[11pt] mb-1">
+            Penanganan Masalah
+          </p>
+          <p className="text-[11pt] mb-3">
+            -
+          </p>
+
+          <p className="font-bold text-[11pt] mb-1">
+            C. Rencana Tindak Lanjut
+          </p>
+          <p className="font-bold text-[11pt] mb-6">
+            -
+          </p>
+        </div>
+
+        {/* ==================== BAB IV PENUTUP ==================== */}
+        <div>
+          <p className="font-bold text-[14pt] uppercase mb-3">
+            BAB IV PENUTUP
+          </p>
+
+          <p className="text-[11pt] text-justify leading-relaxed mb-3">
+            Program Makanan Bergizi Gratis yang dijalankan oleh pemerintah merupakan salah satu upaya strategis dalam meningkatkan kualitas gizi masyarakat, khususnya bagi kelompok yang kurang mampu. Dalam pelaksanaannya, program ini bertujuan untuk mengurangi prevalensi gizi buruk, meningkatkan kesehatan anak-anak, serta memberikan akses yang lebih baik kepada makanan bergizi bagi keluarga-keluarga yang membutuhkan.
+          </p>
+          <p className="text-[11pt] text-justify leading-relaxed mb-3">
+            Berdasarkan hasil pelaksanaan dan evaluasi, dapat disimpulkan bahwa program ini memberikan dampak positif terhadap peningkatan status gizi masyarakat. Melalui distribusi makanan bergizi yang tepat sasaran, program ini berperan penting dalam menurunkan angka stunting, memperbaiki kualitas kesehatan, serta mendorong peningkatan produktivitas di kalangan penerima manfaat.
+          </p>
+          <p className="text-[11pt] text-justify leading-relaxed mb-3">
+            Namun demikian, terdapat beberapa tantangan yang perlu diatasi, seperti distribusi yang belum merata, kendala logistik, serta keterbatasan sumber daya yang mempengaruhi keberlanjutan program. Oleh karena itu, diperlukan kolaborasi yang lebih erat antara pemerintah, pihak swasta, dan masyarakat untuk memperbaiki dan mengoptimalkan pelaksanaan program ini di masa depan.
+          </p>
+          <p className="text-[11pt] text-justify leading-relaxed mb-3">
+            Sebagai rekomendasi, peningkatan sistem distribusi yang lebih efisien dan pemantauan yang lebih ketat terhadap kualitas makanan yang disalurkan harus menjadi prioritas. Selain itu, edukasi mengenai pentingnya gizi seimbang perlu diperluas untuk mendukung keberhasilan program ini secara menyeluruh.
+          </p>
+          <p className="text-[11pt] text-justify leading-relaxed mb-8">
+            Dengan komitmen dan dukungan yang kuat dari berbagai pihak, diharapkan program Makanan Bergizi Gratis ini dapat terus berkembang dan memberikan manfaat yang lebih luas bagi masyarakat Indonesia, serta membantu menciptakan generasi yang lebih sehat dan produktif.
+          </p>
+
+          {/* Signature Block matching docx */}
+          <div className="flex justify-end mt-8">
+            <div className="text-center w-64 text-[11pt]">
+              <p>Teluk Naga, {closingDateStr}</p>
+              <p className="mt-1">Kepala SPPG Teluk Naga 03</p>
+              <div className="h-24"></div>
+              <p className="font-bold">Rahmad Diko</p>
             </div>
           </div>
         </div>
-
-        {/* BAB I: PENDAHULUAN */}
-        <section className="mb-8">
-          <h2 className="text-sm md:text-base font-bold text-slate-950 uppercase mb-3">
-            BAB I PENDAHULUAN
-          </h2>
-
-          <div className="mb-4">
-            <h3 className="font-bold text-xs md:text-sm text-slate-900 mb-1">A. Latar Belakang</h3>
-            <p className="text-xs text-justify leading-relaxed text-slate-800 mb-2">
-              Masalah gizi buruk masih menjadi tantangan besar di berbagai daerah, terutama di desa terpencil yang memiliki akses terbatas terhadap makanan bergizi. Kondisi ini dapat berdampak negatif pada kesehatan dan perkembangan anak-anak serta produktivitas masyarakat. Oleh karena itu, diperlukan langkah nyata untuk memberikan akses makanan bergizi kepada masyarakat yang membutuhkan, sekaligus meningkatkan kesadaran akan pentingnya pola makan sehat.
-            </p>
-            <p className="text-xs text-justify leading-relaxed text-slate-800 mb-2">
-              Indonesia sebagai negara berkembang menghadapi berbagai tantangan di bidang kesehatan masyarakat, salah satunya adalah prevalensi stunting yang tinggi akibat kekurangan gizi kronis. Data dari Kementerian Kesehatan menunjukkan bahwa anak-anak di bawah usia lima tahun di beberapa wilayah mengalami kekurangan gizi, yang berdampak pada tingkat kecerdasan dan daya saing mereka di masa depan. Program intervensi yang terfokus pada penyediaan makanan bergizi menjadi solusi yang mendesak untuk diterapkan.
-            </p>
-            <p className="text-xs text-justify leading-relaxed text-slate-800">
-              Program ini dirancang untuk memberikan dampak jangka pendek dan jangka panjang. Dalam jangka pendek, diharapkan masyarakat dapat merasakan manfaat langsung dari makanan bergizi yang disediakan. Dalam jangka panjang, program ini bertujuan untuk meningkatkan kualitas hidup masyarakat melalui edukasi berkelanjutan tentang pentingnya pola makan yang sehat.
-            </p>
-          </div>
-
-          <div className="mb-4">
-            <h3 className="font-bold text-xs md:text-sm text-slate-900 mb-1">B. Tujuan</h3>
-            <p className="text-xs text-slate-800 mb-1">Program ini bertujuan untuk:</p>
-            <ul className="list-disc list-inside text-xs text-slate-800 space-y-0.5 ml-2">
-              <li>Memberikan makanan bergizi secara gratis kepada masyarakat yang membutuhkan.</li>
-              <li>Meningkatkan kesadaran masyarakat akan pentingnya pola makan sehat.</li>
-              <li>Memperbaiki akses makanan gizi seimbang di lokasi sasaran.</li>
-            </ul>
-          </div>
-
-          <div className="mb-4">
-            <h3 className="font-bold text-xs md:text-sm text-slate-900 mb-1">C. Sasaran</h3>
-            <p className="text-xs text-slate-800 mb-2">Sasaran kegiatan ini adalah:</p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse border border-slate-400">
-                <tbody>
-                  <tr className="border-b border-slate-300">
-                    <td className="py-1 px-3 font-medium w-64 border-r border-slate-300">1. Siswa TK/PAUD/RA</td>
-                    <td className="py-1 px-3 font-semibold">: 95 Siswa</td>
-                  </tr>
-                  <tr className="border-b border-slate-300 bg-slate-50">
-                    <td className="py-1 px-3 font-medium border-r border-slate-300">2. Siswa SD/MI</td>
-                    <td className="py-1 px-3 font-semibold">: 1.921 Siswa</td>
-                  </tr>
-                  <tr className="border-b border-slate-300">
-                    <td className="py-1 px-3 font-medium border-r border-slate-300">3. 3 B (Bumil, Busui, Balita)</td>
-                    <td className="py-1 px-3 font-semibold">: 578 Orang</td>
-                  </tr>
-                  <tr className="border-b border-slate-300 bg-slate-50">
-                    <td className="py-1 px-3 font-medium border-r border-slate-300">4. Kader</td>
-                    <td className="py-1 px-3 font-semibold">: 21 Orang</td>
-                  </tr>
-                  <tr className="border-b border-slate-300">
-                    <td className="py-1 px-3 font-medium border-r border-slate-300">5. Guru &amp; Tenaga Pendidik</td>
-                    <td className="py-1 px-3 font-semibold">: 93 Orang</td>
-                  </tr>
-                  <tr className="bg-slate-100 font-bold">
-                    <td className="py-1.5 px-3 border-r border-slate-300">TOTAL SASARAN</td>
-                    <td className="py-1.5 px-3">: 2.708 Orang</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        {/* BAB II: PELAKSANAAN KEGIATAN */}
-        <section className="mb-8">
-          <h2 className="text-sm md:text-base font-bold text-slate-950 uppercase mb-3">
-            BAB II PELAKSANAAN KEGIATAN
-          </h2>
-
-          <div className="mb-4">
-            <h3 className="font-bold text-xs md:text-sm text-slate-900 mb-1">
-              A. Persiapan (Koordinasi Lintas Sektor)
-            </h3>
-            <p className="text-xs text-slate-800 mb-1">
-              Koordinasi lintas sektor melibatkan berbagai instansi terkait, sebagai berikut:
-            </p>
-            <ul className="list-disc list-inside text-xs text-slate-800 space-y-0.5 ml-2">
-              <li>Dinas Pendidikan Kabupaten Tangerang</li>
-              <li>Dinas Kesehatan Kabupaten Tangerang</li>
-              <li>Kodim 0510 Kabupaten Tangerang</li>
-              <li>Koramil Teluk Naga</li>
-            </ul>
-          </div>
-
-          {/* Lampiran Kegiatan (Workflow & Process Photos) */}
-          <div className="mb-6">
-            <h3 className="font-bold text-xs md:text-sm text-slate-900 mb-2">
-              B. Lampiran Kegiatan
-            </h3>
-
-            {/* 1. Persiapan */}
-            <div className="mb-4">
-              <h4 className="font-semibold text-xs text-slate-900 mb-1.5">1. Persiapan Bahan Makanan</h4>
-              <div className="grid grid-cols-5 gap-2">
-                {[
-                  { img: '/images/laporan/image2.jpeg', desc: 'Pemotongan labu siam & bahan makanan' },
-                  { img: '/images/laporan/image3.jpeg', desc: 'Pemotongan kol & sayuran' },
-                  { img: '/images/laporan/image4.jpeg', desc: 'Pemarutan labu siam & bumbu' },
-                  { img: '/images/laporan/image5.jpeg', desc: 'Pemotongan halus sayur' },
-                  { img: '/images/laporan/image6.jpeg', desc: 'Pemotongan wortel & bahan baku' },
-                ].map((item, i) => {
-                  const dayLabel = dates[i] ? dayjs(dates[i]).locale('id').format('dddd, DD/MM') : `Hari ${i + 1}`;
-                  return (
-                    <div key={i} className="border border-slate-300 rounded p-1 text-center bg-slate-50">
-                      <div className="h-20 w-full relative mb-1 bg-slate-200">
-                        <Image src={item.img} alt={dayLabel} fill sizes="100px" className="object-cover rounded" />
-                      </div>
-                      <div className="text-[10px] font-bold text-slate-900">{dayLabel}</div>
-                      <div className="text-[9px] text-slate-600 line-clamp-2 leading-tight">{item.desc}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 2. Pengolahan */}
-            <div className="mb-4">
-              <h4 className="font-semibold text-xs text-slate-900 mb-1.5">2. Pengolahan / Memasak</h4>
-              <div className="grid grid-cols-5 gap-2">
-                {[
-                  { img: '/images/laporan/image7.jpeg', desc: 'Memasak olahan ayam' },
-                  { img: '/images/laporan/image8.jpeg', desc: 'Menggoreng tahu & lauk nabati' },
-                  { img: '/images/laporan/image9.jpeg', desc: 'Pengolahan daging berbumbu' },
-                  { img: '/images/laporan/image10.jpeg', desc: 'Penggorengan lauk & protein' },
-                  { img: '/images/laporan/image11.jpeg', desc: 'Memasak daging slice & teriyaki' },
-                ].map((item, i) => {
-                  const dayLabel = dates[i] ? dayjs(dates[i]).locale('id').format('dddd, DD/MM') : `Hari ${i + 1}`;
-                  return (
-                    <div key={i} className="border border-slate-300 rounded p-1 text-center bg-slate-50">
-                      <div className="h-20 w-full relative mb-1 bg-slate-200">
-                        <Image src={item.img} alt={dayLabel} fill sizes="100px" className="object-cover rounded" />
-                      </div>
-                      <div className="text-[10px] font-bold text-slate-900">{dayLabel}</div>
-                      <div className="text-[9px] text-slate-600 line-clamp-2 leading-tight">{item.desc}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 3. Pemorsian & Packing */}
-            <div className="mb-4">
-              <h4 className="font-semibold text-xs text-slate-900 mb-1.5">3. Pemorsian dan Packing</h4>
-              <div className="grid grid-cols-5 gap-2">
-                {[
-                  { img: '/images/laporan/image12.jpeg', desc: 'Pemorsian ompreng 04:22 WIB' },
-                  { img: '/images/laporan/image13.jpeg', desc: 'Pemorsian ompreng 04:06 WIB' },
-                  { img: '/images/laporan/image14.jpeg', desc: 'Pemorsian ompreng 03:54 WIB' },
-                  { img: '/images/laporan/image15.jpeg', desc: 'Pemorsian ompreng 04:10 WIB' },
-                  { img: '/images/laporan/image16.jpeg', desc: 'Pemorsian ompreng 04:15 WIB' },
-                ].map((item, i) => {
-                  const dayLabel = dates[i] ? dayjs(dates[i]).locale('id').format('dddd, DD/MM') : `Hari ${i + 1}`;
-                  return (
-                    <div key={i} className="border border-slate-300 rounded p-1 text-center bg-slate-50">
-                      <div className="h-20 w-full relative mb-1 bg-slate-200">
-                        <Image src={item.img} alt={dayLabel} fill sizes="100px" className="object-cover rounded" />
-                      </div>
-                      <div className="text-[10px] font-bold text-slate-900">{dayLabel}</div>
-                      <div className="text-[9px] text-slate-600 line-clamp-2 leading-tight">{item.desc}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 4. Distribusi & 5. Pencucian Ompreng */}
-            <div className="mb-4">
-              <h4 className="font-semibold text-xs text-slate-900 mb-1.5">4. Distribusi &amp; 5. Pencucian Ompreng Standar Higienis</h4>
-              <div className="grid grid-cols-4 gap-2">
-                <div className="border border-slate-300 rounded p-1 text-center bg-slate-50">
-                  <div className="h-20 w-full relative mb-1 bg-slate-200">
-                    <Image src="/images/laporan/image17.jpeg" alt="Distribusi" fill sizes="150px" className="object-cover rounded" />
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-900">Distribusi Mobil Box</div>
-                  <div className="text-[9px] text-slate-600">Pengantaran tepat waktu ke sekolah</div>
-                </div>
-                <div className="border border-slate-300 rounded p-1 text-center bg-slate-50">
-                  <div className="h-20 w-full relative mb-1 bg-slate-200">
-                    <Image src="/images/laporan/image19.jpeg" alt="Penyisihan" fill sizes="150px" className="object-cover rounded" />
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-900">1. Pemisahan Sisa</div>
-                  <div className="text-[9px] text-slate-600">Penyortiran sisa makanan dari ompreng</div>
-                </div>
-                <div className="border border-slate-300 rounded p-1 text-center bg-slate-50">
-                  <div className="h-20 w-full relative mb-1 bg-slate-200">
-                    <Image src="/images/laporan/image21.jpeg" alt="Pencucian" fill sizes="150px" className="object-cover rounded" />
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-900">2-4. Pencucian 3 Tahap</div>
-                  <div className="text-[9px] text-slate-600">Sabun food-grade &amp; pembilasan bersih</div>
-                </div>
-                <div className="border border-slate-300 rounded p-1 text-center bg-slate-50">
-                  <div className="h-20 w-full relative mb-1 bg-slate-200">
-                    <Image src="/images/laporan/image25.jpeg" alt="Sanitasi" fill sizes="150px" className="object-cover rounded" />
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-900">5-8. Sanitasi &amp; Pengelapan</div>
-                  <div className="text-[9px] text-slate-600">Perendaman air panas &amp; lap microfiber</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* TABEL 2.1: SASARAN PENERIMA MANFAAT */}
-          <div className="mb-6">
-            <h3 className="font-bold text-xs md:text-sm text-slate-900 mb-1">
-              C. Pelaksanaan
-            </h3>
-            <div className="font-semibold text-xs text-slate-900 mb-1">
-              Tabel 2.1 Sasaran Penerima Manfaat
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse border border-slate-400">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-400 font-bold text-slate-900">
-                    <th className="border border-slate-300 p-1.5 text-center w-10">No.</th>
-                    <th className="border border-slate-300 p-1.5 text-left w-36">Kabupaten/Kota</th>
-                    <th className="border border-slate-300 p-1.5 text-left">Nama Sekolah / Posyandu</th>
-                    <th className="border border-slate-300 p-1.5 text-left">Alamat</th>
-                    <th className="border border-slate-300 p-1.5 text-center w-28">Jumlah Sasaran</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {DAFTAR_SASARAN_DEFAULT.map((item) => (
-                    <tr key={item.no} className="border-b border-slate-300 even:bg-slate-50/70">
-                      <td className="border border-slate-300 p-1 text-center">{item.no}.</td>
-                      <td className="border border-slate-300 p-1">{item.kabupaten}</td>
-                      <td className="border border-slate-300 p-1 font-semibold">{item.nama}</td>
-                      <td className="border border-slate-300 p-1 text-[11px] text-slate-700">{item.alamat}</td>
-                      <td className="border border-slate-300 p-1 text-center font-bold">{item.jumlah}</td>
-                    </tr>
-                  ))}
-                  <tr className="bg-slate-100 font-bold">
-                    <td colSpan={4} className="border border-slate-300 p-1.5 text-right">TOTAL SASARAN:</td>
-                    <td className="border border-slate-300 p-1.5 text-center text-emerald-800">2.708</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* TABEL 2.2: MENU HARIAN MBG 5 HARI */}
-          <div className="mb-6">
-            <div className="font-semibold text-xs text-slate-900 mb-1">
-              Tabel 2.2 Menu Harian MBG 5 Hari Operasional
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse border border-slate-400">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-400 font-bold text-slate-900">
-                    <th className="border border-slate-300 p-1.5 text-left w-32">Kabupaten/Kota</th>
-                    <th className="border border-slate-300 p-1.5 text-left">Nama Sekolah / Posyandu</th>
-                    <th className="border border-slate-300 p-1.5 text-center w-14">Hari Ke-</th>
-                    <th className="border border-slate-300 p-1.5 text-left w-44">Hari / Tanggal</th>
-                    <th className="border border-slate-300 p-1.5 text-left">Jenis Menu MBG</th>
-                    <th className="border border-slate-300 p-1.5 text-center w-12">Ket.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportDays.map((d, dIdx) => (
-                    <tr key={`day-hdr-${dIdx}`} className="bg-slate-100/90 font-bold text-slate-900 border-t border-b border-slate-300">
-                      <td className="border border-slate-300 p-1 font-semibold text-slate-700">Kabupaten Tangerang</td>
-                      <td className="border border-slate-300 p-1 text-emerald-950 font-bold">
-                        9 Sasaran (4 Sekolah &amp; 5 Posyandu)
-                      </td>
-                      <td className="border border-slate-300 p-1 text-center font-extrabold">{d.pemberianKe}</td>
-                      <td className="border border-slate-300 p-1 font-semibold text-slate-900">{d.hariTanggalLengkap}</td>
-                      <td className="border border-slate-300 p-1 font-bold text-slate-950">
-                        {d.namaMenu || <span className="text-amber-700 italic">Belum diinput di Menu Hari Ini</span>}
-                      </td>
-                      <td className="border border-slate-300 p-1 text-center font-medium text-emerald-700">
-                        {d.isFilled ? 'OK' : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* TABEL 2.3: DOKUMENTASI KEGIATAN SEKOLAH (MBG TK/RA, SD/I) */}
-          <div className="mb-6 page-break-inside-avoid">
-            <div className="font-semibold text-xs md:text-sm text-slate-900 mb-1 flex items-center justify-between">
-              <span>Tabel 2.3 Dokumentasi Kegiatan Sekolah (MBG TK/RA, SD/I)</span>
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-300 print:hidden">
-                Foto Menu: Porsi Besar Sekolah
-              </span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse border border-slate-400">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-400 font-bold text-slate-900">
-                    <th className="border border-slate-300 p-2 text-left">Jenis Menu MBG</th>
-                    <th className="border border-slate-300 p-2 text-center w-40">Hari/Tanggal</th>
-                    <th className="border border-slate-300 p-2 text-center w-52">Menu (Porsi Besar Sekolah)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportDays.map((d, i) => (
-                    <tr key={`sek-${d.dateStr}`} className="border-b border-slate-300">
-                      <td className="border border-slate-300 p-3 align-middle font-medium text-slate-900 text-xs leading-relaxed">
-                        {d.namaMenu || <span className="text-amber-700 italic">Menu belum diinput</span>}
-                      </td>
-                      <td className="border border-slate-300 p-3 align-middle text-center font-semibold text-slate-800 text-xs whitespace-nowrap">
-                        {d.hariTanggalSingkat}
-                      </td>
-                      <td className="border border-slate-300 p-2 align-middle text-center">
-                        <div className="w-48 h-32 mx-auto relative bg-slate-100 border border-slate-300 rounded overflow-hidden flex items-center justify-center">
-                          {d.fotoPorsiBesarUrl ? (
-                            <Image
-                              src={d.fotoPorsiBesarUrl}
-                              alt={`Menu Sekolah ${d.hariTanggalSingkat}`}
-                              fill
-                              sizes="200px"
-                              unoptimized
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full relative">
-                              <Image
-                                src={`/images/laporan/image${27 + i}.png`}
-                                alt={`Sample Menu ${i + 1}`}
-                                fill
-                                sizes="200px"
-                                className="object-cover opacity-80"
-                              />
-                              <span className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-[9px] px-1 py-0.5 rounded text-center">
-                                Sample Template
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* TABEL 2.4: DOKUMENTASI KEGIATAN POSYANDU (3B) */}
-          <div className="mb-6 page-break-inside-avoid">
-            <div className="font-semibold text-xs md:text-sm text-slate-900 mb-1 flex items-center justify-between">
-              <span>Tabel 2.4 Dokumentasi Kegiatan Posyandu (3B: Bumil, Busui, Balita)</span>
-              <span className="text-[11px] font-bold text-pink-700 bg-pink-50 px-2.5 py-0.5 rounded border border-pink-300 print:hidden">
-                Foto Menu: Porsi Bumil/Busui
-              </span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse border border-slate-400">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-400 font-bold text-slate-900">
-                    <th className="border border-slate-300 p-2 text-left">Jenis Menu MBG</th>
-                    <th className="border border-slate-300 p-2 text-center w-40">Hari/Tanggal</th>
-                    <th className="border border-slate-300 p-2 text-center w-52">Menu (Porsi Bumil / Busui)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportDays.map((d, i) => (
-                    <tr key={`pos-${d.dateStr}`} className="border-b border-slate-300">
-                      <td className="border border-slate-300 p-3 align-middle font-medium text-slate-900 text-xs leading-relaxed">
-                        {d.namaMenu || <span className="text-amber-700 italic">Menu belum diinput</span>}
-                      </td>
-                      <td className="border border-slate-300 p-3 align-middle text-center font-semibold text-slate-800 text-xs whitespace-nowrap">
-                        {d.hariTanggalSingkat}
-                      </td>
-                      <td className="border border-slate-300 p-2 align-middle text-center">
-                        <div className="w-48 h-32 mx-auto relative bg-slate-100 border border-slate-300 rounded overflow-hidden flex items-center justify-center">
-                          {d.fotoBumilUrl ? (
-                            <Image
-                              src={d.fotoBumilUrl}
-                              alt={`Menu Posyandu ${d.hariTanggalSingkat}`}
-                              fill
-                              sizes="200px"
-                              unoptimized
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full relative">
-                              <Image
-                                src={i === 4 ? '/images/laporan/image32.png' : `/images/laporan/image${27 + i}.png`}
-                                alt={`Sample Menu Posyandu ${i + 1}`}
-                                fill
-                                sizes="200px"
-                                className="object-cover opacity-80"
-                              />
-                              <span className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-[9px] px-1 py-0.5 rounded text-center">
-                                Sample Template
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* DOKUMENTASI DISTRIBUSI & SURAT JALAN */}
-          <div className="mb-6 page-break-inside-avoid">
-            <h4 className="font-semibold text-xs text-slate-900 mb-2">Dokumentasi Distribusi Sekolah dan Posyandu</h4>
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {['image18.jpeg', 'image33.jpeg', 'image34.jpeg', 'image35.jpeg', 'image36.jpeg', 'image37.jpeg', 'image38.jpeg', 'image39.jpeg'].map((img, i) => (
-                <div key={i} className="h-24 w-full relative bg-slate-100 border border-slate-300 rounded overflow-hidden">
-                  <Image src={`/images/laporan/${img}`} alt={`Distribusi ${i + 1}`} fill sizes="150px" className="object-cover" />
-                </div>
-              ))}
-            </div>
-
-            <h4 className="font-semibold text-xs text-slate-900 mb-2">Dokumentasi Surat Jalan Penerima Manfaat</h4>
-            <div className="grid grid-cols-6 gap-2">
-              {['image40.jpeg', 'image41.jpeg', 'image42.jpeg', 'image43.jpeg', 'image44.jpeg', 'image45.jpeg'].map((img, i) => (
-                <div key={i} className="h-28 w-full relative bg-slate-100 border border-slate-300 rounded overflow-hidden">
-                  <Image src={`/images/laporan/${img}`} alt={`Surat Jalan ${i + 1}`} fill sizes="150px" className="object-cover" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* BAB III: PERMASALAHAN & KENDALA */}
-        <section className="mb-8 page-break-inside-avoid">
-          <h2 className="text-sm md:text-base font-bold text-slate-950 uppercase mb-3">
-            BAB III PERMASALAHAN &amp; KENDALA
-          </h2>
-          <div className="space-y-2 text-xs text-slate-800">
-            <div>
-              <span className="font-bold text-slate-900">A. Permasalahan &amp; Kendala:</span>
-              <p className="ml-4 text-slate-700">- Pelaksanaan minggu ini berjalan tertib dan lancar tanpa kendala operasional yang signifikan.</p>
-            </div>
-            <div>
-              <span className="font-bold text-slate-900">B. Penanganan Masalah:</span>
-              <p className="ml-4 text-slate-700">- Standar operasional prosedur persiapan dini (H-1 malam) dan kontrol suhu makanan konsisten dijalankan.</p>
-            </div>
-            <div>
-              <span className="font-bold text-slate-900">C. Rencana Tindak Lanjut:</span>
-              <p className="ml-4 text-slate-700">- Mempertahankan koordinasi intensif dengan kepala sekolah, kader posyandu, dan tim logistik kendaraan box.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* BAB IV: PENUTUP & TANDA TANGAN */}
-        <section className="page-break-inside-avoid">
-          <h2 className="text-sm md:text-base font-bold text-slate-950 uppercase mb-3">
-            BAB IV PENUTUP
-          </h2>
-          <p className="text-xs text-justify leading-relaxed text-slate-800 mb-3">
-            Program Makanan Bergizi Gratis yang dijalankan oleh pemerintah merupakan salah satu upaya strategis dalam meningkatkan kualitas gizi masyarakat, khususnya bagi kelompok yang membutuhkan. Berdasarkan hasil pelaksanaan dan evaluasi mingguan, program ini memberikan dampak positif terhadap asupan nutrisi peserta didik dan penerima sasaran 3B.
-          </p>
-          <p className="text-xs text-justify leading-relaxed text-slate-800 mb-6">
-            Dengan komitmen dan dukungan penuh dari Badan Gizi Nasional, Yayasan Al-Fruqon Pantura Tangerang, serta seluruh stakeholder lintas sektor, diharapkan program ini dapat terus berkelanjutan dalam mewujudkan generasi penerus yang sehat, cerdas, dan tangguh.
-          </p>
-
-          {/* SIGNATURE BLOCK */}
-          <div className="flex justify-end pt-4">
-            <div className="text-center w-64">
-              <div className="text-xs text-slate-900">Teluk Naga, {closingDateStr}</div>
-              <div className="text-xs font-bold text-slate-900 mt-1">Kepala SPPG Teluk Naga 03</div>
-              <div className="h-20 my-2 flex items-center justify-center">
-                <div className="w-24 h-16 border border-dashed border-slate-300 rounded flex items-center justify-center text-[10px] text-slate-400">
-                  (Tanda Tangan &amp; Cap)
-                </div>
-              </div>
-              <div className="text-xs font-bold text-slate-950 underline">Rahmad Diko</div>
-              <div className="text-[10px] text-slate-600">NIP / ID: SPPG-TN-03</div>
-            </div>
-          </div>
-        </section>
       </div>
 
-      {/* PRINT-ONLY CSS STYLES (Clean HTML <style> without styled-jsx requirement) */}
+      {/* ======================================================== */}
+      {/* PRINT-ONLY CSS RULES (A4 page format)                    */}
+      {/* ======================================================== */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
             @media print {
               @page {
                 size: A4 portrait;
-                margin: 12mm 15mm;
+                margin: 15mm;
               }
               body {
                 background-color: #ffffff !important;
                 color: #000000 !important;
-                font-size: 11pt !important;
+                font-family: Calibri, "Segoe UI", Arial, sans-serif !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
               .print\\:hidden {
                 display: none !important;
-              }
-              .page-break-inside-avoid {
-                break-inside: avoid !important;
-                page-break-inside: avoid !important;
               }
             }
           `,
