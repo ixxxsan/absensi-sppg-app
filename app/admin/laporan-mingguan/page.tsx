@@ -52,6 +52,7 @@ export default function LaporanMingguanPage() {
   // State: 5 operational dates (Hari Ke-1 s/d Hari Ke-5)
   const [dates, setDates] = useState<string[]>(getDefaultDates());
   const [exportingDocx, setExportingDocx] = useState<boolean>(false);
+  const [dayOffOverrides, setDayOffOverrides] = useState<Record<number, boolean>>({});
 
   // SWR: auto-fetch menu data whenever the 5 dates change
   const datesKey = dates.join(',');
@@ -80,6 +81,37 @@ export default function LaporanMingguanPage() {
       };
     });
   }, [dates, rawReportDays]);
+
+  const isDayOff = (idx: number): boolean => {
+    if (dayOffOverrides[idx] !== undefined) {
+      return dayOffOverrides[idx];
+    }
+    const reportInfo = reportDays[idx];
+    return !reportInfo?.namaMenu && !reportInfo?.isFilled;
+  };
+
+  const toggleDayOff = (idx: number) => {
+    setDayOffOverrides(prev => ({
+      ...prev,
+      [idx]: !isDayOff(idx),
+    }));
+  };
+
+  // Filtered operational days (day-off completely excluded)
+  const activeReportDays: DayReportData[] = useMemo(() => {
+    let count = 0;
+    const res: DayReportData[] = [];
+    for (let idx = 0; idx < reportDays.length; idx++) {
+      if (!isDayOff(idx)) {
+        count++;
+        res.push({
+          ...reportDays[idx],
+          pemberianKe: count,
+        });
+      }
+    }
+    return res;
+  }, [reportDays, dayOffOverrides]);
 
   // Update a single operational day (supports skipping holidays)
   const handleDayChange = (index: number, newDate: string) => {
@@ -116,12 +148,17 @@ export default function LaporanMingguanPage() {
 
   // Export DOCX directly using master template
   const handleExportDocx = async () => {
+    if (activeReportDays.length === 0) {
+      alert('Paling sedikit harus ada 1 hari operasional aktif untuk diekspor.');
+      return;
+    }
     setExportingDocx(true);
     try {
+      const activeDates = activeReportDays.map(d => d.dateStr);
       const res = await fetch('/api/laporan-mingguan/export-docx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dates }),
+        body: JSON.stringify({ dates, activeDates }),
       });
 
       if (!res.ok) {
@@ -152,7 +189,8 @@ export default function LaporanMingguanPage() {
   const startFormatted = dates[0] ? dayjs(dates[0]).locale('id').format('DD MMMM') : '';
   const endFormatted = dates[4] ? dayjs(dates[4]).locale('id').format('DD MMMM YYYY') : '';
   const fullDateRangeStr = `${startFormatted} – ${endFormatted}`;
-  const closingDateStr = dates[4] ? dayjs(dates[4]).locale('id').format('DD MMMM YYYY') : '';
+  const lastActiveDate = activeReportDays[activeReportDays.length - 1]?.dateStr || dates[4];
+  const closingDateStr = lastActiveDate ? dayjs(lastActiveDate).locale('id').format('DD MMMM YYYY') : '';
 
   // Chunk surat jalan photos into rows of 5
   const suratJalanRows = useMemo(() => {
@@ -266,21 +304,27 @@ export default function LaporanMingguanPage() {
               const dayName = dayObj.format('dddd');
               const reportInfo = reportDays[idx];
               const isFilled = reportInfo?.isFilled ?? false;
+              const off = isDayOff(idx);
+              const activeItem = activeReportDays.find(a => a.dateStr === dateStr);
 
               return (
                 <div
                   key={idx}
                   className={`p-3 rounded-xl border transition relative ${
-                    isFilled
-                      ? 'bg-emerald-950/20 border-emerald-500/40'
-                      : 'bg-slate-800/60 border-white/10'
+                    off
+                      ? 'bg-amber-950/20 border-amber-500/40 opacity-75'
+                      : 'bg-emerald-950/20 border-emerald-500/40'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
                       Hari Ke-{idx + 1}
                     </span>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${
+                      off
+                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                        : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                    }`}>
                       {dayName}
                     </span>
                   </div>
@@ -293,22 +337,42 @@ export default function LaporanMingguanPage() {
                     title={`Ubah tanggal Hari Ke-${idx + 1}`}
                   />
 
-                  <div className="pt-2 border-t border-white/5">
-                    <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="text-slate-400">Menu Hari Ini:</span>
-                      {isFilled ? (
-                        <span className="text-emerald-400 flex items-center gap-0.5 font-medium">
-                          <CheckCircle2 className="w-3 h-3" /> Ada
+                  <div className="pt-2 border-t border-white/5 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400">Status:</span>
+                      {off ? (
+                        <span className="text-amber-400 font-bold flex items-center gap-1">
+                          🏖️ Libur (Dilewati)
                         </span>
                       ) : (
-                        <span className="text-amber-400 flex items-center gap-0.5 font-medium">
-                          <AlertCircle className="w-3 h-3" /> Kosong
+                        <span className="text-emerald-400 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Pemberian Ke-{activeItem?.pemberianKe}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-white font-medium line-clamp-1" title={reportInfo?.namaMenu || DEFAULT_MENU_DOCX[idx]}>
-                      {reportInfo?.namaMenu || <span className="text-slate-500 italic">Default Docx</span>}
-                    </p>
+
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400">Menu Hari Ini:</span>
+                      {isFilled ? (
+                        <span className="text-emerald-400 font-medium line-clamp-1 max-w-[120px]" title={reportInfo?.namaMenu}>
+                          {reportInfo?.namaMenu}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 italic">Kosong</span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleDayOff(idx)}
+                      className={`w-full mt-1 py-1 px-2 text-[10px] font-semibold rounded-lg border transition cursor-pointer ${
+                        off
+                          ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border-emerald-500/30'
+                          : 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border-amber-500/30'
+                      }`}
+                    >
+                      {off ? 'Aktifkan Masuk' : 'Tandai Libur'}
+                    </button>
                   </div>
                 </div>
               );
@@ -487,12 +551,12 @@ export default function LaporanMingguanPage() {
           </p>
           <table className="w-full text-[10.5pt] border-collapse border border-black mb-6">
             <tbody>
-              {reportDays.map((d, i) => (
-                <tr key={`persiapan-${i}`} className="border border-black">
+              {activeReportDays.map((d, i) => (
+                <tr key={`persiapan-${d.dateStr}`} className="border border-black">
                   <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
                     <div className="w-[110px] h-[146px] mx-auto relative">
                       <Image
-                        src={`/images/laporan/image${2 + i}.jpeg`}
+                        src={`/images/laporan/image${2 + (i % 5)}.jpeg`}
                         alt={`Persiapan ${d.hariTanggalLengkap}`}
                         fill
                         sizes="120px"
@@ -501,7 +565,7 @@ export default function LaporanMingguanPage() {
                     </div>
                   </td>
                   <td className="p-3 border border-black align-top text-justify leading-relaxed">
-                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PERSIAPAN_DESCRIPTIONS[i]}
+                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PERSIAPAN_DESCRIPTIONS[i % PERSIAPAN_DESCRIPTIONS.length]}
                   </td>
                 </tr>
               ))}
@@ -514,12 +578,12 @@ export default function LaporanMingguanPage() {
           </p>
           <table className="w-full text-[10.5pt] border-collapse border border-black mb-6">
             <tbody>
-              {reportDays.map((d, i) => (
-                <tr key={`pengolahan-${i}`} className="border border-black">
+              {activeReportDays.map((d, i) => (
+                <tr key={`pengolahan-${d.dateStr}`} className="border border-black">
                   <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
                     <div className="w-[110px] h-[146px] mx-auto relative">
                       <Image
-                        src={`/images/laporan/image${7 + i}.jpeg`}
+                        src={`/images/laporan/image${7 + (i % 5)}.jpeg`}
                         alt={`Pengolahan ${d.hariTanggalLengkap}`}
                         fill
                         sizes="120px"
@@ -528,7 +592,7 @@ export default function LaporanMingguanPage() {
                     </div>
                   </td>
                   <td className="p-3 border border-black align-top text-justify leading-relaxed">
-                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PENGOLAHAN_DESCRIPTIONS[i]}
+                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PENGOLAHAN_DESCRIPTIONS[i % PENGOLAHAN_DESCRIPTIONS.length]}
                   </td>
                 </tr>
               ))}
@@ -541,12 +605,12 @@ export default function LaporanMingguanPage() {
           </p>
           <table className="w-full text-[10.5pt] border-collapse border border-black mb-6">
             <tbody>
-              {reportDays.map((d, i) => (
-                <tr key={`pemorsian-${i}`} className="border border-black">
+              {activeReportDays.map((d, i) => (
+                <tr key={`pemorsian-${d.dateStr}`} className="border border-black">
                   <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
                     <div className="w-[110px] h-[146px] mx-auto relative">
                       <Image
-                        src={`/images/laporan/image${12 + i}.jpeg`}
+                        src={`/images/laporan/image${12 + (i % 5)}.jpeg`}
                         alt={`Pemorsian ${d.hariTanggalLengkap}`}
                         fill
                         sizes="120px"
@@ -555,7 +619,7 @@ export default function LaporanMingguanPage() {
                     </div>
                   </td>
                   <td className="p-3 border border-black align-top text-justify leading-relaxed">
-                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PEMORSIAN_DESCRIPTIONS[i]}
+                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PEMORSIAN_DESCRIPTIONS[i % PEMORSIAN_DESCRIPTIONS.length]}
                   </td>
                 </tr>
               ))}
@@ -682,10 +746,10 @@ export default function LaporanMingguanPage() {
               </tr>
             </thead>
             <tbody>
-              {reportDays.map((d, dIdx) => {
-                const currentMenu = d.namaMenu || DEFAULT_MENU_DOCX[dIdx];
+              {activeReportDays.map((d, dIdx) => {
+                const currentMenu = d.namaMenu || DEFAULT_MENU_DOCX[dIdx % DEFAULT_MENU_DOCX.length];
                 return (
-                  <Fragment key={`t22-group-${dIdx}`}>
+                  <Fragment key={`t22-group-${d.dateStr}`}>
                     {/* 1. PAUD */}
                     <tr className="border border-black">
                       <td className="border border-black p-1">Kabupaten Tangerang</td>
@@ -789,10 +853,10 @@ export default function LaporanMingguanPage() {
               </tr>
             </thead>
             <tbody>
-              {reportDays.map((d, i) => {
-                const currentMenu = d.namaMenu || DEFAULT_MENU_DOCX[i];
+              {activeReportDays.map((d, i) => {
+                const currentMenu = d.namaMenu || DEFAULT_MENU_DOCX[i % DEFAULT_MENU_DOCX.length];
                 return (
-                  <tr key={`sek-${i}`} className="border border-black">
+                  <tr key={`sek-${d.dateStr}`} className="border border-black">
                     <td className="border border-black p-2.5 align-middle leading-relaxed font-medium">
                       {currentMenu}.
                     </td>
@@ -812,7 +876,7 @@ export default function LaporanMingguanPage() {
                           />
                         ) : (
                           <Image
-                            src={`/images/laporan/image${27 + i}.png`}
+                            src={`/images/laporan/image${27 + (i % 5)}.png`}
                             alt={`Menu Sekolah ${i + 1}`}
                             fill
                             sizes="200px"
@@ -843,11 +907,11 @@ export default function LaporanMingguanPage() {
               </tr>
             </thead>
             <tbody>
-              {reportDays.map((d, i) => {
-                const currentMenu = d.namaMenu || DEFAULT_MENU_DOCX[i];
-                const fallbackImg = i === 4 ? '/images/laporan/image32.png' : `/images/laporan/image${27 + i}.png`;
+              {activeReportDays.map((d, i) => {
+                const currentMenu = d.namaMenu || DEFAULT_MENU_DOCX[i % DEFAULT_MENU_DOCX.length];
+                const fallbackImg = i === 4 ? '/images/laporan/image32.png' : `/images/laporan/image${27 + (i % 5)}.png`;
                 return (
-                  <tr key={`pos-${i}`} className="border border-black">
+                  <tr key={`pos-${d.dateStr}`} className="border border-black">
                     <td className="border border-black p-2.5 align-middle leading-relaxed font-medium">
                       {currentMenu}.
                     </td>

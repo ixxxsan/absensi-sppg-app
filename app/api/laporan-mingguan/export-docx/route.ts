@@ -221,23 +221,32 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const dates: string[] = body.dates;
+    const dates: string[] = body.dates; // Full 5 days for range title
+    const rawActiveDates: string[] = Array.isArray(body.activeDates) && body.activeDates.length > 0
+      ? body.activeDates
+      : dates;
 
-    if (!Array.isArray(dates) || dates.length !== 5) {
-      return NextResponse.json({ error: 'Harap tentukan 5 hari kerja operasional.' }, { status: 400 });
+    if (!Array.isArray(dates) || dates.length === 0) {
+      return NextResponse.json({ error: 'Harap tentukan tanggal operasional.' }, { status: 400 });
     }
 
-    // Fetch menus from DB
+    // Filter valid active dates (skips days off)
+    const activeDates = rawActiveDates.filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+    if (activeDates.length === 0) {
+      return NextResponse.json({ error: 'Minimal harus ada 1 hari operasional.' }, { status: 400 });
+    }
+
+    // Fetch menus from DB for all referenced dates
+    const allQueryDates = Array.from(new Set([...dates, ...activeDates]));
     const menus = await db
       .select()
       .from(menuHarian)
-      .where(inArray(menuHarian.tanggal, dates));
+      .where(inArray(menuHarian.tanggal, allQueryDates));
 
     const menuMap = new Map(menus.map(m => [m.tanggal, m]));
 
-    // Format 5 operational days
-    // Each chosen date maps to Pemberian Ke-1 s/d Ke-5 in exact selected order
-    const daysData = dates.map((d, idx) => {
+    // Format active operational days (Pemberian Ke-1, Ke-2, etc. strictly sequential)
+    const activeDaysData = activeDates.map((d, idx) => {
       const dayObj = dayjs(d).locale('id');
       const m = menuMap.get(d);
       return {
@@ -246,11 +255,13 @@ export async function POST(req: NextRequest) {
         dateStr: d,
         hariTanggalLengkap: dayObj.format('dddd, DD MMMM YYYY'),
         hariTanggalSingkat: dayObj.format('dddd, DD/MM/YYYY'),
-        namaMenu: m?.namaMenu || DEFAULT_MENU_DOCX[idx],
+        namaMenu: m?.namaMenu || DEFAULT_MENU_DOCX[idx % DEFAULT_MENU_DOCX.length],
         fotoSekolahPorsiBesarUrl: m?.fotoPorsiBesarUrl || '',
         fotoPosyanduBumilUrl: m?.fotoBumilUrl || '',
       };
     });
+
+    const activeCount = activeDaysData.length;
 
     // Read template
     const templatePath = path.join(process.cwd(), 'templates', 'Laporan_Pelaksanaan_Program_MBG_Master.docx');
@@ -269,7 +280,7 @@ export async function POST(req: NextRequest) {
 
     // 1. Update Title Date: "LAPORAN MINGGUAN [Start] – [End]"
     const startStr = dayjs(dates[0]).locale('id').format('DD MMMM');
-    const endStr = dayjs(dates[4]).locale('id').format('DD MMMM YYYY');
+    const endStr = dayjs(dates[dates.length - 1]).locale('id').format('DD MMMM YYYY');
     const newTitle = `LAPORAN MINGGUAN ${startStr} – ${endStr}`;
 
     const paragraphs = doc.getElementsByTagName('w:p');
@@ -296,110 +307,157 @@ export async function POST(req: NextRequest) {
 
     // 2. Update Dates in Lampiran Kegiatan:
     // Table 1 (1. Persiapan), Table 2 (2. Pengolahan), Table 3 (3. Pemorsian dan Packing)
-    // Each row's first paragraph (p[0]) in cell 1 holds the day's date
+    // Only includes active operational days; excess day-off rows are completely removed
     for (const tblIdx of [1, 2, 3]) {
-      const tbl = tables[tblIdx];
+      const tbl = tables[tblIdx] as any;
       if (!tbl) continue;
-      const rows = tbl.getElementsByTagName('w:tr');
-      for (let rIdx = 0; rIdx < Math.min(rows.length, 5); rIdx++) {
+      const rows = Array.from(tbl.getElementsByTagName('w:tr')) as any[];
+      for (let rIdx = 0; rIdx < Math.min(rows.length, activeCount); rIdx++) {
         const cells = rows[rIdx].getElementsByTagName('w:tc');
         if (cells.length >= 2) {
           const ps = cells[1].getElementsByTagName('w:p');
           if (ps.length > 0) {
-            setParagraphText(ps[0], daysData[rIdx].hariTanggalLengkap, true);
+            setParagraphText(ps[0], activeDaysData[rIdx].hariTanggalLengkap, true);
           }
+        }
+      }
+      // Remove excess rows beyond activeCount
+      for (let rIdx = rows.length - 1; rIdx >= activeCount; rIdx--) {
+        if (rows[rIdx].parentNode) {
+          tbl.removeChild(rows[rIdx]);
         }
       }
     }
 
     // 3. Update Table 2.2 (Tables 9, 10, 11, 12 in template)
-    // Clear all old paragraphs properly to prevent doubled text
-    // Matches Pemberian Ke- (1..5) directly to daysData[keNum - 1]
-    for (const tblIdx of [9, 10, 11, 12]) {
-      const tbl = tables[tblIdx];
-      if (!tbl) continue;
-      const rows = tbl.getElementsByTagName('w:tr');
-      for (let rIdx = 0; rIdx < rows.length; rIdx++) {
-        const cells = rows[rIdx].getElementsByTagName('w:tc');
-        if (cells.length >= 5) {
-          const keText = cells[2].textContent?.trim() || '';
-          const keNum = parseInt(keText, 10);
-          if (keNum >= 1 && keNum <= 5) {
-            const hasExistingDateOrMenu =
-              (cells[3].textContent?.trim().length ?? 0) > 0 ||
-              (cells[4].textContent?.trim().length ?? 0) > 0;
-            if (hasExistingDateOrMenu) {
-              const dInfo = daysData[keNum - 1];
+    // Collect all 45 data rows across tables 9, 10, 11, 12
+    const allTable22Rows: { tbl: any; tr: any }[] = [];
+    const t9 = tables[9] as any;
+    if (t9) {
+      const r = t9.getElementsByTagName('w:tr');
+      for (let i = 1; i < r.length; i++) allTable22Rows.push({ tbl: t9, tr: r[i] });
+    }
+    const t10 = tables[10] as any;
+    if (t10) {
+      const r = t10.getElementsByTagName('w:tr');
+      for (let i = 0; i < r.length; i++) allTable22Rows.push({ tbl: t10, tr: r[i] });
+    }
+    const t11 = tables[11] as any;
+    if (t11) {
+      const r = t11.getElementsByTagName('w:tr');
+      for (let i = 0; i < r.length; i++) allTable22Rows.push({ tbl: t11, tr: r[i] });
+    }
+    const t12 = tables[12] as any;
+    if (t12) {
+      const r = t12.getElementsByTagName('w:tr');
+      for (let i = 0; i < r.length; i++) allTable22Rows.push({ tbl: t12, tr: r[i] });
+    }
+
+    // 5 groups of 9 institutions
+    for (let g = 0; g < 5; g++) {
+      const groupRows = allTable22Rows.slice(g * 9, (g + 1) * 9);
+      if (g < activeCount) {
+        // Active operational day: set Pemberian Ke- (g + 1)
+        const dInfo = activeDaysData[g];
+        const pemberianKeStr = (g + 1).toString();
+        groupRows.forEach((item, rowIdx) => {
+          const cells = item.tr.getElementsByTagName('w:tc');
+          if (cells.length >= 5) {
+            setCellText(cells[2], pemberianKeStr);
+            if (rowIdx === 0 || rowIdx === 4 || (g === 3 && rowIdx === 6)) {
               setCellText(cells[3], dInfo.hariTanggalLengkap);
               setCellText(cells[4], dInfo.namaMenu);
+            } else {
+              setCellText(cells[3], '');
+              setCellText(cells[4], '');
             }
           }
+        });
+      } else {
+        // Day-off / inactive group: remove rows completely so no table exists for this day
+        groupRows.forEach(item => {
+          if (item.tr.parentNode) {
+            item.tbl.removeChild(item.tr);
+          }
+        });
+      }
+    }
+
+    // Remove any table in 9..12 that now has 0 rows
+    for (const tbl of [tables[9], tables[10], tables[11], tables[12]] as any[]) {
+      if (tbl && tbl.getElementsByTagName('w:tr').length === 0 && tbl.parentNode) {
+        tbl.parentNode.removeChild(tbl);
+      }
+    }
+
+    // 4. Update Table 2.3 (Sekolah) and Table 2.4 (Posyandu)
+    const sekolahRows: { tbl: any; tr: any }[] = [];
+    const t13 = tables[13] as any;
+    if (t13) {
+      const r = t13.getElementsByTagName('w:tr');
+      if (r[1]) sekolahRows.push({ tbl: t13, tr: r[1] });
+      if (r[2]) sekolahRows.push({ tbl: t13, tr: r[2] });
+      if (r[3]) sekolahRows.push({ tbl: t13, tr: r[3] });
+    }
+    const t14 = tables[14] as any;
+    if (t14) {
+      const r = t14.getElementsByTagName('w:tr');
+      if (r[0]) sekolahRows.push({ tbl: t14, tr: r[0] });
+      if (r[1]) sekolahRows.push({ tbl: t14, tr: r[1] });
+    }
+
+    const posyanduRows: { tbl: any; tr: any }[] = [];
+    const t15 = tables[15] as any;
+    if (t15) {
+      const r = t15.getElementsByTagName('w:tr');
+      if (r[1]) posyanduRows.push({ tbl: t15, tr: r[1] });
+      if (r[2]) posyanduRows.push({ tbl: t15, tr: r[2] });
+      if (r[3]) posyanduRows.push({ tbl: t15, tr: r[3] });
+    }
+    const t16 = tables[16] as any;
+    if (t16) {
+      const r = t16.getElementsByTagName('w:tr');
+      if (r[0]) posyanduRows.push({ tbl: t16, tr: r[0] });
+      if (r[1]) posyanduRows.push({ tbl: t16, tr: r[1] });
+    }
+
+    // Populate active rows
+    for (let i = 0; i < activeCount; i++) {
+      const d = activeDaysData[i];
+      if (sekolahRows[i]) {
+        const c = sekolahRows[i].tr.getElementsByTagName('w:tc');
+        if (c.length >= 2) {
+          setCellText(c[0], d.namaMenu);
+          setCellText(c[1], d.hariTanggalSingkat);
+        }
+      }
+      if (posyanduRows[i]) {
+        const c = posyanduRows[i].tr.getElementsByTagName('w:tc');
+        if (c.length >= 2) {
+          setCellText(c[0], d.namaMenu);
+          setCellText(c[1], d.hariTanggalSingkat);
         }
       }
     }
 
-    // 4. Update Table 2.3 (Sekolah): Table 13 (Row 1..3) & Table 14 (Row 0..1)
-    const t13 = tables[13];
-    if (t13) {
-      const r13 = t13.getElementsByTagName('w:tr');
-      if (r13[1]) {
-        const c = r13[1].getElementsByTagName('w:tc');
-        if (c.length >= 2) { setCellText(c[0], daysData[0].namaMenu); setCellText(c[1], daysData[0].hariTanggalSingkat); }
+    // Remove inactive day-off rows completely
+    for (let i = 4; i >= activeCount; i--) {
+      if (sekolahRows[i] && sekolahRows[i].tr.parentNode) {
+        sekolahRows[i].tbl.removeChild(sekolahRows[i].tr);
       }
-      if (r13[2]) {
-        const c = r13[2].getElementsByTagName('w:tc');
-        if (c.length >= 2) { setCellText(c[0], daysData[1].namaMenu); setCellText(c[1], daysData[1].hariTanggalSingkat); }
-      }
-      if (r13[3]) {
-        const c = r13[3].getElementsByTagName('w:tc');
-        if (c.length >= 2) { setCellText(c[0], daysData[2].namaMenu); setCellText(c[1], daysData[2].hariTanggalSingkat); }
-      }
-    }
-    const t14 = tables[14];
-    if (t14) {
-      const r14 = t14.getElementsByTagName('w:tr');
-      if (r14[0]) {
-        const c = r14[0].getElementsByTagName('w:tc');
-        if (c.length >= 2) { setCellText(c[0], daysData[3].namaMenu); setCellText(c[1], daysData[3].hariTanggalSingkat); }
-      }
-      if (r14[1]) {
-        const c = r14[1].getElementsByTagName('w:tc');
-        if (c.length >= 2) { setCellText(c[0], daysData[4].namaMenu); setCellText(c[1], daysData[4].hariTanggalSingkat); }
+      if (posyanduRows[i] && posyanduRows[i].tr.parentNode) {
+        posyanduRows[i].tbl.removeChild(posyanduRows[i].tr);
       }
     }
 
-    // 5. Update Table 2.4 (Posyandu): Table 15 (Row 1..3) & Table 16 (Row 0..1)
-    const t15 = tables[15];
-    if (t15) {
-      const r15 = t15.getElementsByTagName('w:tr');
-      if (r15[1]) {
-        const c = r15[1].getElementsByTagName('w:tc');
-        if (c.length >= 2) { setCellText(c[0], daysData[0].namaMenu); setCellText(c[1], daysData[0].hariTanggalSingkat); }
-      }
-      if (r15[2]) {
-        const c = r15[2].getElementsByTagName('w:tc');
-        if (c.length >= 2) { setCellText(c[0], daysData[1].namaMenu); setCellText(c[1], daysData[1].hariTanggalSingkat); }
-      }
-      if (r15[3]) {
-        const c = r15[3].getElementsByTagName('w:tc');
-        if (c.length >= 2) { setCellText(c[0], daysData[2].namaMenu); setCellText(c[1], daysData[2].hariTanggalSingkat); }
-      }
+    if (t14 && t14.getElementsByTagName('w:tr').length === 0 && t14.parentNode) {
+      t14.parentNode.removeChild(t14);
     }
-    const t16 = tables[16];
-    if (t16) {
-      const r16 = t16.getElementsByTagName('w:tr');
-      if (r16[0]) {
-        const c = r16[0].getElementsByTagName('w:tc');
-        if (c.length >= 2) { setCellText(c[0], daysData[3].namaMenu); setCellText(c[1], daysData[3].hariTanggalSingkat); }
-      }
-      if (r16[1]) {
-        const c = r16[1].getElementsByTagName('w:tc');
-        if (c.length >= 2) { setCellText(c[0], daysData[4].namaMenu); setCellText(c[1], daysData[4].hariTanggalSingkat); }
-      }
+    if (t16 && t16.getElementsByTagName('w:tr').length === 0 && t16.parentNode) {
+      t16.parentNode.removeChild(t16);
     }
 
-    // 6. Separate Posyandu (Table 2.4) relationship IDs (rId106 - rId110)
-    // Standard OpenXML sequential numeric IDs
+    // 5. Separate Posyandu (Table 2.4) relationship IDs (rId106 - rId110)
     const relsRoot = relsDoc.documentElement;
     if (!relsRoot) {
       return NextResponse.json({ error: 'Relasi Word tidak valid.' }, { status: 500 });
@@ -431,20 +489,15 @@ export async function POST(req: NextRequest) {
       }
     };
 
-    if (t15) {
-      const r15 = t15.getElementsByTagName('w:tr');
-      if (r15[1]) setBlipEmbed(r15[1], posyanduRelIds[0]);
-      if (r15[2]) setBlipEmbed(r15[2], posyanduRelIds[1]);
-      if (r15[3]) setBlipEmbed(r15[3], posyanduRelIds[2]);
-    }
-    if (t16) {
-      const r16 = t16.getElementsByTagName('w:tr');
-      if (r16[0]) setBlipEmbed(r16[0], posyanduRelIds[3]);
-      if (r16[1]) setBlipEmbed(r16[1], posyanduRelIds[4]);
+    for (let i = 0; i < Math.min(posyanduRows.length, activeCount); i++) {
+      if (posyanduRows[i]?.tr) {
+        setBlipEmbed(posyanduRows[i].tr, posyanduRelIds[i]);
+      }
     }
 
-    // 7. Update Closing Date Paragraph: "Teluk Naga, 04 September 2026"
-    const closingDateStr = `Teluk Naga, ${dayjs(dates[4]).locale('id').format('DD MMMM YYYY')}`;
+    // 6. Update Closing Date Paragraph: "Teluk Naga, [Last Active Date]"
+    const lastActiveDate = activeDaysData[activeCount - 1].dateStr;
+    const closingDateStr = `Teluk Naga, ${dayjs(lastActiveDate).locale('id').format('DD MMMM YYYY')}`;
     for (let i = paragraphs.length - 1; i >= Math.max(0, paragraphs.length - 20); i--) {
       const p = paragraphs[i];
       const text = p.textContent || '';
@@ -466,25 +519,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 8. Update Food Images in word/media/
-    // Strictly:
-    // Tabel 2.3 (Sekolah) strictly uses Porsi Besar (fotoPorsiBesarUrl) -> image27.png .. image31.png
-    // Tabel 2.4 (Posyandu) strictly uses Porsi Bumil/Busui (fotoBumilUrl) -> posyandu_day_1.png .. posyandu_day_5.png
-    const sekolahReplacements = [
-      { media: 'word/media/image27.png', url: daysData[0].fotoSekolahPorsiBesarUrl },
-      { media: 'word/media/image28.png', url: daysData[1].fotoSekolahPorsiBesarUrl },
-      { media: 'word/media/image29.png', url: daysData[2].fotoSekolahPorsiBesarUrl },
-      { media: 'word/media/image30.png', url: daysData[3].fotoSekolahPorsiBesarUrl },
-      { media: 'word/media/image31.png', url: daysData[4].fotoSekolahPorsiBesarUrl },
-    ];
+    // 7. Update Food Images in word/media/ for active operational days only
+    const sekolahReplacements = activeDaysData.map((d, i) => ({
+      media: `word/media/image${27 + i}.png`,
+      url: d.fotoSekolahPorsiBesarUrl,
+    }));
 
-    const posyanduReplacements = [
-      { media: 'word/media/posyandu_day_1.png', url: daysData[0].fotoPosyanduBumilUrl, fallback: 'word/media/image27.png' },
-      { media: 'word/media/posyandu_day_2.png', url: daysData[1].fotoPosyanduBumilUrl, fallback: 'word/media/image28.png' },
-      { media: 'word/media/posyandu_day_3.png', url: daysData[2].fotoPosyanduBumilUrl, fallback: 'word/media/image29.png' },
-      { media: 'word/media/posyandu_day_4.png', url: daysData[3].fotoPosyanduBumilUrl, fallback: 'word/media/image30.png' },
-      { media: 'word/media/posyandu_day_5.png', url: daysData[4].fotoPosyanduBumilUrl, fallback: 'word/media/image32.png' },
-    ];
+    const posyanduReplacements = activeDaysData.map((d, i) => ({
+      media: `word/media/posyandu_day_${i + 1}.png`,
+      url: d.fotoPosyanduBumilUrl,
+      fallback: i === 4 ? 'word/media/image32.png' : `word/media/image${27 + i}.png`,
+    }));
 
     // Download & replace Sekolah (Porsi Besar) + record image dimensions
     const sekolahDimensions = await Promise.all(
@@ -496,7 +541,6 @@ export async function POST(req: NextRequest) {
             return getImageDimensions(buf);
           }
         }
-        // Fallback: read existing image from zip so dimensions are known
         const existing = zip.file(item.media);
         if (existing) {
           const buf = await existing.async('nodebuffer');
@@ -516,7 +560,6 @@ export async function POST(req: NextRequest) {
             return getImageDimensions(buf);
           }
         }
-        // Fallback to default image in template if bumil url not yet uploaded
         const fb = zip.file(item.fallback);
         if (fb) {
           const fbData = await fb.async('nodebuffer');
@@ -527,30 +570,15 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    // 9. Fix Image Drawings in Table 2.3 & 2.4:
+    // 8. Fix Image Drawings in Table 2.3 & 2.4:
     // Remove crop settings (<a:srcRect>) and preserve natural aspect ratio
-    if (t13) {
-      const r13 = t13.getElementsByTagName('w:tr');
-      if (r13[1]) fixRowImageDrawing(r13[1], sekolahDimensions[0]);
-      if (r13[2]) fixRowImageDrawing(r13[2], sekolahDimensions[1]);
-      if (r13[3]) fixRowImageDrawing(r13[3], sekolahDimensions[2]);
-    }
-    if (t14) {
-      const r14 = t14.getElementsByTagName('w:tr');
-      if (r14[0]) fixRowImageDrawing(r14[0], sekolahDimensions[3]);
-      if (r14[1]) fixRowImageDrawing(r14[1], sekolahDimensions[4]);
-    }
-
-    if (t15) {
-      const r15 = t15.getElementsByTagName('w:tr');
-      if (r15[1]) fixRowImageDrawing(r15[1], posyanduDimensions[0]);
-      if (r15[2]) fixRowImageDrawing(r15[2], posyanduDimensions[1]);
-      if (r15[3]) fixRowImageDrawing(r15[3], posyanduDimensions[2]);
-    }
-    if (t16) {
-      const r16 = t16.getElementsByTagName('w:tr');
-      if (r16[0]) fixRowImageDrawing(r16[0], posyanduDimensions[3]);
-      if (r16[1]) fixRowImageDrawing(r16[1], posyanduDimensions[4]);
+    for (let i = 0; i < activeCount; i++) {
+      if (sekolahRows[i]) {
+        fixRowImageDrawing(sekolahRows[i].tr, sekolahDimensions[i]);
+      }
+      if (posyanduRows[i]) {
+        fixRowImageDrawing(posyanduRows[i].tr, posyanduDimensions[i]);
+      }
     }
 
     // Save modified XML and rels back into the zip
@@ -565,7 +593,7 @@ export async function POST(req: NextRequest) {
       compressionOptions: { level: 6 },
     });
 
-    const safeFilename = `Laporan_Mingguan_MBG_${dates[0]}_sd_${dates[4]}.docx`;
+    const safeFilename = `Laporan_Mingguan_MBG_${dates[0]}_sd_${dates[dates.length - 1]}.docx`;
 
     return new Response(new Uint8Array(outputBuffer), {
       status: 200,
