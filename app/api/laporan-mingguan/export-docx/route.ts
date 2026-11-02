@@ -13,38 +13,177 @@ import 'dayjs/locale/id';
 
 dayjs.locale('id');
 
+const DEFAULT_MENU_DOCX = [
+  'Nasi Putih, Chicken Teriyaki, Tahu Cabai Garam, Capcay, Semangka',
+  'Nasi Putih, Sate Taichan, Tahu Crispy, Tumis Wortel & Jagung, Kelengkeng',
+  'Nasi Putih, Ayam Lada Hitam, Steam Tofu, Sup Kimlo, Semangka',
+  'Nasi Putih, Steam Fuyunghai, Tempe Crispy, Nutrijell Strawberry, Anggur Hitam',
+  'Kentang Goreng, Dimsum, Kacang Polong, Mix Vegetables, Anggur Merah, Susu Full Cream',
+];
+
+/**
+ * Cleanly sets cell text without leaving old paragraphs or runs.
+ * Prevents duplicate/stacked text from appearing in Word cells.
+ */
 function setCellText(cell: unknown, newText: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const c = cell as any;
-  const p = c.getElementsByTagName('w:p')[0];
-  if (!p || !c.ownerDocument) return;
+  if (!c || !c.ownerDocument) return;
+
+  const doc = c.ownerDocument;
+  const ps = Array.from(c.getElementsByTagName('w:p')) as Element[];
+
+  if (ps.length === 0) {
+    const newP = doc.createElement('w:p');
+    const newR = doc.createElement('w:r');
+    const newT = doc.createElement('w:t');
+    newT.textContent = newText;
+    newR.appendChild(newT);
+    newP.appendChild(newR);
+    c.appendChild(newP);
+    return;
+  }
+
+  // Target the first paragraph
+  const targetP = ps[0];
+
+  // Remove all other paragraphs in this cell so old text NEVER persists
+  for (let i = 1; i < ps.length; i++) {
+    c.removeChild(ps[i]);
+  }
+
+  // Remove all children of targetP except w:pPr (to preserve paragraph alignment/spacing)
+  const children = Array.from(targetP.childNodes);
+  for (const child of children) {
+    if (child.nodeName !== 'w:pPr') {
+      targetP.removeChild(child);
+    }
+  }
+
+  // Add clean run with new text
+  const r = doc.createElement('w:r');
+  const t = doc.createElement('w:t');
+  t.textContent = newText;
+  r.appendChild(t);
+  targetP.appendChild(r);
+}
+
+/**
+ * Updates a specific paragraph's text (e.g. date heading in process tables)
+ * while preserving its paragraph properties (w:pPr) and bold styling.
+ */
+function setParagraphText(p: unknown, newText: string, isBold: boolean = true) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const runs = Array.from(p.getElementsByTagName('w:r')) as any[];
-  if (runs.length > 0) {
-    const firstRun = runs[0];
-    let t = firstRun.getElementsByTagName('w:t')[0];
-    if (!t) {
-      t = c.ownerDocument.createElement('w:t');
-      firstRun.appendChild(t);
+  const pNode = p as any;
+  if (!pNode || !pNode.ownerDocument) return;
+
+  const doc = pNode.ownerDocument;
+
+  // Remove all children of pNode except w:pPr
+  const children = Array.from(pNode.childNodes) as Element[];
+  for (const child of children) {
+    if (child.nodeName !== 'w:pPr') {
+      pNode.removeChild(child);
     }
-    t.textContent = newText;
-    // Remove subsequent runs so old text doesn't persist
-    for (let i = 1; i < runs.length; i++) {
-      p.removeChild(runs[i]);
+  }
+
+  // Create clean run with bold
+  const r = doc.createElement('w:r');
+  const rPr = doc.createElement('w:rPr');
+  if (isBold) {
+    rPr.appendChild(doc.createElement('w:b'));
+    rPr.appendChild(doc.createElement('w:bCs'));
+  }
+  r.appendChild(rPr);
+  const t = doc.createElement('w:t');
+  t.textContent = newText;
+  r.appendChild(t);
+  pNode.appendChild(r);
+}
+
+/**
+ * Parses width and height from PNG or JPEG buffer without external dependencies.
+ */
+function getImageDimensions(buffer: Buffer): { width: number; height: number } | null {
+  if (!buffer || buffer.length < 24) return null;
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
+    const width = buffer.readUInt32BE(16);
+    const height = buffer.readUInt32BE(20);
+    if (width > 0 && height > 0) return { width, height };
+  }
+  // JPEG: FF D8 FF
+  if (buffer[0] === 0xff && buffer[1] === 0xd8) {
+    let offset = 2;
+    while (offset < buffer.length) {
+      if (buffer[offset] !== 0xff) break;
+      const marker = buffer[offset + 1];
+      if (marker === 0xc0 || marker === 0xc2) {
+        const height = buffer.readUInt16BE(offset + 5);
+        const width = buffer.readUInt16BE(offset + 7);
+        if (width > 0 && height > 0) return { width, height };
+      }
+      offset += 2 + buffer.readUInt16BE(offset + 2);
     }
-  } else {
-    const r = c.ownerDocument.createElement('w:r');
-    const t = c.ownerDocument.createElement('w:t');
-    t.textContent = newText;
-    r.appendChild(t);
-    p.appendChild(r);
+  }
+  return null;
+}
+
+/**
+ * Removes Word template crop settings (<a:srcRect>) and adjusts cx/cy
+ * to preserve the natural aspect ratio of the uploaded food photo.
+ */
+function fixRowImageDrawing(row: unknown, imgDimensions: { width: number; height: number } | null) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const r = row as any;
+  if (!r) return;
+
+  // 1. Remove all a:srcRect cropping tags from blipFill so entire ompreng is shown
+  const blipFills = r.getElementsByTagName('a:blipFill');
+  for (let i = 0; i < blipFills.length; i++) {
+    const srcRects = Array.from(blipFills[i].getElementsByTagName('a:srcRect'));
+    for (const sr of srcRects) {
+      blipFills[i].removeChild(sr);
+    }
+  }
+
+  // 2. Adjust cx and cy to preserve aspect ratio without stretching
+  if (imgDimensions && imgDimensions.width > 0 && imgDimensions.height > 0) {
+    const maxCx = 2400000; // ~6.6 cm (fits within 5906 dxa cell)
+    const maxCy = 1800000; // ~5.0 cm
+    const aspect = imgDimensions.width / imgDimensions.height;
+
+    let finalCx = maxCx;
+    let finalCy = maxCy;
+
+    if (aspect >= maxCx / maxCy) {
+      finalCx = maxCx;
+      finalCy = Math.round(maxCx / aspect);
+    } else {
+      finalCy = maxCy;
+      finalCx = Math.round(maxCy * aspect);
+    }
+
+    const extents = r.getElementsByTagName('wp:extent');
+    for (let i = 0; i < extents.length; i++) {
+      extents[i].setAttribute('cx', finalCx.toString());
+      extents[i].setAttribute('cy', finalCy.toString());
+    }
+
+    const aExts = r.getElementsByTagName('a:ext');
+    for (let i = 0; i < aExts.length; i++) {
+      if (aExts[i].getAttribute('cx')) {
+        aExts[i].setAttribute('cx', finalCx.toString());
+        aExts[i].setAttribute('cy', finalCy.toString());
+      }
+    }
   }
 }
 
 async function fetchImageBuffer(url: string): Promise<Buffer | null> {
   if (!url || !url.startsWith('http')) return null;
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return null;
     const arrayBuf = await res.arrayBuffer();
     return Buffer.from(arrayBuf);
@@ -65,7 +204,7 @@ export async function POST(req: NextRequest) {
     const dates: string[] = body.dates;
 
     if (!Array.isArray(dates) || dates.length !== 5) {
-      return NextResponse.json({ error: 'Harap tentukan 5 hari kerja (Senin - Jumat).' }, { status: 400 });
+      return NextResponse.json({ error: 'Harap tentukan 5 hari kerja operasional.' }, { status: 400 });
     }
 
     // Fetch menus from DB
@@ -76,10 +215,8 @@ export async function POST(req: NextRequest) {
 
     const menuMap = new Map(menus.map(m => [m.tanggal, m]));
 
-    // Format days
-    // Requirement:
-    // Tabel 2.3 (Sekolah): strictly from Porsi Besar (fotoPorsiBesarUrl)
-    // Tabel 2.4 (Posyandu): strictly from Porsi Bumil/Busui (fotoBumilUrl)
+    // Format 5 operational days
+    // Each chosen date maps to Pemberian Ke-1 s/d Ke-5 in exact selected order
     const daysData = dates.map((d, idx) => {
       const dayObj = dayjs(d).locale('id');
       const m = menuMap.get(d);
@@ -89,7 +226,7 @@ export async function POST(req: NextRequest) {
         dateStr: d,
         hariTanggalLengkap: dayObj.format('dddd, DD MMMM YYYY'),
         hariTanggalSingkat: dayObj.format('dddd, DD/MM/YYYY'),
-        namaMenu: m?.namaMenu || 'Menu belum ditentukan',
+        namaMenu: m?.namaMenu || DEFAULT_MENU_DOCX[idx],
         fotoSekolahPorsiBesarUrl: m?.fotoPorsiBesarUrl || '',
         fotoPosyanduBumilUrl: m?.fotoBumilUrl || '',
       };
@@ -137,7 +274,27 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Update Table 2.2 (Tables 9, 10, 11, 12 in template)
+    // 2. Update Dates in Lampiran Kegiatan:
+    // Table 1 (1. Persiapan), Table 2 (2. Pengolahan), Table 3 (3. Pemorsian dan Packing)
+    // Each row's first paragraph (p[0]) in cell 1 holds the day's date
+    for (const tblIdx of [1, 2, 3]) {
+      const tbl = tables[tblIdx];
+      if (!tbl) continue;
+      const rows = tbl.getElementsByTagName('w:tr');
+      for (let rIdx = 0; rIdx < Math.min(rows.length, 5); rIdx++) {
+        const cells = rows[rIdx].getElementsByTagName('w:tc');
+        if (cells.length >= 2) {
+          const ps = cells[1].getElementsByTagName('w:p');
+          if (ps.length > 0) {
+            setParagraphText(ps[0], daysData[rIdx].hariTanggalLengkap, true);
+          }
+        }
+      }
+    }
+
+    // 3. Update Table 2.2 (Tables 9, 10, 11, 12 in template)
+    // Clear all old paragraphs properly to prevent doubled text
+    // Matches Pemberian Ke- (1..5) directly to daysData[keNum - 1]
     for (const tblIdx of [9, 10, 11, 12]) {
       const tbl = tables[tblIdx];
       if (!tbl) continue;
@@ -148,7 +305,9 @@ export async function POST(req: NextRequest) {
           const keText = cells[2].textContent?.trim() || '';
           const keNum = parseInt(keText, 10);
           if (keNum >= 1 && keNum <= 5) {
-            const hasExistingDateOrMenu = (cells[3].textContent?.trim().length ?? 0) > 0 || (cells[4].textContent?.trim().length ?? 0) > 0;
+            const hasExistingDateOrMenu =
+              (cells[3].textContent?.trim().length ?? 0) > 0 ||
+              (cells[4].textContent?.trim().length ?? 0) > 0;
             if (hasExistingDateOrMenu) {
               const dInfo = daysData[keNum - 1];
               setCellText(cells[3], dInfo.hariTanggalLengkap);
@@ -159,21 +318,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Update Table 2.3 (Sekolah): Table 13 (Row 1..3) & Table 14 (Row 0..1)
+    // 4. Update Table 2.3 (Sekolah): Table 13 (Row 1..3) & Table 14 (Row 0..1)
     const t13 = tables[13];
     if (t13) {
       const r13 = t13.getElementsByTagName('w:tr');
-      // Row 1: Day 1 (Senin)
       if (r13[1]) {
         const c = r13[1].getElementsByTagName('w:tc');
         if (c.length >= 2) { setCellText(c[0], daysData[0].namaMenu); setCellText(c[1], daysData[0].hariTanggalSingkat); }
       }
-      // Row 2: Day 2 (Selasa)
       if (r13[2]) {
         const c = r13[2].getElementsByTagName('w:tc');
         if (c.length >= 2) { setCellText(c[0], daysData[1].namaMenu); setCellText(c[1], daysData[1].hariTanggalSingkat); }
       }
-      // Row 3: Day 3 (Rabu)
       if (r13[3]) {
         const c = r13[3].getElementsByTagName('w:tc');
         if (c.length >= 2) { setCellText(c[0], daysData[2].namaMenu); setCellText(c[1], daysData[2].hariTanggalSingkat); }
@@ -182,19 +338,17 @@ export async function POST(req: NextRequest) {
     const t14 = tables[14];
     if (t14) {
       const r14 = t14.getElementsByTagName('w:tr');
-      // Row 0: Day 4 (Kamis)
       if (r14[0]) {
         const c = r14[0].getElementsByTagName('w:tc');
         if (c.length >= 2) { setCellText(c[0], daysData[3].namaMenu); setCellText(c[1], daysData[3].hariTanggalSingkat); }
       }
-      // Row 1: Day 5 (Jumat)
       if (r14[1]) {
         const c = r14[1].getElementsByTagName('w:tc');
         if (c.length >= 2) { setCellText(c[0], daysData[4].namaMenu); setCellText(c[1], daysData[4].hariTanggalSingkat); }
       }
     }
 
-    // 4. Update Table 2.4 (Posyandu): Table 15 (Row 1..3) & Table 16 (Row 0..1)
+    // 5. Update Table 2.4 (Posyandu): Table 15 (Row 1..3) & Table 16 (Row 0..1)
     const t15 = tables[15];
     if (t15) {
       const r15 = t15.getElementsByTagName('w:tr');
@@ -224,15 +378,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Ensure Posyandu (Table 2.4) has independent image relationships so it doesn't share with Sekolah
-    // Add separate relationships for Posyandu Day 1..5 in document.xml.rels
+    // 6. Separate Posyandu (Table 2.4) relationship IDs (rId106 - rId110)
+    // Standard OpenXML sequential numeric IDs
     const relsRoot = relsDoc.documentElement;
     if (!relsRoot) {
       return NextResponse.json({ error: 'Relasi Word tidak valid.' }, { status: 500 });
     }
-    const posyanduRelIds = ['rIdPosyandu1', 'rIdPosyandu2', 'rIdPosyandu3', 'rIdPosyandu4', 'rIdPosyandu5'];
+    const posyanduRelIds = ['rId106', 'rId107', 'rId108', 'rId109', 'rId110'];
     posyanduRelIds.forEach((rid, i) => {
-      // Check if already exists, else create
       let exists = false;
       const childRels = relsDoc.getElementsByTagName('Relationship');
       for (let j = 0; j < childRels.length; j++) {
@@ -250,7 +403,6 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Helper to set blip embed
     const setBlipEmbed = (row: unknown, relId: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const blips = (row as any).getElementsByTagName('a:blip');
@@ -271,7 +423,7 @@ export async function POST(req: NextRequest) {
       if (r16[1]) setBlipEmbed(r16[1], posyanduRelIds[4]);
     }
 
-    // 6. Update Closing Date Paragraph: "Teluk Naga, 04 September 2026"
+    // 7. Update Closing Date Paragraph: "Teluk Naga, 04 September 2026"
     const closingDateStr = `Teluk Naga, ${dayjs(dates[4]).locale('id').format('DD MMMM YYYY')}`;
     for (let i = paragraphs.length - 1; i >= Math.max(0, paragraphs.length - 20); i--) {
       const p = paragraphs[i];
@@ -294,8 +446,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 7. Update Food Images in word/media/
-    // Requirement strictly applied:
+    // 8. Update Food Images in word/media/
+    // Strictly:
     // Tabel 2.3 (Sekolah) strictly uses Porsi Besar (fotoPorsiBesarUrl) -> image27.png .. image31.png
     // Tabel 2.4 (Posyandu) strictly uses Porsi Bumil/Busui (fotoBumilUrl) -> posyandu_day_1.png .. posyandu_day_5.png
     const sekolahReplacements = [
@@ -314,25 +466,34 @@ export async function POST(req: NextRequest) {
       { media: 'word/media/posyandu_day_5.png', url: daysData[4].fotoPosyanduBumilUrl, fallback: 'word/media/image32.png' },
     ];
 
-    // Download & replace Sekolah (Porsi Besar)
-    await Promise.all(
+    // Download & replace Sekolah (Porsi Besar) + record image dimensions
+    const sekolahDimensions = await Promise.all(
       sekolahReplacements.map(async item => {
-        if (!item.url) return;
-        const buf = await fetchImageBuffer(item.url);
-        if (buf) {
-          zip.file(item.media, buf);
+        if (item.url) {
+          const buf = await fetchImageBuffer(item.url);
+          if (buf) {
+            zip.file(item.media, buf);
+            return getImageDimensions(buf);
+          }
         }
+        // Fallback: read existing image from zip so dimensions are known
+        const existing = zip.file(item.media);
+        if (existing) {
+          const buf = await existing.async('nodebuffer');
+          return getImageDimensions(buf);
+        }
+        return null;
       })
     );
 
-    // Download & replace Posyandu (Porsi Bumil/Busui)
-    await Promise.all(
+    // Download & replace Posyandu (Porsi Bumil/Busui) + record image dimensions
+    const posyanduDimensions = await Promise.all(
       posyanduReplacements.map(async item => {
         if (item.url) {
           const buf = await fetchImageBuffer(item.url);
           if (buf) {
             zip.file(item.media, buf);
-            return;
+            return getImageDimensions(buf);
           }
         }
         // Fallback to default image in template if bumil url not yet uploaded
@@ -340,9 +501,37 @@ export async function POST(req: NextRequest) {
         if (fb) {
           const fbData = await fb.async('nodebuffer');
           zip.file(item.media, fbData);
+          return getImageDimensions(fbData);
         }
+        return null;
       })
     );
+
+    // 9. Fix Image Drawings in Table 2.3 & 2.4:
+    // Remove crop settings (<a:srcRect>) and preserve natural aspect ratio
+    if (t13) {
+      const r13 = t13.getElementsByTagName('w:tr');
+      if (r13[1]) fixRowImageDrawing(r13[1], sekolahDimensions[0]);
+      if (r13[2]) fixRowImageDrawing(r13[2], sekolahDimensions[1]);
+      if (r13[3]) fixRowImageDrawing(r13[3], sekolahDimensions[2]);
+    }
+    if (t14) {
+      const r14 = t14.getElementsByTagName('w:tr');
+      if (r14[0]) fixRowImageDrawing(r14[0], sekolahDimensions[3]);
+      if (r14[1]) fixRowImageDrawing(r14[1], sekolahDimensions[4]);
+    }
+
+    if (t15) {
+      const r15 = t15.getElementsByTagName('w:tr');
+      if (r15[1]) fixRowImageDrawing(r15[1], posyanduDimensions[0]);
+      if (r15[2]) fixRowImageDrawing(r15[2], posyanduDimensions[1]);
+      if (r15[3]) fixRowImageDrawing(r15[3], posyanduDimensions[2]);
+    }
+    if (t16) {
+      const r16 = t16.getElementsByTagName('w:tr');
+      if (r16[0]) fixRowImageDrawing(r16[0], posyanduDimensions[3]);
+      if (r16[1]) fixRowImageDrawing(r16[1], posyanduDimensions[4]);
+    }
 
     // Save modified XML and rels back into the zip
     const serializer = new XMLSerializer();

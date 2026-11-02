@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import useSWR from 'swr';
@@ -688,7 +688,7 @@ export default function LaporanMingguanPage() {
               {reportDays.map((d, dIdx) => {
                 const currentMenu = d.namaMenu || DEFAULT_MENU_DOCX[dIdx];
                 return (
-                  <tr key={`t22-group-${dIdx}`} className="contents">
+                  <Fragment key={`t22-group-${dIdx}`}>
                     {/* 1. PAUD */}
                     <tr className="border border-black">
                       <td className="border border-black p-1">Kabupaten Tangerang</td>
@@ -770,7 +770,7 @@ export default function LaporanMingguanPage() {
                       <td className="border border-black p-1"></td>
                       <td className="border border-black p-1 text-center"></td>
                     </tr>
-                  </tr>
+                  </Fragment>
                 );
               })}
             </tbody>
