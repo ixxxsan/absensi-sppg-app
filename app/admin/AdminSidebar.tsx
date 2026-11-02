@@ -55,7 +55,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
       initial={{ width: 260 }}
       animate={{ width: collapsed ? 80 : 260 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="relative flex flex-col border-r border-white/10 z-40 h-full flex-shrink-0"
+      className="relative flex flex-col border-r border-white/10 z-40 h-full flex-shrink-0 print:hidden"
       style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)' }}
     >
       {/* Logo Area */}

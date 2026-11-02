@@ -27,11 +27,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-[#f9fafb]">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-[#f9fafb] print:h-auto print:overflow-visible print:block print:bg-white">
       <AdminSidebar user={session.user} />
       
       {/* ── Main content ── */}
-      <main className="flex-1 overflow-y-auto min-w-0">
+      <main className="flex-1 overflow-y-auto min-w-0 print:h-auto print:overflow-visible print:block">
         {children}
       </main>
     </div>

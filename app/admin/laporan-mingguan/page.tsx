@@ -183,9 +183,6 @@ export default function LaporanMingguanPage() {
                 <FileSpreadsheet className="w-7 h-7 text-emerald-400" />
                 Laporan Mingguan SPPG
               </h1>
-              <p className="text-sm text-slate-400">
-                Pilih 5 hari operasional (fleksibel jika ada libur). Format &amp; layout 1:1 identik dengan Master Word.
-              </p>
             </div>
           </div>
 
@@ -1028,14 +1025,16 @@ export default function LaporanMingguanPage() {
                 size: A4 portrait;
                 margin: 15mm;
               }
-              body {
+              html, body {
+                height: auto !important;
+                overflow: visible !important;
                 background-color: #ffffff !important;
                 color: #000000 !important;
                 font-family: Calibri, "Segoe UI", Arial, sans-serif !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
-              .print\\:hidden {
+              aside, nav, .print\\:hidden {
                 display: none !important;
               }
             }
