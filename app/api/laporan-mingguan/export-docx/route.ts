@@ -102,10 +102,10 @@ function setParagraphText(p: unknown, newText: string, isBold: boolean = true) {
 }
 
 /**
- * Parses width and height from PNG or JPEG buffer without external dependencies.
+ * Parses width and height from PNG, JPEG, or WebP buffer without external dependencies.
  */
 function getImageDimensions(buffer: Buffer): { width: number; height: number } | null {
-  if (!buffer || buffer.length < 24) return null;
+  if (!buffer || buffer.length < 30) return null;
   // PNG: 89 50 4E 47 0D 0A 1A 0A
   if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
     const width = buffer.readUInt32BE(16);
@@ -115,7 +115,7 @@ function getImageDimensions(buffer: Buffer): { width: number; height: number } |
   // JPEG: FF D8 FF
   if (buffer[0] === 0xff && buffer[1] === 0xd8) {
     let offset = 2;
-    while (offset < buffer.length) {
+    while (offset < buffer.length - 8) {
       if (buffer[offset] !== 0xff) break;
       const marker = buffer[offset + 1];
       if (marker === 0xc0 || marker === 0xc2) {
@@ -124,6 +124,24 @@ function getImageDimensions(buffer: Buffer): { width: number; height: number } |
         if (width > 0 && height > 0) return { width, height };
       }
       offset += 2 + buffer.readUInt16BE(offset + 2);
+    }
+  }
+  // WebP: RIFF .... WEBP
+  if (buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') {
+    const type = buffer.toString('ascii', 12, 16);
+    if (type === 'VP8 ' && buffer.length >= 30) {
+      const width = buffer.readUInt16LE(26) & 0x3fff;
+      const height = buffer.readUInt16LE(28) & 0x3fff;
+      if (width > 0 && height > 0) return { width, height };
+    } else if (type === 'VP8L' && buffer.length >= 25) {
+      const b1 = buffer[21], b2 = buffer[22], b3 = buffer[23], b4 = buffer[24];
+      const width = 1 + (((b2 & 0x3f) << 8) | b1);
+      const height = 1 + (((b4 & 0xf) << 10) | (b3 << 2) | ((b2 & 0xc0) >> 6));
+      if (width > 0 && height > 0) return { width, height };
+    } else if (type === 'VP8X' && buffer.length >= 30) {
+      const width = 1 + (buffer[24] | (buffer[25] << 8) | (buffer[26] << 16));
+      const height = 1 + (buffer[27] | (buffer[28] << 8) | (buffer[29] << 16));
+      if (width > 0 && height > 0) return { width, height };
     }
   }
   return null;
@@ -138,24 +156,22 @@ function fixRowImageDrawing(row: unknown, imgDimensions: { width: number; height
   const r = row as any;
   if (!r) return;
 
-  // 1. Remove all a:srcRect cropping tags from blipFill so entire ompreng is shown
-  const blipFills = r.getElementsByTagName('a:blipFill');
-  for (let i = 0; i < blipFills.length; i++) {
-    const srcRects = Array.from(blipFills[i].getElementsByTagName('a:srcRect'));
-    for (const sr of srcRects) {
-      blipFills[i].removeChild(sr);
+  // 1. Remove ALL a:srcRect cropping tags from this row (master template crops bottom by 35%)
+  const srcRects = Array.from(r.getElementsByTagName('a:srcRect')) as Element[];
+  for (const sr of srcRects) {
+    if (sr.parentNode) {
+      sr.parentNode.removeChild(sr);
     }
   }
 
-  // 2. Adjust cx and cy to preserve aspect ratio without stretching
+  // 2. Adjust cx and cy to preserve natural aspect ratio without stretching
+  const maxCx = 2400000; // ~6.67 cm (fits cleanly within 5906 dxa cell)
+  const maxCy = 1800000; // ~5.00 cm
+  let finalCx = maxCx;
+  let finalCy = maxCy;
+
   if (imgDimensions && imgDimensions.width > 0 && imgDimensions.height > 0) {
-    const maxCx = 2400000; // ~6.6 cm (fits within 5906 dxa cell)
-    const maxCy = 1800000; // ~5.0 cm
     const aspect = imgDimensions.width / imgDimensions.height;
-
-    let finalCx = maxCx;
-    let finalCy = maxCy;
-
     if (aspect >= maxCx / maxCy) {
       finalCx = maxCx;
       finalCy = Math.round(maxCx / aspect);
@@ -163,19 +179,23 @@ function fixRowImageDrawing(row: unknown, imgDimensions: { width: number; height
       finalCy = maxCy;
       finalCx = Math.round(maxCy * aspect);
     }
+  } else {
+    // Default food tray landscape proportion (4:3)
+    finalCx = 2400000;
+    finalCy = 1800000;
+  }
 
-    const extents = r.getElementsByTagName('wp:extent');
-    for (let i = 0; i < extents.length; i++) {
-      extents[i].setAttribute('cx', finalCx.toString());
-      extents[i].setAttribute('cy', finalCy.toString());
-    }
+  const extents = r.getElementsByTagName('wp:extent');
+  for (let i = 0; i < extents.length; i++) {
+    extents[i].setAttribute('cx', finalCx.toString());
+    extents[i].setAttribute('cy', finalCy.toString());
+  }
 
-    const aExts = r.getElementsByTagName('a:ext');
-    for (let i = 0; i < aExts.length; i++) {
-      if (aExts[i].getAttribute('cx')) {
-        aExts[i].setAttribute('cx', finalCx.toString());
-        aExts[i].setAttribute('cy', finalCy.toString());
-      }
+  const aExts = r.getElementsByTagName('a:ext');
+  for (let i = 0; i < aExts.length; i++) {
+    if (aExts[i].getAttribute('cx')) {
+      aExts[i].setAttribute('cx', finalCx.toString());
+      aExts[i].setAttribute('cy', finalCy.toString());
     }
   }
 }

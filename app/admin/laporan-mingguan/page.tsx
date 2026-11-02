@@ -800,7 +800,7 @@ export default function LaporanMingguanPage() {
                       {d.hariTanggalSingkat}
                     </td>
                     <td className="border border-black p-2 align-middle text-center">
-                      <div className="w-[180px] h-[120px] mx-auto relative bg-slate-50">
+                      <div className="w-[190px] h-[135px] mx-auto relative bg-slate-50">
                         {d.fotoPorsiBesarUrl ? (
                           <Image
                             src={d.fotoPorsiBesarUrl}
@@ -808,7 +808,7 @@ export default function LaporanMingguanPage() {
                             fill
                             sizes="200px"
                             unoptimized
-                            className="object-cover"
+                            className="object-contain"
                           />
                         ) : (
                           <Image
@@ -816,7 +816,7 @@ export default function LaporanMingguanPage() {
                             alt={`Menu Sekolah ${i + 1}`}
                             fill
                             sizes="200px"
-                            className="object-cover"
+                            className="object-contain"
                           />
                         )}
                       </div>
@@ -855,7 +855,7 @@ export default function LaporanMingguanPage() {
                       {d.hariTanggalSingkat}
                     </td>
                     <td className="border border-black p-2 align-middle text-center">
-                      <div className="w-[180px] h-[120px] mx-auto relative bg-slate-50">
+                      <div className="w-[190px] h-[135px] mx-auto relative bg-slate-50">
                         {d.fotoBumilUrl ? (
                           <Image
                             src={d.fotoBumilUrl}
@@ -863,7 +863,7 @@ export default function LaporanMingguanPage() {
                             fill
                             sizes="200px"
                             unoptimized
-                            className="object-cover"
+                            className="object-contain"
                           />
                         ) : (
                           <Image
@@ -871,7 +871,7 @@ export default function LaporanMingguanPage() {
                             alt={`Menu Posyandu ${i + 1}`}
                             fill
                             sizes="200px"
-                            className="object-cover"
+                            className="object-contain"
                           />
                         )}
                       </div>
