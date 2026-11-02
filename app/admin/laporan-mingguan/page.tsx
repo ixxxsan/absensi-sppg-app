@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import useSWR from 'swr';
@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
-import { getWeeklyReportMenuData, DayReportData, DAFTAR_SASARAN_DEFAULT } from '@/app/actions/laporan-mingguan';
+import { getWeeklyReportMenuData } from '@/app/actions/laporan-mingguan';
+import { DAFTAR_SASARAN_DEFAULT, DayReportData } from '@/lib/constants/laporan-mingguan';
 
 dayjs.locale('id');
 
@@ -38,11 +39,31 @@ export default function LaporanMingguanPage() {
 
   // SWR: auto-fetch menu data whenever the 5 dates change
   const datesKey = dates.join(',');
-  const { data: reportDays = [], isLoading, error } = useSWR<DayReportData[]>(
+  const { data: rawReportDays = [], isLoading, error } = useSWR<DayReportData[]>(
     ['weekly-menu-data', datesKey],
     () => getWeeklyReportMenuData(dates),
     { revalidateOnFocus: false }
   );
+
+  // Fallback days map so UI always has 5 rows even during loading/initialization
+  const reportDays: DayReportData[] = useMemo(() => {
+    return dates.map((d, idx) => {
+      const fetched = rawReportDays.find(r => r.dateStr === d);
+      if (fetched) return fetched;
+      const dayObj = dayjs(d).locale('id');
+      return {
+        pemberianKe: idx + 1,
+        dateStr: d,
+        hariTanggalLengkap: dayObj.format('dddd, DD MMMM YYYY'),
+        hariTanggalSingkat: dayObj.format('dddd, DD/MM/YYYY'),
+        namaMenu: '',
+        fotoPorsiBesarUrl: '',
+        fotoPorsiKecilUrl: '',
+        fotoBumilUrl: '',
+        isFilled: false,
+      };
+    });
+  }, [dates, rawReportDays]);
 
   // Update a single operational day
   const handleDayChange = (index: number, newDate: string) => {
@@ -459,7 +480,7 @@ export default function LaporanMingguanPage() {
                   return (
                     <div key={i} className="border border-slate-300 rounded p-1 text-center bg-slate-50">
                       <div className="h-20 w-full relative mb-1 bg-slate-200">
-                        <Image src={item.img} alt={dayLabel} fill className="object-cover rounded" />
+                        <Image src={item.img} alt={dayLabel} fill sizes="100px" className="object-cover rounded" />
                       </div>
                       <div className="text-[10px] font-bold text-slate-900">{dayLabel}</div>
                       <div className="text-[9px] text-slate-600 line-clamp-2 leading-tight">{item.desc}</div>
@@ -484,7 +505,7 @@ export default function LaporanMingguanPage() {
                   return (
                     <div key={i} className="border border-slate-300 rounded p-1 text-center bg-slate-50">
                       <div className="h-20 w-full relative mb-1 bg-slate-200">
-                        <Image src={item.img} alt={dayLabel} fill className="object-cover rounded" />
+                        <Image src={item.img} alt={dayLabel} fill sizes="100px" className="object-cover rounded" />
                       </div>
                       <div className="text-[10px] font-bold text-slate-900">{dayLabel}</div>
                       <div className="text-[9px] text-slate-600 line-clamp-2 leading-tight">{item.desc}</div>
@@ -509,7 +530,7 @@ export default function LaporanMingguanPage() {
                   return (
                     <div key={i} className="border border-slate-300 rounded p-1 text-center bg-slate-50">
                       <div className="h-20 w-full relative mb-1 bg-slate-200">
-                        <Image src={item.img} alt={dayLabel} fill className="object-cover rounded" />
+                        <Image src={item.img} alt={dayLabel} fill sizes="100px" className="object-cover rounded" />
                       </div>
                       <div className="text-[10px] font-bold text-slate-900">{dayLabel}</div>
                       <div className="text-[9px] text-slate-600 line-clamp-2 leading-tight">{item.desc}</div>
@@ -525,28 +546,28 @@ export default function LaporanMingguanPage() {
               <div className="grid grid-cols-4 gap-2">
                 <div className="border border-slate-300 rounded p-1 text-center bg-slate-50">
                   <div className="h-20 w-full relative mb-1 bg-slate-200">
-                    <Image src="/images/laporan/image17.jpeg" alt="Distribusi" fill className="object-cover rounded" />
+                    <Image src="/images/laporan/image17.jpeg" alt="Distribusi" fill sizes="150px" className="object-cover rounded" />
                   </div>
                   <div className="text-[10px] font-bold text-slate-900">Distribusi Mobil Box</div>
                   <div className="text-[9px] text-slate-600">Pengantaran tepat waktu ke sekolah</div>
                 </div>
                 <div className="border border-slate-300 rounded p-1 text-center bg-slate-50">
                   <div className="h-20 w-full relative mb-1 bg-slate-200">
-                    <Image src="/images/laporan/image19.jpeg" alt="Penyisihan" fill className="object-cover rounded" />
+                    <Image src="/images/laporan/image19.jpeg" alt="Penyisihan" fill sizes="150px" className="object-cover rounded" />
                   </div>
                   <div className="text-[10px] font-bold text-slate-900">1. Pemisahan Sisa</div>
                   <div className="text-[9px] text-slate-600">Penyortiran sisa makanan dari ompreng</div>
                 </div>
                 <div className="border border-slate-300 rounded p-1 text-center bg-slate-50">
                   <div className="h-20 w-full relative mb-1 bg-slate-200">
-                    <Image src="/images/laporan/image21.jpeg" alt="Pencucian" fill className="object-cover rounded" />
+                    <Image src="/images/laporan/image21.jpeg" alt="Pencucian" fill sizes="150px" className="object-cover rounded" />
                   </div>
                   <div className="text-[10px] font-bold text-slate-900">2-4. Pencucian 3 Tahap</div>
                   <div className="text-[9px] text-slate-600">Sabun food-grade &amp; pembilasan bersih</div>
                 </div>
                 <div className="border border-slate-300 rounded p-1 text-center bg-slate-50">
                   <div className="h-20 w-full relative mb-1 bg-slate-200">
-                    <Image src="/images/laporan/image25.jpeg" alt="Sanitasi" fill className="object-cover rounded" />
+                    <Image src="/images/laporan/image25.jpeg" alt="Sanitasi" fill sizes="150px" className="object-cover rounded" />
                   </div>
                   <div className="text-[10px] font-bold text-slate-900">5-8. Sanitasi &amp; Pengelapan</div>
                   <div className="text-[9px] text-slate-600">Perendaman air panas &amp; lap microfiber</div>
@@ -665,6 +686,8 @@ export default function LaporanMingguanPage() {
                               src={d.fotoPorsiBesarUrl}
                               alt={`Menu Sekolah ${d.hariTanggalSingkat}`}
                               fill
+                              sizes="200px"
+                              unoptimized
                               className="object-cover"
                             />
                           ) : (
@@ -673,6 +696,7 @@ export default function LaporanMingguanPage() {
                                 src={`/images/laporan/image${27 + i}.png`}
                                 alt={`Sample Menu ${i + 1}`}
                                 fill
+                                sizes="200px"
                                 className="object-cover opacity-80"
                               />
                               <span className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-[9px] px-1 py-0.5 rounded text-center">
@@ -722,6 +746,8 @@ export default function LaporanMingguanPage() {
                               src={d.fotoBumilUrl}
                               alt={`Menu Posyandu ${d.hariTanggalSingkat}`}
                               fill
+                              sizes="200px"
+                              unoptimized
                               className="object-cover"
                             />
                           ) : (
@@ -730,6 +756,7 @@ export default function LaporanMingguanPage() {
                                 src={i === 4 ? '/images/laporan/image32.png' : `/images/laporan/image${27 + i}.png`}
                                 alt={`Sample Menu Posyandu ${i + 1}`}
                                 fill
+                                sizes="200px"
                                 className="object-cover opacity-80"
                               />
                               <span className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-[9px] px-1 py-0.5 rounded text-center">
@@ -752,7 +779,7 @@ export default function LaporanMingguanPage() {
             <div className="grid grid-cols-4 gap-2 mb-4">
               {['image18.jpeg', 'image33.jpeg', 'image34.jpeg', 'image35.jpeg', 'image36.jpeg', 'image37.jpeg', 'image38.jpeg', 'image39.jpeg'].map((img, i) => (
                 <div key={i} className="h-24 w-full relative bg-slate-100 border border-slate-300 rounded overflow-hidden">
-                  <Image src={`/images/laporan/${img}`} alt={`Distribusi ${i + 1}`} fill className="object-cover" />
+                  <Image src={`/images/laporan/${img}`} alt={`Distribusi ${i + 1}`} fill sizes="150px" className="object-cover" />
                 </div>
               ))}
             </div>
@@ -761,7 +788,7 @@ export default function LaporanMingguanPage() {
             <div className="grid grid-cols-6 gap-2">
               {['image40.jpeg', 'image41.jpeg', 'image42.jpeg', 'image43.jpeg', 'image44.jpeg', 'image45.jpeg'].map((img, i) => (
                 <div key={i} className="h-28 w-full relative bg-slate-100 border border-slate-300 rounded overflow-hidden">
-                  <Image src={`/images/laporan/${img}`} alt={`Surat Jalan ${i + 1}`} fill className="object-cover" />
+                  <Image src={`/images/laporan/${img}`} alt={`Surat Jalan ${i + 1}`} fill sizes="150px" className="object-cover" />
                 </div>
               ))}
             </div>
@@ -818,29 +845,33 @@ export default function LaporanMingguanPage() {
         </section>
       </div>
 
-      {/* PRINT-ONLY CSS STYLES */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4 portrait;
-            margin: 12mm 15mm;
-          }
-          body {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            font-size: 11pt !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .page-break-inside-avoid {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-        }
-      `}</style>
+      {/* PRINT-ONLY CSS STYLES (Clean HTML <style> without styled-jsx requirement) */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 12mm 15mm;
+              }
+              body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                font-size: 11pt !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .print\\:hidden {
+                display: none !important;
+              }
+              .page-break-inside-avoid {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+              }
+            }
+          `,
+        }}
+      />
     </div>
   );
 }
