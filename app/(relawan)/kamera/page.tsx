@@ -155,7 +155,7 @@ export default function KameraPage() {
     } finally {
       isUploadingRef.current = false;
     }
-  }, [tipeAbsen, latitude, longitude, reset, router, session]);
+  }, [tipeAbsen, latitude, longitude, reset, router]);
 
   const handleBack = () => {
     reset();

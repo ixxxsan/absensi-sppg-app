@@ -15,14 +15,7 @@ export async function requestPasswordReset(identifier: string) {
     if (!trimmed) return { success: false, error: 'Wajib diisi.' };
 
     const headerList = await headers();
-    const host = headerList.get('x-forwarded-host') || headerList.get('host');
-    const proto = headerList.get('x-forwarded-proto') || 'https';
-
-    let appUrl = getAppUrl();
-    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
-      appUrl = `${proto}://${host}`;
-    }
-    appUrl = appUrl.replace(/\/+$/, '');
+    const appUrl = getAppUrl();
 
     const [found] = await db
       .select({ email: user.email })

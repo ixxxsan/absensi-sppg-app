@@ -5,7 +5,7 @@ import { useForm, UseFormRegister, UseFormWatch, UseFormSetValue, type FieldPath
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/lib/supabase";
-import { upsertMenu, getMenuByDate } from "@/app/actions/menu";
+import { upsertMenu, getMenuByDate, MenuNutrition } from "@/app/actions/menu";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -61,7 +61,7 @@ export default function AdminMenuPage() {
     }
   }, []);
 
-  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<MenuForm>({
+  const { register, handleSubmit, watch, setValue, reset } = useForm<MenuForm>({
     resolver: zodResolver(menuSchema),
     defaultValues: {
       tanggal: getTodayWib(),
@@ -96,19 +96,22 @@ export default function AdminMenuPage() {
       const data = await getMenuByDate(dateStr);
       if (data) {
         setExistingMenu(data);
+        const giziKecil = data.giziPorsiKecil as unknown as MenuNutrition;
+        const giziBesar = data.giziPorsiBesar as unknown as MenuNutrition;
+        const giziBumil = data.giziBumil as unknown as MenuNutrition;
         reset({
           tanggal: dateStr,
           namaMenu: data.namaMenu,
-          giziPorsiKecil: data.giziPorsiKecil as any,
-          giziPorsiBesar: data.giziPorsiBesar as any,
-          giziBumil: data.giziBumil as any,
+          giziPorsiKecil: giziKecil,
+          giziPorsiBesar: giziBesar,
+          giziBumil: giziBumil,
         });
         setValue("namaMenu", data.namaMenu);
         const nutrientKeys = ["energi", "protein", "lemak", "karbohidrat", "serat"] as const;
         nutrientKeys.forEach((key) => {
-          setValue(`giziPorsiKecil.${key}`, Number((data.giziPorsiKecil as any)?.[key]) || 0);
-          setValue(`giziPorsiBesar.${key}`, Number((data.giziPorsiBesar as any)?.[key]) || 0);
-          setValue(`giziBumil.${key}`, Number((data.giziBumil as any)?.[key]) || 0);
+          setValue(`giziPorsiKecil.${key}`, Number(giziKecil?.[key]) || 0);
+          setValue(`giziPorsiBesar.${key}`, Number(giziBesar?.[key]) || 0);
+          setValue(`giziBumil.${key}`, Number(giziBumil?.[key]) || 0);
         });
         goeyToast.success("Memuat menu yang sudah ada untuk tanggal ini.");
       } else {
@@ -218,7 +221,7 @@ export default function AdminMenuPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (error) {
+    } catch {
       goeyToast.error("Gagal mengunduh QR Code");
     }
   };

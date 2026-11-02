@@ -95,13 +95,24 @@ export async function createRelawan(fd: FormData) {
   const [email, namaLengkap, status] = ['email', 'namaLengkap', 'status'].map(k => (fd.get(k) as string || '').trim());
   const pass = randomBytes(8).toString('hex');
 
+  let idRelawan = (fd.get('idRelawan') as string || '').trim();
+  if (!idRelawan) {
+    const existing = (await db.select({ idRelawan: user.idRelawan }).from(user).where(eq(user.role, 'relawan')))
+      .map(u => parseInt(u.idRelawan?.replace(/\D/g, '') || '0', 10))
+      .filter(n => !isNaN(n) && n > 0);
+    const existingSet = new Set(existing);
+    let nextNum = 1;
+    while (existingSet.has(nextNum)) nextNum++;
+    idRelawan = `SPPG-${String(nextNum).padStart(3, '0')}`;
+  }
+
   try {
     const res = await auth.api.signUpEmail({ body: { email, name: namaLengkap, password: pass } });
     if (!res?.user) throw new Error('API signUp gagal');
 
     await db.update(user).set({
       role: 'relawan', nik: fd.get('nik') as string, divisi: fd.get('divisi') as string, 
-      status, idRelawan: fd.get('idRelawan') as string, noTelepon: fd.get('noTelepon') as string,
+      status, idRelawan, noTelepon: fd.get('noTelepon') as string,
       statusAktif: status === 'Aktif'
     }).where(eq(user.id, res.user.id));
 
@@ -165,20 +176,31 @@ export async function bulkImportRelawan(rows: BulkImportRow[]) {
   const session = await getServerSession();
   if (!isAdmin(session?.user?.role)) return { success: false, error: 'Unauthorized' };
 
-  const nums = (await db.select({ idRelawan: user.idRelawan }).from(user).where(eq(user.role, 'relawan')))
-    .map(u => parseInt(u.idRelawan?.replace(/\D/g, '') || '0')).sort((a, b) => a - b);
-  
-  let next = 1;
-  while (nums.includes(next)) next++;
+  const existingSet = new Set(
+    (await db.select({ idRelawan: user.idRelawan }).from(user).where(eq(user.role, 'relawan')))
+      .map(u => parseInt(u.idRelawan?.replace(/\D/g, '') || '0', 10))
+      .filter(n => !isNaN(n) && n > 0)
+  );
+
+  let candidate = 1;
+  const assignedIds: string[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    while (existingSet.has(candidate)) {
+      candidate++;
+    }
+    existingSet.add(candidate);
+    assignedIds.push(`SPPG-${String(candidate).padStart(3, '0')}`);
+  }
 
   const results = await Promise.all(rows.map(async (r, i) => {
     const pass = randomBytes(8).toString('hex');
+    const assignedId = assignedIds[i];
     try {
       const res = await auth.api.signUpEmail({ body: { email: r.email, name: r.namaLengkap, password: pass } });
       if (!res?.user) throw new Error('Fail');
       await db.update(user).set({
         role: 'relawan', nik: r.nik, divisi: r.divisi, status: r.status || 'Aktif',
-        idRelawan: `SPPG-${String(next + i).padStart(3, '0')}`, noTelepon: r.noTelepon, statusAktif: r.status !== 'Cuti'
+        idRelawan: assignedId, noTelepon: r.noTelepon, statusAktif: r.status !== 'Cuti'
       }).where(eq(user.id, res.user.id));
       const emailResult = await sendPasswordEmail(r.email, pass, r.namaLengkap);
       return { 

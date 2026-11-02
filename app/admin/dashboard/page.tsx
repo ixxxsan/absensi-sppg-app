@@ -54,7 +54,7 @@ async function DashboardContent() {
       .from(absensi)
       .leftJoin(user, eq(absensi.userId, user.id))
       .where(eq(absensi.tanggalAbsen, todayDate))
-      .orderBy(desc(absensi.id))
+      .orderBy(desc(absensi.createdAt))
   ]);
 
   const totalRelawan = result[0].value;

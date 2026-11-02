@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, CheckCircle2, Download, FileSpreadsheet, Info } from 'lucide-react';
 import { nowWIB } from '@/lib/utils';
 import { getAllAbsensi } from '@/app/actions/absensi';
+import { getRelawans } from '@/app/actions/relawan';
 
 interface LaporanItem {
   idRelawan: string;
@@ -29,6 +30,20 @@ export default function LaporanPage() {
   const [lastExport, setLastExport] = useState<string | null>(null);
   
   const [data, setData] = useState<LaporanItem[]>([]);
+  type RelawanType = Awaited<ReturnType<typeof getRelawans>>[number];
+  const [relawanList, setRelawanList] = useState<RelawanType[]>([]);
+
+  useEffect(() => {
+    async function fetchRelawans() {
+      try {
+        const res = await getRelawans();
+        setRelawanList(res || []);
+      } catch (e) {
+        console.error('Failed to fetch relawan:', e);
+      }
+    }
+    fetchRelawans();
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -98,8 +113,19 @@ export default function LaporanPage() {
 
     const filteredForExport = data.filter((r) => r.tanggal >= dateFrom && r.tanggal <= dateTo);
     
-    // Calculate Total Hari Kerja per Volunteer
+    // Calculate Total Hari Kerja per Volunteer (seeded with all relawan for VLOOKUP compatibility)
     const aggregateMap = new Map();
+    relawanList.forEach(rel => {
+      const id = rel.idRelawan || 'SPPG-000';
+      aggregateMap.set(id, {
+        'ID Relawan': id,
+        'Nama Lengkap': rel.name || 'Unknown',
+        'Divisi': rel.divisi || '-',
+        'Status': rel.status || 'Aktif',
+        'Total Hari Kerja (Hari)': 0
+      });
+    });
+
     filteredForExport.forEach(r => {
       if (!aggregateMap.has(r.idRelawan)) {
         aggregateMap.set(r.idRelawan, { 'ID Relawan': r.idRelawan, 'Nama Lengkap': r.namaLengkap, 'Divisi': r.divisi, 'Status': r.status, 'Total Hari Kerja (Hari)': 0 });
@@ -214,6 +240,17 @@ export default function LaporanPage() {
   });
 
   const summaryMap: Record<string, { idRelawan: string; namaLengkap: string; divisi: string; status: string; totalHariKerja: number }> = {};
+  relawanList.forEach(rel => {
+    const id = rel.idRelawan || 'SPPG-000';
+    summaryMap[id] = {
+      idRelawan: id,
+      namaLengkap: rel.name || 'Unknown',
+      divisi: rel.divisi || '-',
+      status: rel.status || 'Aktif',
+      totalHariKerja: 0
+    };
+  });
+
   filteredData.forEach(r => {
     if (!summaryMap[r.idRelawan]) {
       summaryMap[r.idRelawan] = {

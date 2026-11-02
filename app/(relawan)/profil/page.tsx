@@ -6,6 +6,8 @@ import { LogOut, Settings, Key, HelpCircle, ChevronRight, X, Camera } from 'luci
 import { authClient } from '@/lib/auth-client';
 import { goeyToast } from 'goey-toast';
 import { motion, Variants } from 'framer-motion';
+import { compressImage } from '@/lib/utils';
+import { uploadProfilePhoto } from '@/app/actions/user';
 
 export default function ProfilPage() {
   const router = useRouter();
@@ -34,20 +36,32 @@ export default function ProfilPage() {
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && user) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        try {
-          await authClient.updateUser({
-            image: base64String
-          });
-        } catch (error) {
-          goeyToast.error("Gagal mengupdate foto profil");
-          console.error("Failed to update profile photo", error);
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      goeyToast.error('Format file harus berupa gambar (JPG/PNG/WEBP)');
+      return;
+    }
+
+    try {
+      goeyToast.info('Mengompres dan mengunggah foto...');
+      const compressedBlob = await compressImage(file, 0.7);
+      const fd = new FormData();
+      fd.append('photo', compressedBlob);
+
+      const res = await uploadProfilePhoto(fd);
+      if (res.success && res.imageUrl) {
+        await authClient.updateUser({ image: res.imageUrl });
+        goeyToast.success('Foto profil berhasil diperbarui');
+        router.refresh();
+      } else {
+        goeyToast.error(res.error || 'Gagal mengunggah foto profil');
+      }
+    } catch (error) {
+      console.error('Failed to update profile photo:', error);
+      goeyToast.error('Gagal memproses foto profil');
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 

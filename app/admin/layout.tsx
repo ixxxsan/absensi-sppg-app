@@ -1,26 +1,29 @@
 import { getServerSession } from '@/lib/auth-server';
 import AdminSidebar from './AdminSidebar';
 import { isAdminRole } from '@/lib/utils';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // We can't rely completely on middleware for role check since middleware 
-  // might not have full db access if we ever need it, but getServerSession does.
-  // Actually, getServerSession fetches the session securely.
   const session = await getServerSession();
-
-  // Basic check for admin role
   const isAdmin = session?.user && isAdminRole(session.user.role);
 
+  const headerList = await headers();
+  const pathname = headerList.get('x-pathname') || '';
+
   if (!isAdmin) {
-    return (
-      <div className="flex h-[100dvh] w-full overflow-hidden bg-[#f9fafb]">
-        <main className="flex-1 overflow-y-auto min-w-0">
-          {children}
-        </main>
-      </div>
-    );
+    if (pathname === '/admin/login' || pathname.startsWith('/admin/login')) {
+      return (
+        <div className="flex h-[100dvh] w-full overflow-hidden bg-[#f9fafb]">
+          <main className="flex-1 overflow-y-auto min-w-0">
+            {children}
+          </main>
+        </div>
+      );
+    }
+    redirect('/admin/login');
   }
 
   return (

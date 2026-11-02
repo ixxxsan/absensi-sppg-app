@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, MapPin, Clock, Camera, CheckCircle, XCircle, ClipboardList, Loader2 } from 'lucide-react';
 import { useAbsensiStore } from '@/lib/stores';
 import Image from 'next/image';
@@ -118,31 +118,37 @@ export default function RiwayatPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // H2+H3 Fix: Fetch riwayat from server filtered by month
-  const fetchRiwayat = useCallback(async (month: number, year: number) => {
-    setIsLoading(true);
-    try {
-      const records = await getRiwayatRelawan(month, year);
-      setServerRecords(records.map(r => ({
-        id: r.id,
-        userId: r.userId,
-        tanggalAbsen: r.tanggalAbsen,
-        waktuAbsen: r.waktuAbsen,
-        fotoUrl: r.fotoUrl,
-        latitude: Number(r.latitude),
-        longitude: Number(r.longitude),
-        tipe: r.tipe as 'masuk' | 'pulang',
-        statusValidasi: r.statusValidasi as AbsenRecord['statusValidasi'],
-      })));
-    } catch (e) {
-      console.error('Gagal fetch riwayat:', e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchRiwayat(selectedMonth, selectedYear);
-  }, [selectedMonth, selectedYear, fetchRiwayat]);
+    let ignore = false;
+    async function loadData() {
+      try {
+        const records = await getRiwayatRelawan(selectedMonth, selectedYear);
+        if (!ignore) {
+          setServerRecords(records.map(r => ({
+            id: r.id,
+            userId: r.userId,
+            tanggalAbsen: r.tanggalAbsen,
+            waktuAbsen: r.waktuAbsen,
+            fotoUrl: r.fotoUrl,
+            latitude: Number(r.latitude),
+            longitude: Number(r.longitude),
+            tipe: r.tipe as 'masuk' | 'pulang',
+            statusValidasi: r.statusValidasi as AbsenRecord['statusValidasi'],
+          })));
+        }
+      } catch (e) {
+        console.error('Gagal fetch riwayat:', e);
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    }
+    loadData();
+    return () => {
+      ignore = true;
+    };
+  }, [selectedMonth, selectedYear]);
 
   // Merge today's records (from Zustand) with server records, dedup by id
   const todayRecords: AbsenRecord[] = [
@@ -201,7 +207,10 @@ export default function RiwayatPage() {
           <select
             id="month-filter"
             value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            onChange={(e) => {
+              setSelectedMonth(Number(e.target.value));
+              setIsLoading(true);
+            }}
             className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3.5 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-white/20 transition-colors"
           >
             {MONTHS.map((m, i) => (

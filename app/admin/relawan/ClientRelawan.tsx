@@ -6,7 +6,7 @@ import { createRelawan, updateRelawan, deleteRelawan, bulkImportRelawan, resetPa
 import { useRouter } from 'next/navigation';
 import { goeyToast } from 'goey-toast';
 
-import { Divisi, StatusRelawan, DIVISI_OPTIONS, STATUS_RELAWAN_OPTIONS } from '@/lib/constants';
+import { DIVISI_OPTIONS, STATUS_RELAWAN_OPTIONS } from '@/lib/constants';
 
 export interface ImportFailedDetail {
   email: string;

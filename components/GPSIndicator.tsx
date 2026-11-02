@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react';
 import { useCameraStore } from '@/lib/stores';
 import { haversineDistance } from '@/lib/utils';
 import { GEOFENCE } from '@/lib/config';
-import { goeyToast } from 'goey-toast';
 
 const TASK_LOCATION = { lat: GEOFENCE.lat, lon: GEOFENCE.lon };
 const GEOFENCE_RADIUS = GEOFENCE.radiusMeters;

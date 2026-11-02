@@ -7,7 +7,7 @@
  * layout relawan (BottomNav, auth guard).
  */
 import React from "react";
-import { getMenuHariIni } from "@/app/actions/menu";
+import { getMenuHariIni, MenuNutrition } from "@/app/actions/menu";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
 import MenuClient from "./menu-client";
@@ -44,19 +44,19 @@ export default async function MenuHariIniPage() {
         label: "Porsi Kecil",
         icon: <UtensilsCrossed size={20} />,
         img: menuData.fotoPorsiKecilUrl,
-        nutrition: menuData.giziPorsiKecil as any,
+        nutrition: menuData.giziPorsiKecil as unknown as MenuNutrition,
       },
       {
         label: "Porsi Besar",
         icon: <Utensils size={20} />,
         img: menuData.fotoPorsiBesarUrl,
-        nutrition: menuData.giziPorsiBesar as any,
+        nutrition: menuData.giziPorsiBesar as unknown as MenuNutrition,
       },
       {
         label: "Bumil/Busui",
         icon: <Baby size={20} />,
         img: menuData.fotoBumilUrl,
-        nutrition: menuData.giziBumil as any,
+        nutrition: menuData.giziBumil as unknown as MenuNutrition,
       }
     ]
   };

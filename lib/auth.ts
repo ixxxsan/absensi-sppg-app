@@ -48,7 +48,7 @@ export const auth = betterAuth({
         autoSignIn: true,
         resetPasswordTokenExpiresIn: 1800, // 30 menit
         revokeSessionsOnPasswordReset: true,
-        sendResetPassword: async ({ user, url, token }: { user: any; url: string; token?: string }) => {
+        sendResetPassword: async ({ user, url, token }: { user: { name?: string | null; email: string }; url: string; token?: string }) => {
             if (!process.env.RESEND_API_KEY) {
                 console.warn("[AUTH] RESEND_API_KEY tidak ditemukan, email reset di-skip.");
                 return;

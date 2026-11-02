@@ -7,9 +7,6 @@ import {
   Ban, 
   Hourglass, 
   Calendar, 
-  UtensilsCrossed, 
-  Utensils, 
-  Baby, 
   Zap, 
   Drumstick, 
   Droplet, 
@@ -75,7 +72,6 @@ export default function MenuClient({ data }: { data: MenuData }) {
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 flex-shrink-0 flex items-center justify-center">
               <div className="absolute inset-2 bg-white/40 blur-md rounded-full" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt="Badan Gizi Nasional Logo"
                 className="w-8 h-8 object-contain drop-shadow-lg relative z-10"
@@ -122,7 +118,6 @@ export default function MenuClient({ data }: { data: MenuData }) {
 
           <section className="mb-8">
             <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-lg mb-4 border border-white/10 group bg-[#0c2860]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="w-full h-full object-cover transition-opacity duration-200 ease-in-out"
                 alt={data.namaMenu}

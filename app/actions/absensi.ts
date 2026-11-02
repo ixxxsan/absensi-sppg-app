@@ -152,9 +152,10 @@ export async function submitAbsensi(formData: FormData) {
       catatanSistem: isSpoof ? 'Time Spoofing Indication' : null
     }).returning();
     return { success: true, record };
-  } catch (err: any) {
-    console.error('Error saat submit absensi:', err);
-    return { success: false, error: err?.message || 'Gagal menyimpan data absensi. Silakan coba lagi.' };
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('Error saat submit absensi:', error);
+    return { success: false, error: error?.message || 'Gagal menyimpan data absensi. Silakan coba lagi.' };
   }
 }
 

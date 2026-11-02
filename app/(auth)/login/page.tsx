@@ -10,6 +10,7 @@ import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { goeyToast } from 'goey-toast';
 import Image from 'next/image';
+import { resolveLoginIdentifier } from '@/app/actions/user';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email atau ID Relawan wajib diisi'),
@@ -48,7 +49,9 @@ function LoginContent() {
     setIsLoading(true);
     setLoginError('');
     try {
-      const emailInput = data.email.trim().toLowerCase();
+      const rawInput = data.email.trim();
+      const resolvedEmail = await resolveLoginIdentifier(rawInput);
+      const emailInput = (resolvedEmail || rawInput).toLowerCase();
       
       const res = await authClient.signIn.email({
         email: emailInput,
