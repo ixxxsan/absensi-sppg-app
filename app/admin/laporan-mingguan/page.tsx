@@ -7,7 +7,8 @@ import useSWR from 'swr';
 import {
   Printer, Download, Calendar, ChevronLeft, ChevronRight,
   CheckCircle2, AlertCircle, RefreshCw, ExternalLink, Utensils,
-  FileSpreadsheet, ArrowLeft, RotateCcw
+  FileSpreadsheet, ArrowLeft, RotateCcw, UploadCloud, Trash2,
+  ImagePlus, ChevronDown, ChevronUp, X, Layers, FileImage
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
@@ -33,6 +34,15 @@ const DEFAULT_MENU_DOCX = [
   'Kentang Goreng, Dimsum, Kacang Polong, Mix Vegetables, Anggur Merah, Susu Full Cream',
 ];
 
+export interface CustomDocImages {
+  suratJalan: string[];
+  persiapan: string[];
+  pengolahan: string[];
+  pemorsian: string[];
+  distribusi: string[];
+  dokumentasiDistribusi: string[];
+}
+
 export default function LaporanMingguanPage() {
   // Compute default Monday - Friday
   const getDefaultDates = () => {
@@ -53,6 +63,110 @@ export default function LaporanMingguanPage() {
   const [dates, setDates] = useState<string[]>(getDefaultDates());
   const [exportingDocx, setExportingDocx] = useState<boolean>(false);
   const [dayOffOverrides, setDayOffOverrides] = useState<Record<number, boolean>>({});
+
+  // State: Custom dropped images for automatic replacement
+  const [customImages, setCustomImages] = useState<CustomDocImages>({
+    suratJalan: [],
+    persiapan: [],
+    pengolahan: [],
+    pemorsian: [],
+    distribusi: [],
+    dokumentasiDistribusi: [],
+  });
+  const [photoPanelOpen, setPhotoPanelOpen] = useState<boolean>(true);
+  const [activePhotoTab, setActivePhotoTab] = useState<'suratJalan' | 'proses' | 'distribusi'>('suratJalan');
+  const [isCompressing, setIsCompressing] = useState<boolean>(false);
+
+  // Client-side image compressor: scales images so max dimension <= 850px, quality 0.76 (~35-60KB JPEG)
+  const compressImageFile = async (file: File, maxDim = 850, quality = 0.76): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } else {
+            resolve((e.target?.result as string) || '');
+          }
+        };
+        img.onerror = () => resolve('');
+        img.src = (e.target?.result as string) || '';
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleBulkFiles = async (
+    category: keyof CustomDocImages,
+    fileList: FileList | File[],
+    maxCount: number = 42,
+    replace: boolean = false
+  ) => {
+    const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+    setIsCompressing(true);
+    try {
+      const compressedList: string[] = [];
+      for (const file of files) {
+        const dataUrl = await compressImageFile(file);
+        if (dataUrl) compressedList.push(dataUrl);
+      }
+      setCustomImages(prev => {
+        const existing = replace ? [] : prev[category];
+        const merged = [...existing, ...compressedList].slice(0, maxCount);
+        return {
+          ...prev,
+          [category]: merged,
+        };
+      });
+    } catch (err) {
+      console.error('Error compressing dropped images:', err);
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  const handleRemovePhoto = (category: keyof CustomDocImages, index: number) => {
+    setCustomImages(prev => ({
+      ...prev,
+      [category]: prev[category].filter((_, idx) => idx !== index),
+    }));
+  };
+
+  const handleResetCategory = (category: keyof CustomDocImages) => {
+    setCustomImages(prev => ({
+      ...prev,
+      [category]: [],
+    }));
+  };
+
+  const handleResetAllPhotos = () => {
+    setCustomImages({
+      suratJalan: [],
+      persiapan: [],
+      pengolahan: [],
+      pemorsian: [],
+      distribusi: [],
+      dokumentasiDistribusi: [],
+    });
+  };
 
   // SWR: auto-fetch menu data whenever the 5 dates change
   const datesKey = dates.join(',');
@@ -86,8 +200,7 @@ export default function LaporanMingguanPage() {
     if (dayOffOverrides[idx] !== undefined) {
       return dayOffOverrides[idx];
     }
-    const reportInfo = reportDays[idx];
-    return !reportInfo?.namaMenu && !reportInfo?.isFilled;
+    return false;
   };
 
   const toggleDayOff = (idx: number) => {
@@ -158,7 +271,7 @@ export default function LaporanMingguanPage() {
       const res = await fetch('/api/laporan-mingguan/export-docx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dates, activeDates }),
+        body: JSON.stringify({ dates, activeDates, customImages }),
       });
 
       if (!res.ok) {
@@ -192,14 +305,22 @@ export default function LaporanMingguanPage() {
   const lastActiveDate = activeReportDays[activeReportDays.length - 1]?.dateStr || dates[4];
   const closingDateStr = lastActiveDate ? dayjs(lastActiveDate).locale('id').format('DD MMMM YYYY') : '';
 
+  // Active surat jalan photos (custom dropped photos or fallback to 42 default photos)
+  const activeSuratJalanPhotos = useMemo(() => {
+    if (customImages.suratJalan.length > 0) {
+      return customImages.suratJalan;
+    }
+    return SURAT_JALAN_PHOTOS.map(img => `/images/laporan/${img}`);
+  }, [customImages.suratJalan]);
+
   // Chunk surat jalan photos into rows of 5
   const suratJalanRows = useMemo(() => {
     const rows: string[][] = [];
-    for (let i = 0; i < SURAT_JALAN_PHOTOS.length; i += 5) {
-      rows.push(SURAT_JALAN_PHOTOS.slice(i, i + 5));
+    for (let i = 0; i < activeSuratJalanPhotos.length; i += 5) {
+      rows.push(activeSuratJalanPhotos.slice(i, i + 5));
     }
     return rows;
-  }, []);
+  }, [activeSuratJalanPhotos]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 print:p-0 print:bg-white print:text-black">
@@ -397,6 +518,540 @@ export default function LaporanMingguanPage() {
           </div>
         </div>
 
+        {/* ======================================================== */}
+        {/* FOTO DOKUMENTASI ADJUSTMENT (BULK DRAG & DROP)           */}
+        {/* ======================================================== */}
+        <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-5 backdrop-blur-md shadow-xl mb-6 transition">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <UploadCloud className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                  Penyesuaian Foto Dokumentasi
+                  {isCompressing && (
+                    <span className="text-xs font-normal text-emerald-400 flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Memproses...
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Drop foto di sini untuk otomatis menggantikan foto default pada Web &amp; Export Word (.docx).
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {(customImages.suratJalan.length > 0 ||
+                customImages.persiapan.length > 0 ||
+                customImages.pengolahan.length > 0 ||
+                customImages.pemorsian.length > 0 ||
+                customImages.distribusi.length > 0 ||
+                customImages.dokumentasiDistribusi.length > 0) && (
+                <button
+                  type="button"
+                  onClick={handleResetAllPhotos}
+                  className="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 text-xs font-medium transition flex items-center gap-1.5 cursor-pointer"
+                  title="Kembalikan semua foto ke default template master"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Reset Semua Foto</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setPhotoPanelOpen(prev => !prev)}
+                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-medium transition flex items-center gap-1 cursor-pointer"
+              >
+                <span>{photoPanelOpen ? 'Sembunyikan' : 'Buka Pengaturan Foto'}</span>
+                {photoPanelOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {photoPanelOpen && (
+            <div className="mt-4">
+              {/* Category Navigation Tabs */}
+              <div className="flex flex-wrap gap-2 mb-4 border-b border-white/5 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setActivePhotoTab('suratJalan')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+                    activePhotoTab === 'suratJalan'
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40'
+                      : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  }`}
+                >
+                  <FileImage className="w-3.5 h-3.5" />
+                  <span>Surat Jalan (Bulk)</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    customImages.suratJalan.length > 0
+                      ? 'bg-white text-emerald-700'
+                      : 'bg-white/10 text-slate-400'
+                  }`}>
+                    {customImages.suratJalan.length > 0 ? `${customImages.suratJalan.length} Custom` : '42 Default'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActivePhotoTab('proses')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+                    activePhotoTab === 'proses'
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40'
+                      : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Persiapan / Olah / Porsi</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    customImages.persiapan.length + customImages.pengolahan.length + customImages.pemorsian.length > 0
+                      ? 'bg-white text-emerald-700'
+                      : 'bg-white/10 text-slate-400'
+                  }`}>
+                    {customImages.persiapan.length + customImages.pengolahan.length + customImages.pemorsian.length > 0 ? 'Custom' : 'Default'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActivePhotoTab('distribusi')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+                    activePhotoTab === 'distribusi'
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40'
+                      : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  }`}
+                >
+                  <ImagePlus className="w-3.5 h-3.5" />
+                  <span>Distribusi &amp; Dok. Distribusi</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    customImages.distribusi.length + customImages.dokumentasiDistribusi.length > 0
+                      ? 'bg-white text-emerald-700'
+                      : 'bg-white/10 text-slate-400'
+                  }`}>
+                    {customImages.distribusi.length + customImages.dokumentasiDistribusi.length > 0 ? 'Custom' : 'Default'}
+                  </span>
+                </button>
+              </div>
+
+              {/* TAB 1: SURAT JALAN BULK DROP */}
+              {activePhotoTab === 'suratJalan' && (
+                <div>
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (e.dataTransfer.files) handleBulkFiles('suratJalan', e.dataTransfer.files, 42);
+                    }}
+                    className="border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/30 rounded-2xl p-6 text-center transition cursor-pointer relative"
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files) handleBulkFiles('suratJalan', e.target.files, 42);
+                        e.target.value = '';
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      title="Tarik &amp; lepas file foto surat jalan atau klik untuk memilih"
+                    />
+                    <UploadCloud className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-white mb-1">
+                      Tarik &amp; Lepas Bulk Foto Surat Jalan di Sini
+                    </p>
+                    <p className="text-xs text-slate-300 max-w-lg mx-auto">
+                      Bisa pilih 10–42+ foto sekaligus. Foto otomatis dioptimasi dan menggantikan tabel Surat Jalan 5-kolom secara berurutan.
+                    </p>
+                    <span className="inline-block mt-3 px-3 py-1 bg-emerald-600/30 border border-emerald-500/40 rounded-lg text-xs font-semibold text-emerald-300">
+                      Pilih Foto dari Perangkat
+                    </span>
+                  </div>
+
+                  {customImages.suratJalan.length > 0 ? (
+                    <div className="mt-4 bg-slate-950/60 border border-white/10 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+                        <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {customImages.suratJalan.length} Foto Surat Jalan Custom Terpasang
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleResetCategory('suratJalan')}
+                          className="text-[11px] text-red-400 hover:text-red-300 underline font-medium cursor-pointer"
+                        >
+                          Hapus Semua &amp; Kembali ke Default
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 gap-2 max-h-56 overflow-y-auto pr-1">
+                        {customImages.suratJalan.map((img, idx) => (
+                          <div key={idx} className="relative group rounded-lg overflow-hidden border border-white/15 bg-black aspect-[3/4]">
+                            <img src={img} alt={`SJ ${idx + 1}`} className="w-full h-full object-cover" />
+                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] text-center font-bold text-white py-0.5">
+                              #{idx + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto('suratJalan', idx)}
+                              className="absolute top-1 right-1 p-0.5 rounded-full bg-red-600/90 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                              title="Hapus foto ini"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-slate-400 italic text-center">
+                      Saat ini menggunakan 42 foto surat jalan default master template.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: PROSES (PERSIAPAN, PENGOLAHAN, PEMORSIAN) */}
+              {activePhotoTab === 'proses' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Persiapan */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-white">1. Persiapan</span>
+                      {customImages.persiapan.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleResetCategory('persiapan')}
+                          className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (e.dataTransfer.files) handleBulkFiles('persiapan', e.dataTransfer.files, 5);
+                      }}
+                      className="border border-dashed border-white/20 hover:border-emerald-400/60 rounded-xl p-3 text-center mb-2.5 transition relative cursor-pointer bg-white/5"
+                    >
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files) handleBulkFiles('persiapan', e.target.files, 5);
+                          e.target.value = '';
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <UploadCloud className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                      <p className="text-[11px] text-slate-300">Drop foto Persiapan (1-5 foto)</p>
+                    </div>
+
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const custom = customImages.persiapan[i];
+                        return (
+                          <div key={i} className="relative group rounded border border-white/10 bg-black aspect-[3/4] overflow-hidden">
+                            <img
+                              src={custom || `/images/laporan/image${2 + i}.jpeg`}
+                              alt={`Persiapan ${i + 1}`}
+                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-50'}`}
+                            />
+                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center font-bold text-white">
+                              H{i + 1}
+                            </span>
+                            {custom && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePhoto('persiapan', i)}
+                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Pengolahan */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-white">2. Pengolahan</span>
+                      {customImages.pengolahan.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleResetCategory('pengolahan')}
+                          className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (e.dataTransfer.files) handleBulkFiles('pengolahan', e.dataTransfer.files, 5);
+                      }}
+                      className="border border-dashed border-white/20 hover:border-emerald-400/60 rounded-xl p-3 text-center mb-2.5 transition relative cursor-pointer bg-white/5"
+                    >
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files) handleBulkFiles('pengolahan', e.target.files, 5);
+                          e.target.value = '';
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <UploadCloud className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                      <p className="text-[11px] text-slate-300">Drop foto Pengolahan (1-5 foto)</p>
+                    </div>
+
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const custom = customImages.pengolahan[i];
+                        return (
+                          <div key={i} className="relative group rounded border border-white/10 bg-black aspect-[3/4] overflow-hidden">
+                            <img
+                              src={custom || `/images/laporan/image${7 + i}.jpeg`}
+                              alt={`Pengolahan ${i + 1}`}
+                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-50'}`}
+                            />
+                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center font-bold text-white">
+                              H{i + 1}
+                            </span>
+                            {custom && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePhoto('pengolahan', i)}
+                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Pemorsian & Packing */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-white">3. Pemorsian &amp; Packing</span>
+                      {customImages.pemorsian.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleResetCategory('pemorsian')}
+                          className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (e.dataTransfer.files) handleBulkFiles('pemorsian', e.dataTransfer.files, 5);
+                      }}
+                      className="border border-dashed border-white/20 hover:border-emerald-400/60 rounded-xl p-3 text-center mb-2.5 transition relative cursor-pointer bg-white/5"
+                    >
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files) handleBulkFiles('pemorsian', e.target.files, 5);
+                          e.target.value = '';
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <UploadCloud className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                      <p className="text-[11px] text-slate-300">Drop foto Pemorsian (1-5 foto)</p>
+                    </div>
+
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const custom = customImages.pemorsian[i];
+                        return (
+                          <div key={i} className="relative group rounded border border-white/10 bg-black aspect-[3/4] overflow-hidden">
+                            <img
+                              src={custom || `/images/laporan/image${12 + i}.jpeg`}
+                              alt={`Pemorsian ${i + 1}`}
+                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-50'}`}
+                            />
+                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center font-bold text-white">
+                              H{i + 1}
+                            </span>
+                            {custom && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePhoto('pemorsian', i)}
+                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: DISTRIBUSI & DOKUMENTASI DISTRIBUSI */}
+              {activePhotoTab === 'distribusi' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* 4. Distribusi (2 foto) */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-white">4. Distribusi (Sekolah &amp; Posyandu)</span>
+                      {customImages.distribusi.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleResetCategory('distribusi')}
+                          className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (e.dataTransfer.files) handleBulkFiles('distribusi', e.dataTransfer.files, 2);
+                      }}
+                      className="border border-dashed border-white/20 hover:border-emerald-400/60 rounded-xl p-3 text-center mb-3 transition relative cursor-pointer bg-white/5"
+                    >
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files) handleBulkFiles('distribusi', e.target.files, 2);
+                          e.target.value = '';
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <UploadCloud className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                      <p className="text-[11px] text-slate-300">Drop 2 foto Distribusi (Sekolah &amp; Posyandu)</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Sekolah', 'Posyandu'].map((label, idx) => {
+                        const custom = customImages.distribusi[idx];
+                        return (
+                          <div key={idx} className="relative group rounded-lg border border-white/10 bg-black aspect-video overflow-hidden">
+                            <img
+                              src={custom || `/images/laporan/image${17 + idx}.jpeg`}
+                              alt={`Distribusi ${label}`}
+                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-50'}`}
+                            />
+                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[10px] text-center font-bold text-white py-0.5">
+                              {label}
+                            </span>
+                            {custom && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePhoto('distribusi', idx)}
+                                className="absolute top-1 right-1 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Dokumentasi Distribusi (8 foto) */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-white">Dokumentasi Distribusi (8 Foto Grid)</span>
+                      {customImages.dokumentasiDistribusi.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleResetCategory('dokumentasiDistribusi')}
+                          className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (e.dataTransfer.files) handleBulkFiles('dokumentasiDistribusi', e.dataTransfer.files, 8);
+                      }}
+                      className="border border-dashed border-white/20 hover:border-emerald-400/60 rounded-xl p-3 text-center mb-3 transition relative cursor-pointer bg-white/5"
+                    >
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files) handleBulkFiles('dokumentasiDistribusi', e.target.files, 8);
+                          e.target.value = '';
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <UploadCloud className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                      <p className="text-[11px] text-slate-300">Drop bulk foto Dokumentasi Distribusi (hingga 8 foto)</p>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {Array.from({ length: 8 }).map((_, i) => {
+                        const custom = customImages.dokumentasiDistribusi[i];
+                        return (
+                          <div key={i} className="relative group rounded border border-white/10 bg-black aspect-video overflow-hidden">
+                            <img
+                              src={custom || `/images/laporan/${DISTRIBUSI_PHOTOS[i]}`}
+                              alt={`Dok. Distribusi ${i + 1}`}
+                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-50'}`}
+                            />
+                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] text-center font-bold text-white">
+                              #{i + 1}
+                            </span>
+                            {custom && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePhoto('dokumentasiDistribusi', i)}
+                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {error && (
           <div className="p-4 rounded-xl bg-red-950/50 border border-red-500/40 text-red-200 text-sm mb-6 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
@@ -551,24 +1206,29 @@ export default function LaporanMingguanPage() {
           </p>
           <table className="w-full text-[10.5pt] border-collapse border border-black mb-6">
             <tbody>
-              {activeReportDays.map((d, i) => (
-                <tr key={`persiapan-${d.dateStr}`} className="border border-black">
-                  <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
-                    <div className="w-[110px] h-[146px] mx-auto relative">
-                      <Image
-                        src={`/images/laporan/image${2 + (i % 5)}.jpeg`}
-                        alt={`Persiapan ${d.hariTanggalLengkap}`}
-                        fill
-                        sizes="120px"
-                        className="object-cover"
-                      />
-                    </div>
-                  </td>
-                  <td className="p-3 border border-black align-top text-justify leading-relaxed">
-                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PERSIAPAN_DESCRIPTIONS[i % PERSIAPAN_DESCRIPTIONS.length]}
-                  </td>
-                </tr>
-              ))}
+              {activeReportDays.map((d, i) => {
+                const customImg = customImages.persiapan[i];
+                const imgSrc = customImg || `/images/laporan/image${2 + (i % 5)}.jpeg`;
+                return (
+                  <tr key={`persiapan-${d.dateStr}`} className="border border-black">
+                    <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
+                      <div className="w-[110px] h-[146px] mx-auto relative">
+                        <Image
+                          src={imgSrc}
+                          alt={`Persiapan ${d.hariTanggalLengkap}`}
+                          fill
+                          sizes="120px"
+                          unoptimized={imgSrc.startsWith('data:')}
+                          className="object-cover"
+                        />
+                      </div>
+                    </td>
+                    <td className="p-3 border border-black align-top text-justify leading-relaxed">
+                      <span className="font-bold">{d.hariTanggalLengkap}</span> {PERSIAPAN_DESCRIPTIONS[i % PERSIAPAN_DESCRIPTIONS.length]}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
@@ -578,24 +1238,29 @@ export default function LaporanMingguanPage() {
           </p>
           <table className="w-full text-[10.5pt] border-collapse border border-black mb-6">
             <tbody>
-              {activeReportDays.map((d, i) => (
-                <tr key={`pengolahan-${d.dateStr}`} className="border border-black">
-                  <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
-                    <div className="w-[110px] h-[146px] mx-auto relative">
-                      <Image
-                        src={`/images/laporan/image${7 + (i % 5)}.jpeg`}
-                        alt={`Pengolahan ${d.hariTanggalLengkap}`}
-                        fill
-                        sizes="120px"
-                        className="object-cover"
-                      />
-                    </div>
-                  </td>
-                  <td className="p-3 border border-black align-top text-justify leading-relaxed">
-                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PENGOLAHAN_DESCRIPTIONS[i % PENGOLAHAN_DESCRIPTIONS.length]}
-                  </td>
-                </tr>
-              ))}
+              {activeReportDays.map((d, i) => {
+                const customImg = customImages.pengolahan[i];
+                const imgSrc = customImg || `/images/laporan/image${7 + (i % 5)}.jpeg`;
+                return (
+                  <tr key={`pengolahan-${d.dateStr}`} className="border border-black">
+                    <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
+                      <div className="w-[110px] h-[146px] mx-auto relative">
+                        <Image
+                          src={imgSrc}
+                          alt={`Pengolahan ${d.hariTanggalLengkap}`}
+                          fill
+                          sizes="120px"
+                          unoptimized={imgSrc.startsWith('data:')}
+                          className="object-cover"
+                        />
+                      </div>
+                    </td>
+                    <td className="p-3 border border-black align-top text-justify leading-relaxed">
+                      <span className="font-bold">{d.hariTanggalLengkap}</span> {PENGOLAHAN_DESCRIPTIONS[i % PENGOLAHAN_DESCRIPTIONS.length]}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
@@ -605,24 +1270,29 @@ export default function LaporanMingguanPage() {
           </p>
           <table className="w-full text-[10.5pt] border-collapse border border-black mb-6">
             <tbody>
-              {activeReportDays.map((d, i) => (
-                <tr key={`pemorsian-${d.dateStr}`} className="border border-black">
-                  <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
-                    <div className="w-[110px] h-[146px] mx-auto relative">
-                      <Image
-                        src={`/images/laporan/image${12 + (i % 5)}.jpeg`}
-                        alt={`Pemorsian ${d.hariTanggalLengkap}`}
-                        fill
-                        sizes="120px"
-                        className="object-cover"
-                      />
-                    </div>
-                  </td>
-                  <td className="p-3 border border-black align-top text-justify leading-relaxed">
-                    <span className="font-bold">{d.hariTanggalLengkap}</span> {PEMORSIAN_DESCRIPTIONS[i % PEMORSIAN_DESCRIPTIONS.length]}
-                  </td>
-                </tr>
-              ))}
+              {activeReportDays.map((d, i) => {
+                const customImg = customImages.pemorsian[i];
+                const imgSrc = customImg || `/images/laporan/image${12 + (i % 5)}.jpeg`;
+                return (
+                  <tr key={`pemorsian-${d.dateStr}`} className="border border-black">
+                    <td className="w-[140px] p-2 border border-black text-center align-middle bg-slate-50">
+                      <div className="w-[110px] h-[146px] mx-auto relative">
+                        <Image
+                          src={imgSrc}
+                          alt={`Pemorsian ${d.hariTanggalLengkap}`}
+                          fill
+                          sizes="120px"
+                          unoptimized={imgSrc.startsWith('data:')}
+                          className="object-cover"
+                        />
+                      </div>
+                    </td>
+                    <td className="p-3 border border-black align-top text-justify leading-relaxed">
+                      <span className="font-bold">{d.hariTanggalLengkap}</span> {PEMORSIAN_DESCRIPTIONS[i % PEMORSIAN_DESCRIPTIONS.length]}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
@@ -639,10 +1309,11 @@ export default function LaporanMingguanPage() {
                 <td className="w-1/2 p-2 border border-black text-center align-middle">
                   <div className="w-full h-[180px] relative">
                     <Image
-                      src="/images/laporan/image17.jpeg"
+                      src={customImages.distribusi[0] || "/images/laporan/image17.jpeg"}
                       alt="Distribusi Sekolah"
                       fill
                       sizes="350px"
+                      unoptimized={Boolean(customImages.distribusi[0]?.startsWith('data:'))}
                       className="object-cover"
                     />
                   </div>
@@ -650,10 +1321,11 @@ export default function LaporanMingguanPage() {
                 <td className="w-1/2 p-2 border border-black text-center align-middle">
                   <div className="w-full h-[180px] relative">
                     <Image
-                      src="/images/laporan/image18.jpeg"
+                      src={customImages.distribusi[1] || "/images/laporan/image18.jpeg"}
                       alt="Distribusi Posyandu"
                       fill
                       sizes="350px"
+                      unoptimized={Boolean(customImages.distribusi[1]?.startsWith('data:'))}
                       className="object-cover"
                     />
                   </div>
@@ -953,34 +1625,45 @@ export default function LaporanMingguanPage() {
           <table className="w-full border-collapse border border-black mb-8">
             <tbody>
               <tr className="border border-black">
-                {DISTRIBUSI_PHOTOS.slice(0, 4).map((img, idx) => (
-                  <td key={`dist-r1-${idx}`} className="w-1/4 p-1.5 border border-black text-center align-middle">
-                    <div className="w-full h-[110px] relative">
-                      <Image
-                        src={`/images/laporan/${img}`}
-                        alt={`Distribusi ${idx + 1}`}
-                        fill
-                        sizes="180px"
-                        className="object-cover"
-                      />
-                    </div>
-                  </td>
-                ))}
+                {DISTRIBUSI_PHOTOS.slice(0, 4).map((img, idx) => {
+                  const customImg = customImages.dokumentasiDistribusi[idx];
+                  const imgSrc = customImg || `/images/laporan/${img}`;
+                  return (
+                    <td key={`dist-r1-${idx}`} className="w-1/4 p-1.5 border border-black text-center align-middle">
+                      <div className="w-full h-[110px] relative">
+                        <Image
+                          src={imgSrc}
+                          alt={`Distribusi ${idx + 1}`}
+                          fill
+                          sizes="180px"
+                          unoptimized={imgSrc.startsWith('data:')}
+                          className="object-cover"
+                        />
+                      </div>
+                    </td>
+                  );
+                })}
               </tr>
               <tr className="border border-black">
-                {DISTRIBUSI_PHOTOS.slice(4, 8).map((img, idx) => (
-                  <td key={`dist-r2-${idx}`} className="w-1/4 p-1.5 border border-black text-center align-middle">
-                    <div className="w-full h-[110px] relative">
-                      <Image
-                        src={`/images/laporan/${img}`}
-                        alt={`Distribusi ${idx + 5}`}
-                        fill
-                        sizes="180px"
-                        className="object-cover"
-                      />
-                    </div>
-                  </td>
-                ))}
+                {DISTRIBUSI_PHOTOS.slice(4, 8).map((img, idx) => {
+                  const photoIdx = idx + 4;
+                  const customImg = customImages.dokumentasiDistribusi[photoIdx];
+                  const imgSrc = customImg || `/images/laporan/${img}`;
+                  return (
+                    <td key={`dist-r2-${idx}`} className="w-1/4 p-1.5 border border-black text-center align-middle">
+                      <div className="w-full h-[110px] relative">
+                        <Image
+                          src={imgSrc}
+                          alt={`Distribusi ${photoIdx + 1}`}
+                          fill
+                          sizes="180px"
+                          unoptimized={imgSrc.startsWith('data:')}
+                          className="object-cover"
+                        />
+                      </div>
+                    </td>
+                  );
+                })}
               </tr>
             </tbody>
           </table>
@@ -997,10 +1680,11 @@ export default function LaporanMingguanPage() {
                     <td key={`sj-col-${cIdx}`} className="w-1/5 p-1 border border-black text-center align-middle">
                       <div className="w-full h-[130px] relative">
                         <Image
-                          src={`/images/laporan/${img}`}
+                          src={img}
                           alt={`Surat Jalan ${rIdx * 5 + cIdx + 1}`}
                           fill
                           sizes="150px"
+                          unoptimized={img.startsWith('data:')}
                           className="object-cover"
                         />
                       </div>

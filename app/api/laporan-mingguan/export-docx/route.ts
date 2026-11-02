@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth-server';
 import { isAdminRole } from '@/lib/utils';
 import { db } from '@/lib/db';
 import { menuHarian } from '@/lib/db/schema';
+import { DISTRIBUSI_PHOTOS } from '@/lib/constants/laporan-mingguan';
 import { inArray } from 'drizzle-orm';
 import path from 'path';
 import fs from 'fs/promises';
@@ -201,7 +202,19 @@ function fixRowImageDrawing(row: unknown, imgDimensions: { width: number; height
 }
 
 async function fetchImageBuffer(url: string): Promise<Buffer | null> {
-  if (!url || !url.startsWith('http')) return null;
+  if (!url) return null;
+  if (url.startsWith('data:image/')) {
+    const commaIdx = url.indexOf(',');
+    if (commaIdx !== -1) {
+      try {
+        return Buffer.from(url.substring(commaIdx + 1), 'base64');
+      } catch (err) {
+        console.error('Failed to parse base64 image data:', err);
+        return null;
+      }
+    }
+  }
+  if (!url.startsWith('http')) return null;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return null;
@@ -225,6 +238,14 @@ export async function POST(req: NextRequest) {
     const rawActiveDates: string[] = Array.isArray(body.activeDates) && body.activeDates.length > 0
       ? body.activeDates
       : dates;
+    const customImages: {
+      suratJalan?: string[];
+      persiapan?: string[];
+      pengolahan?: string[];
+      pemorsian?: string[];
+      distribusi?: string[];
+      dokumentasiDistribusi?: string[];
+    } = body.customImages || {};
 
     if (!Array.isArray(dates) || dates.length === 0) {
       return NextResponse.json({ error: 'Harap tentukan tanggal operasional.' }, { status: 400 });
@@ -578,6 +599,69 @@ export async function POST(req: NextRequest) {
       }
       if (posyanduRows[i]) {
         fixRowImageDrawing(posyanduRows[i].tr, posyanduDimensions[i]);
+      }
+    }
+
+    // 9. Update Custom Dropped Images (if provided by user):
+    // Persiapan (Table 1: image2.jpeg .. image6.jpeg)
+    if (Array.isArray(customImages.persiapan)) {
+      for (let i = 0; i < Math.min(customImages.persiapan.length, 5); i++) {
+        if (customImages.persiapan[i]) {
+          const buf = await fetchImageBuffer(customImages.persiapan[i]);
+          if (buf) zip.file(`word/media/image${2 + i}.jpeg`, buf);
+        }
+      }
+    }
+
+    // Pengolahan (Table 2: image7.jpeg .. image11.jpeg)
+    if (Array.isArray(customImages.pengolahan)) {
+      for (let i = 0; i < Math.min(customImages.pengolahan.length, 5); i++) {
+        if (customImages.pengolahan[i]) {
+          const buf = await fetchImageBuffer(customImages.pengolahan[i]);
+          if (buf) zip.file(`word/media/image${7 + i}.jpeg`, buf);
+        }
+      }
+    }
+
+    // Pemorsian & Packing (Table 3: image12.jpeg .. image16.jpeg)
+    if (Array.isArray(customImages.pemorsian)) {
+      for (let i = 0; i < Math.min(customImages.pemorsian.length, 5); i++) {
+        if (customImages.pemorsian[i]) {
+          const buf = await fetchImageBuffer(customImages.pemorsian[i]);
+          if (buf) zip.file(`word/media/image${12 + i}.jpeg`, buf);
+        }
+      }
+    }
+
+    // Distribusi (Section 4: image17.jpeg & image18.jpeg)
+    if (Array.isArray(customImages.distribusi)) {
+      if (customImages.distribusi[0]) {
+        const buf = await fetchImageBuffer(customImages.distribusi[0]);
+        if (buf) zip.file('word/media/image17.jpeg', buf);
+      }
+      if (customImages.distribusi[1]) {
+        const buf = await fetchImageBuffer(customImages.distribusi[1]);
+        if (buf) zip.file('word/media/image18.jpeg', buf);
+      }
+    }
+
+    // Dokumentasi Distribusi Sekolah dan Posyandu (Table 17: DISTRIBUSI_PHOTOS)
+    if (Array.isArray(customImages.dokumentasiDistribusi)) {
+      for (let i = 0; i < Math.min(customImages.dokumentasiDistribusi.length, DISTRIBUSI_PHOTOS.length); i++) {
+        if (customImages.dokumentasiDistribusi[i]) {
+          const buf = await fetchImageBuffer(customImages.dokumentasiDistribusi[i]);
+          if (buf) zip.file(`word/media/${DISTRIBUSI_PHOTOS[i]}`, buf);
+        }
+      }
+    }
+
+    // Dokumentasi Surat Jalan Sekolah dan Posyandu (Table 18, 19, 20: image40.jpeg .. image81.jpeg)
+    if (Array.isArray(customImages.suratJalan) && customImages.suratJalan.length > 0) {
+      for (let i = 0; i < Math.min(customImages.suratJalan.length, 42); i++) {
+        if (customImages.suratJalan[i]) {
+          const buf = await fetchImageBuffer(customImages.suratJalan[i]);
+          if (buf) zip.file(`word/media/image${40 + i}.jpeg`, buf);
+        }
       }
     }
 
