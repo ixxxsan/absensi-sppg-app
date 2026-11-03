@@ -52,25 +52,38 @@ export function AdminSoundProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Preserve original methods
-    const originalSuccess = goeyToast.success;
-    const originalError = goeyToast.error;
+    try {
+      if (!goeyToast || !Object.isExtensible(goeyToast)) return;
 
-    // Wrap goeyToast methods with audio triggers
-    goeyToast.success = (...args: Parameters<typeof originalSuccess>) => {
-      playSfx('success');
-      return originalSuccess(...args);
-    };
+      // Preserve original methods
+      const originalSuccess = goeyToast.success;
+      const originalError = goeyToast.error;
 
-    goeyToast.error = (...args: Parameters<typeof originalError>) => {
-      playSfx('error');
-      return originalError(...args);
-    };
+      if (typeof originalSuccess === 'function') {
+        goeyToast.success = (...args: Parameters<typeof originalSuccess>) => {
+          try { playSfx('success'); } catch {}
+          return originalSuccess(...args);
+        };
+      }
 
-    return () => {
-      goeyToast.success = originalSuccess;
-      goeyToast.error = originalError;
-    };
+      if (typeof originalError === 'function') {
+        goeyToast.error = (...args: Parameters<typeof originalError>) => {
+          try { playSfx('error'); } catch {}
+          return originalError(...args);
+        };
+      }
+
+      return () => {
+        try {
+          if (originalSuccess && Object.isExtensible(goeyToast)) goeyToast.success = originalSuccess;
+          if (originalError && Object.isExtensible(goeyToast)) goeyToast.error = originalError;
+        } catch {
+          // ignore cleanup errors
+        }
+      };
+    } catch (e) {
+      console.warn('Toast sound binding skipped:', e);
+    }
   }, []);
 
   // Global delegated click & drop interaction sounds across the admin panel

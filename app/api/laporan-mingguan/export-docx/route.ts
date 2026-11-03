@@ -404,9 +404,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Remove any table in 9..12 that now has 0 rows
+    // If activeCount === 4: merge Day 4 rows (3 rows from t12) into t11 so all 9 institutions fit on 1 page cleanly
+    if (activeCount === 4 && t11 && t12) {
+      const r12 = Array.from(t12.getElementsByTagName('w:tr')) as any[];
+      for (let i = 0; i < 3; i++) {
+        if (r12[i]) {
+          t11.appendChild(r12[i]);
+        }
+      }
+    }
+
+    // Remove any table in 9..12 that now has 0 rows and remove its preceding section break paragraph
     for (const tbl of [tables[9], tables[10], tables[11], tables[12]] as any[]) {
       if (tbl && tbl.getElementsByTagName('w:tr').length === 0 && tbl.parentNode) {
+        let pBefore = tbl.previousSibling;
+        while (pBefore && pBefore.nodeName !== 'w:p') pBefore = pBefore.previousSibling;
+        if (pBefore && pBefore.getElementsByTagName('w:sectPr').length > 0 && pBefore.parentNode) {
+          pBefore.parentNode.removeChild(pBefore);
+        }
         tbl.parentNode.removeChild(tbl);
       }
     }
@@ -442,6 +457,18 @@ export async function POST(req: NextRequest) {
       if (r[1]) posyanduRows.push({ tbl: t16, tr: r[1] });
     }
 
+    // When activeCount === 4: merge row 4 (Kamis) into t13 and t15 so all 4 days fit on 1 single page without awkward 1-row overflow
+    if (activeCount === 4) {
+      if (sekolahRows[3] && t13) {
+        t13.appendChild(sekolahRows[3].tr);
+        sekolahRows[3].tbl = t13;
+      }
+      if (posyanduRows[3] && t15) {
+        t15.appendChild(posyanduRows[3].tr);
+        posyanduRows[3].tbl = t15;
+      }
+    }
+
     // Populate active rows
     for (let i = 0; i < activeCount; i++) {
       const d = activeDaysData[i];
@@ -471,10 +498,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // When t14 has 0 rows, remove it AND its preceding section break paragraph to eliminate the ghost blank page
     if (t14 && t14.getElementsByTagName('w:tr').length === 0 && t14.parentNode) {
+      let pBefore = t14.previousSibling;
+      while (pBefore && pBefore.nodeName !== 'w:p') pBefore = pBefore.previousSibling;
+      if (pBefore && pBefore.getElementsByTagName('w:sectPr').length > 0 && pBefore.parentNode) {
+        pBefore.parentNode.removeChild(pBefore);
+      }
       t14.parentNode.removeChild(t14);
     }
+
+    // When t16 has 0 rows, remove it AND its preceding section break paragraph to eliminate the ghost blank page
     if (t16 && t16.getElementsByTagName('w:tr').length === 0 && t16.parentNode) {
+      let pBefore = t16.previousSibling;
+      while (pBefore && pBefore.nodeName !== 'w:p') pBefore = pBefore.previousSibling;
+      if (pBefore && pBefore.getElementsByTagName('w:sectPr').length > 0 && pBefore.parentNode) {
+        pBefore.parentNode.removeChild(pBefore);
+      }
       t16.parentNode.removeChild(t16);
     }
 
@@ -663,6 +703,49 @@ export async function POST(req: NextRequest) {
           if (buf) zip.file(`word/media/image${40 + i}.jpeg`, buf);
         }
       }
+    }
+
+    // 7. Clean redundant empty spacer paragraphs that cause mid-page drift & awkward whitespace gaps
+    const docBody = doc.getElementsByTagName('w:body')[0];
+    if (docBody) {
+      const allPs = Array.from(docBody.childNodes).filter((n: any) => n.nodeName === 'w:p') as any[];
+      for (const p of allPs) {
+        const text = (p.textContent || '').trim();
+        const hasDrawings = p.getElementsByTagName('w:drawing').length > 0;
+        const hasSectPr = p.getElementsByTagName('w:sectPr').length > 0;
+        const hasBrPage = Array.from(p.getElementsByTagName('w:br')).some((b: any) => b.getAttribute('w:type') === 'page');
+
+        if (!text && !hasDrawings && !hasSectPr && !hasBrPage) {
+          if (p.parentNode === docBody) {
+            docBody.removeChild(p);
+          }
+        }
+      }
+
+      // Ensure key chapter and section headers always start crisp at the top of a new page
+      const ensurePageBreakBefore = (titleText: string) => {
+        const ps = Array.from(docBody.getElementsByTagName('w:p')) as any[];
+        for (let i = 0; i < ps.length; i++) {
+          const p = ps[i];
+          if (p.textContent && p.textContent.includes(titleText)) {
+            let pPr = p.getElementsByTagName('w:pPr')[0];
+            if (!pPr) {
+              pPr = doc.createElement('w:pPr');
+              p.insertBefore(pPr, p.firstChild);
+            }
+            if (pPr.getElementsByTagName('w:pageBreakBefore').length === 0) {
+              pPr.appendChild(doc.createElement('w:pageBreakBefore'));
+            }
+            break;
+          }
+        }
+      };
+
+      ensurePageBreakBefore('BAB II PELAKSANAAN KEGIATAN');
+      ensurePageBreakBefore('C. Pelaksaan');
+      ensurePageBreakBefore('Tabel 2.3');
+      ensurePageBreakBefore('Dokumentasi Surat Jalan');
+      ensurePageBreakBefore('BAB IV PENUTUP');
     }
 
     // Save modified XML and rels back into the zip
