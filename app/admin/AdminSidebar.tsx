@@ -7,9 +7,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, CheckSquare, FileSpreadsheet,
-  LogOut, ChevronLeft, Calendar, Utensils, FileText
+  LogOut, ChevronLeft, Calendar, Utensils, FileText,
+  Volume2, VolumeX
 } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
+import { useAdminSound } from '@/components/admin/AdminSoundProvider';
 
 const navItems = [
   { href: '/admin/dashboard',        icon: LayoutDashboard, label: 'Dashboard' },
@@ -35,6 +37,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const { isMuted, toggleMute } = useAdminSound();
 
   if (pathname === '/admin/login') {
     return null;
@@ -148,10 +151,47 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
           )}
         </div>
         
+        {/* SFX Sound Toggle */}
+        <button
+          type="button"
+          onClick={() => toggleMute()}
+          title={collapsed ? (isMuted ? 'Suara SFX: Mute' : 'Suara SFX: Aktif') : undefined}
+          data-sfx="none"
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group active:scale-95 mb-1.5 cursor-pointer ${
+            isMuted
+              ? 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+              : 'text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20'
+          } ${collapsed ? 'justify-center' : ''}`}
+        >
+          {isMuted ? (
+            <VolumeX className="w-4 h-4 flex-shrink-0 group-hover:scale-110 transition-transform text-slate-400" />
+          ) : (
+            <Volume2 className="w-4 h-4 flex-shrink-0 group-hover:scale-110 transition-transform text-emerald-400" />
+          )}
+          <AnimatePresence mode="wait">
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="text-[12px] font-medium whitespace-nowrap overflow-hidden flex items-center justify-between flex-1"
+              >
+                <span>Efek Suara SFX</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                  isMuted ? 'bg-white/10 text-slate-400' : 'bg-emerald-400 text-slate-950 shadow-sm'
+                }`}>
+                  {isMuted ? 'MUTE' : 'ON'}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </button>
+
         <button
           onClick={handleLogout}
           title={collapsed ? 'Keluar' : undefined}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 group active:scale-95
+          data-sfx="delete"
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 group active:scale-95 cursor-pointer
             ${collapsed ? 'justify-center' : ''}
           `}
         >
@@ -174,7 +214,8 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
       {/* Collapse Toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3.5 top-9 w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-500 shadow-lg shadow-black/20 transition-colors z-50 active:scale-90"
+        data-sfx="collapse"
+        className="absolute -right-3.5 top-9 w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-500 shadow-lg shadow-black/20 transition-colors z-50 active:scale-90 cursor-pointer"
       >
         <motion.div
           animate={{ rotate: collapsed ? 180 : 0 }}

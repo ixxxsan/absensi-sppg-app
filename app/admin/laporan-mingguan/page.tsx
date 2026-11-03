@@ -13,6 +13,7 @@ import {
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import { getWeeklyReportMenuData } from '@/app/actions/laporan-mingguan';
+import { playSfx } from '@/lib/audio/sfx';
 import {
   DAFTAR_SASARAN_DEFAULT,
   DayReportData,
@@ -136,14 +137,17 @@ export default function LaporanMingguanPage() {
           [category]: merged,
         };
       });
+      playSfx('drop');
     } catch (err) {
       console.error('Error compressing dropped images:', err);
+      playSfx('error');
     } finally {
       setIsCompressing(false);
     }
   };
 
   const handleRemovePhoto = (category: keyof CustomDocImages, index: number) => {
+    playSfx('delete');
     setCustomImages(prev => ({
       ...prev,
       [category]: prev[category].filter((_, idx) => idx !== index),
@@ -151,6 +155,7 @@ export default function LaporanMingguanPage() {
   };
 
   const handleResetCategory = (category: keyof CustomDocImages) => {
+    playSfx('delete');
     setCustomImages(prev => ({
       ...prev,
       [category]: [],
@@ -158,6 +163,7 @@ export default function LaporanMingguanPage() {
   };
 
   const handleResetAllPhotos = () => {
+    playSfx('delete');
     setCustomImages({
       suratJalan: [],
       persiapan: [],
@@ -204,9 +210,11 @@ export default function LaporanMingguanPage() {
   };
 
   const toggleDayOff = (idx: number) => {
+    const nextOff = !isDayOff(idx);
+    playSfx(nextOff ? 'toggle-off' : 'toggle-on');
     setDayOffOverrides(prev => ({
       ...prev,
-      [idx]: !isDayOff(idx),
+      [idx]: nextOff,
     }));
   };
 
@@ -262,9 +270,11 @@ export default function LaporanMingguanPage() {
   // Export DOCX directly using master template
   const handleExportDocx = async () => {
     if (activeReportDays.length === 0) {
+      playSfx('warning');
       alert('Paling sedikit harus ada 1 hari operasional aktif untuk diekspor.');
       return;
     }
+    playSfx('download');
     setExportingDocx(true);
     try {
       const activeDates = activeReportDays.map(d => d.dateStr);
@@ -288,7 +298,9 @@ export default function LaporanMingguanPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(downloadUrl);
+      playSfx('success');
     } catch (err: unknown) {
+      playSfx('error');
       alert((err as Error).message || 'Gagal mengekspor Word.');
     } finally {
       setExportingDocx(false);
