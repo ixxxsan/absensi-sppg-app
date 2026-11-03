@@ -58,13 +58,12 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
       initial={{ width: 260 }}
       animate={{ width: collapsed ? 80 : 260 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="relative flex flex-col border-r border-white/10 z-40 h-full flex-shrink-0 print:hidden"
-      style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)' }}
+      className="relative flex flex-col border-r border-slate-800 bg-[#071e49] z-40 h-full flex-shrink-0 print:hidden"
+      
     >
       {/* Logo Area */}
-      <div className={`flex items-center gap-3 p-5 border-b border-white/10 min-h-[88px] ${collapsed ? 'justify-center' : ''}`}>
+      <div className={`flex items-center gap-3 p-5 border-b border-slate-800 min-h-[88px] ${collapsed ? 'justify-center' : ''}`}>
         <div className="relative w-10 h-10 flex-shrink-0 flex items-center justify-center">
-          <div className="absolute inset-1 bg-white/40 blur-md rounded-full" />
           <Image src="/icons/icon-192.png" alt="Logo" fill className="object-contain drop-shadow-lg relative z-10" />
         </div>
         <AnimatePresence mode="wait">
@@ -100,14 +99,14 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
                 ${collapsed ? 'justify-center' : ''}
                 ${isActive 
                   ? 'text-emerald-400 font-semibold' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5 font-medium'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60 font-medium'
                 }
               `}
             >
               {isActive && (
                 <motion.div 
                   layoutId="activeNavIndicator"
-                  className="absolute inset-0 bg-emerald-500/10 rounded-xl border border-emerald-500/20"
+                  className="absolute inset-0 bg-emerald-500/15 rounded-xl border border-emerald-500/30"
                   initial={false}
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
@@ -132,7 +131,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
       </nav>
 
       {/* User Profile & Logout */}
-      <div className="p-4 border-t border-white/10">
+      <div className="p-4 border-t border-slate-800 bg-[#051636]">
         <div className={`flex items-center gap-3 mb-2 px-2 ${collapsed ? 'justify-center' : ''}`}>
           {!collapsed && (
             <motion.div 
@@ -159,8 +158,8 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
           data-sfx="none"
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group active:scale-95 mb-1.5 cursor-pointer ${
             isMuted
-              ? 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-              : 'text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20'
+              ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/60'
+              : 'text-emerald-400 hover:text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/15 border border-emerald-500/30'
           } ${collapsed ? 'justify-center' : ''}`}
         >
           {isMuted ? (

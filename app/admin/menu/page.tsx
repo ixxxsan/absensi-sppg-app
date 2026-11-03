@@ -271,7 +271,7 @@ export default function AdminMenuPage() {
       </div>
 
       {showQR && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50  p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center relative">
             <button 
               onClick={() => setShowQR(false)}

@@ -229,14 +229,14 @@ export default function AbsensiValidasiPage() {
       {/* Photo Preview Modal */}
       {previewRow && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 "
           onClick={() => { setPreviewId(null); setIsFullscreen(false); }}
         >
           {isFullscreen ? (
             <div className="absolute inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => setIsFullscreen(false)}
-                className="absolute top-4 right-4 p-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors z-[70]"
+                className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-white hover:bg-slate-700 border border-slate-700 transition-colors z-[70]"
                 aria-label="Tutup Layar Penuh"
               >
                 <XCircle className="w-8 h-8" />

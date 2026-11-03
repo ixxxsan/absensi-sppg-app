@@ -574,7 +574,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
 
       {/* Modal — Tambah/Edit */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 ">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in">
             <h2 className="text-slate-800 text-lg font-bold mb-5">
               {editTarget ? 'Edit Relawan' : 'Tambah Relawan Baru'}
@@ -699,7 +699,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
 
       {/* Modal — Progress Import */}
       {isImporting && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 ">
           <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center">
             <Loader2 className="w-10 h-10 animate-spin text-emerald-500 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-slate-800 mb-2">Mengimpor Data...</h3>
@@ -713,7 +713,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
 
       {/* Modal — Laporan Import */}
       {importReport && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 ">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in">
             <h2 className="text-slate-800 text-lg font-bold mb-5">Laporan Import Excel</h2>
             
@@ -754,7 +754,7 @@ export default function ClientRelawan({ initialData }: { initialData: RelawanIte
 
       {/* Modal — Informasi Password */}
       {createdPasswordInfo && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 ">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in">
             <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${createdPasswordInfo.emailSuccess ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
               <KeyRound className="w-6 h-6" />

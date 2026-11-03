@@ -16,7 +16,7 @@ function DashboardSkeleton() {
       {/* KPI Skeletons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white/50 rounded-[2rem] p-6 sm:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 flex flex-col justify-between h-40">
+          <div key={i} className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 flex flex-col justify-between h-40">
             <div className="w-12 h-12 rounded-2xl bg-slate-100" />
             <div>
               <div className="w-16 h-10 bg-slate-100 rounded-md mt-2" />
@@ -28,8 +28,8 @@ function DashboardSkeleton() {
       
       {/* Chart & Table Skeletons */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-        <div className="xl:col-span-2 bg-white/50 rounded-[2.5rem] p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 h-[300px]" />
-        <div className="xl:col-span-3 bg-white/50 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 h-[300px]" />
+        <div className="xl:col-span-2 bg-white rounded-2xl p-8 shadow-sm border border-slate-200 h-[300px]" />
+        <div className="xl:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 h-[300px]" />
       </div>
     </div>
   );

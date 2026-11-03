@@ -335,7 +335,7 @@ export default function LaporanMingguanPage() {
   }, [activeSuratJalanPhotos]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 print:p-0 print:bg-white print:text-black">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 p-4 md:p-8 print:p-0 print:bg-white print:text-black">
       {/* ======================================================== */}
       {/* NON-PRINTABLE TOP CONTROLS & DATE CONFIGURATION          */}
       {/* ======================================================== */}
@@ -344,14 +344,14 @@ export default function LaporanMingguanPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/admin/laporan"
-              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition"
+              className="p-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200 transition shadow-sm"
               title="Kembali ke Laporan"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-white flex items-center gap-2.5">
-                <FileSpreadsheet className="w-7 h-7 text-emerald-400" />
+              <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
+                <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
                 Laporan Mingguan SPPG
               </h1>
             </div>
@@ -360,16 +360,16 @@ export default function LaporanMingguanPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium transition cursor-pointer shadow-sm hover:shadow"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium transition cursor-pointer shadow-sm active:scale-[0.98]"
             >
-              <Printer className="w-4 h-4 text-sky-400" />
+              <Printer className="w-4 h-4 text-slate-500" />
               <span>Cetak / Simpan PDF</span>
             </button>
 
             <button
               onClick={handleExportDocx}
               disabled={exportingDocx}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium transition cursor-pointer shadow-lg shadow-emerald-900/30 disabled:opacity-60"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-60"
             >
               {exportingDocx ? (
                 <RefreshCw className="w-4 h-4 animate-spin text-white" />
@@ -382,12 +382,12 @@ export default function LaporanMingguanPage() {
         </div>
 
         {/* 5 Operational Days Selectors */}
-        <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-5 backdrop-blur-md shadow-xl mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-white/10">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-emerald-400" />
-              <span className="font-semibold text-white">5 Hari Operasional:</span>
-              <span className="text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-3 py-1 rounded-lg text-sm">
+              <Calendar className="w-5 h-5 text-emerald-600" />
+              <span className="font-semibold text-slate-800">5 Hari Operasional:</span>
+              <span className="text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg text-sm font-mono">
                 {fullDateRangeStr || 'Memuat...'}
               </span>
             </div>
@@ -395,7 +395,7 @@ export default function LaporanMingguanPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleShiftWeek(-7)}
-                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition text-xs flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition text-xs font-medium flex items-center gap-1 active:scale-[0.98]"
                 title="Mundur 1 Minggu"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -403,28 +403,28 @@ export default function LaporanMingguanPage() {
               </button>
               <button
                 onClick={handleResetCurrentWeek}
-                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition text-xs flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition text-xs font-medium flex items-center gap-1 active:scale-[0.98]"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Minggu Ini</span>
               </button>
               <button
                 onClick={() => handleShiftWeek(7)}
-                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition text-xs flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition text-xs font-medium flex items-center gap-1 active:scale-[0.98]"
                 title="Maju 1 Minggu"
               >
                 <span>+1 Minggu</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
 
-              <div className="ml-2 pl-3 border-l border-white/10 flex items-center gap-2">
-                <label htmlFor="startDateInput" className="text-xs text-slate-400 hidden lg:inline">Mulai Dari:</label>
+              <div className="ml-2 pl-3 border-l border-slate-200 flex items-center gap-2">
+                <label htmlFor="startDateInput" className="text-xs text-slate-500 hidden lg:inline font-medium">Mulai Dari:</label>
                 <input
                   id="startDateInput"
                   type="date"
                   value={dates[0] || ''}
                   onChange={(e) => handleSetWeekFromStart(e.target.value)}
-                  className="bg-slate-800 border border-white/20 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-mono"
                   title="Pilih tanggal awal untuk mengisi 5 hari berurutan"
                 />
               </div>
@@ -443,20 +443,20 @@ export default function LaporanMingguanPage() {
               return (
                 <div
                   key={idx}
-                  className={`p-3 rounded-xl border transition relative ${
+                  className={`p-3.5 rounded-xl border transition relative ${
                     off
-                      ? 'bg-amber-950/20 border-amber-500/40 opacity-75'
-                      : 'bg-emerald-950/20 border-emerald-500/40'
+                      ? 'bg-amber-50/50 border-amber-200 opacity-80'
+                      : 'bg-slate-50/70 border-slate-200'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
                       Hari Ke-{idx + 1}
                     </span>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${
                       off
-                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                        : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                        ? 'bg-amber-100/70 text-amber-800 border-amber-300'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     }`}>
                       {dayName}
                     </span>
@@ -466,28 +466,28 @@ export default function LaporanMingguanPage() {
                     type="date"
                     value={dateStr}
                     onChange={(e) => handleDayChange(idx, e.target.value)}
-                    className="w-full bg-slate-900 border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 mb-2 font-mono"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 mb-2 font-mono shadow-xs"
                     title={`Ubah tanggal Hari Ke-${idx + 1}`}
                   />
 
-                  <div className="pt-2 border-t border-white/5 space-y-1.5">
+                  <div className="pt-2 border-t border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-400">Status:</span>
+                      <span className="text-slate-500">Status:</span>
                       {off ? (
-                        <span className="text-amber-400 font-bold flex items-center gap-1">
+                        <span className="text-amber-700 font-bold flex items-center gap-1">
                           🏖️ Libur (Dilewati)
                         </span>
                       ) : (
-                        <span className="text-emerald-400 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Pemberian Ke-{activeItem?.pemberianKe}
+                        <span className="text-emerald-700 font-bold flex items-center gap-1 font-mono">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Pemberian Ke-{activeItem?.pemberianKe}
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-400">Menu Hari Ini:</span>
+                      <span className="text-slate-500">Menu Hari Ini:</span>
                       {isFilled ? (
-                        <span className="text-emerald-400 font-medium line-clamp-1 max-w-[120px]" title={reportInfo?.namaMenu}>
+                        <span className="text-emerald-700 font-medium line-clamp-1 max-w-[120px]" title={reportInfo?.namaMenu}>
                           {reportInfo?.namaMenu}
                         </span>
                       ) : (
@@ -498,10 +498,10 @@ export default function LaporanMingguanPage() {
                     <button
                       type="button"
                       onClick={() => toggleDayOff(idx)}
-                      className={`w-full mt-1 py-1 px-2 text-[10px] font-semibold rounded-lg border transition cursor-pointer ${
+                      className={`w-full mt-1 py-1 px-2 text-[10px] font-semibold rounded-lg border transition cursor-pointer active:scale-[0.98] ${
                         off
-                          ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border-emerald-500/30'
-                          : 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border-amber-500/30'
+                          ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                          : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200'
                       }`}
                     >
                       {off ? 'Aktifkan Masuk' : 'Tandai Libur'}
@@ -512,16 +512,16 @@ export default function LaporanMingguanPage() {
             })}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2 pt-2 border-t border-white/5">
+          <div className="mt-4 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2 pt-3 border-t border-slate-100">
             <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               Tabel 2.3 (Sekolah): <strong>Porsi Besar</strong>.
-              <span className="w-2 h-2 rounded-full bg-pink-400 ml-2"></span>
+              <span className="w-2 h-2 rounded-full bg-pink-500 ml-2"></span>
               Tabel 2.4 (Posyandu): <strong>Porsi Bumil/Busui</strong>.
             </span>
             <Link
               href="/admin/menu"
-              className="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 hover:underline font-medium"
+              className="text-emerald-700 hover:text-emerald-800 flex items-center gap-1 font-semibold"
             >
               <Utensils className="w-3.5 h-3.5" />
               Kelola Menu Hari Ini
@@ -533,22 +533,22 @@ export default function LaporanMingguanPage() {
         {/* ======================================================== */}
         {/* FOTO DOKUMENTASI ADJUSTMENT (BULK DRAG & DROP)           */}
         {/* ======================================================== */}
-        <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-5 backdrop-blur-md shadow-xl mb-6 transition">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-6 transition">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700">
                 <UploadCloud className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
                   Penyesuaian Foto Dokumentasi
                   {isCompressing && (
-                    <span className="text-xs font-normal text-emerald-400 flex items-center gap-1">
+                    <span className="text-xs font-normal text-emerald-700 flex items-center gap-1 font-mono">
                       <RefreshCw className="w-3 h-3 animate-spin" /> Memproses...
                     </span>
                   )}
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   Drop foto di sini untuk otomatis menggantikan foto default pada Web &amp; Export Word (.docx).
                 </p>
               </div>
@@ -564,7 +564,7 @@ export default function LaporanMingguanPage() {
                 <button
                   type="button"
                   onClick={handleResetAllPhotos}
-                  className="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 text-xs font-medium transition flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-medium transition flex items-center gap-1.5 cursor-pointer active:scale-[0.98]"
                   title="Kembalikan semua foto ke default template master"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -575,7 +575,7 @@ export default function LaporanMingguanPage() {
               <button
                 type="button"
                 onClick={() => setPhotoPanelOpen(prev => !prev)}
-                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-medium transition flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium transition flex items-center gap-1 cursor-pointer active:scale-[0.98]"
               >
                 <span>{photoPanelOpen ? 'Sembunyikan' : 'Buka Pengaturan Foto'}</span>
                 {photoPanelOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -586,22 +586,22 @@ export default function LaporanMingguanPage() {
           {photoPanelOpen && (
             <div className="mt-4">
               {/* Category Navigation Tabs */}
-              <div className="flex flex-wrap gap-2 mb-4 border-b border-white/5 pb-2">
+              <div className="flex flex-wrap gap-2 mb-4 border-b border-slate-100 pb-2">
                 <button
                   type="button"
                   onClick={() => setActivePhotoTab('suratJalan')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer active:scale-[0.98] ${
                     activePhotoTab === 'suratJalan'
-                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40'
-                      : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                      ? 'bg-[#071e49] text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   <FileImage className="w-3.5 h-3.5" />
                   <span>Surat Jalan (Bulk)</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold font-mono ${
                     customImages.suratJalan.length > 0
-                      ? 'bg-white text-emerald-700'
-                      : 'bg-white/10 text-slate-400'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-slate-200 text-slate-700'
                   }`}>
                     {customImages.suratJalan.length > 0 ? `${customImages.suratJalan.length} Custom` : '42 Default'}
                   </span>
@@ -610,18 +610,18 @@ export default function LaporanMingguanPage() {
                 <button
                   type="button"
                   onClick={() => setActivePhotoTab('proses')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer active:scale-[0.98] ${
                     activePhotoTab === 'proses'
-                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40'
-                      : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                      ? 'bg-[#071e49] text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
                   <span>Persiapan / Olah / Porsi</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold font-mono ${
                     customImages.persiapan.length + customImages.pengolahan.length + customImages.pemorsian.length > 0
-                      ? 'bg-white text-emerald-700'
-                      : 'bg-white/10 text-slate-400'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-slate-200 text-slate-700'
                   }`}>
                     {customImages.persiapan.length + customImages.pengolahan.length + customImages.pemorsian.length > 0 ? 'Custom' : 'Default'}
                   </span>
@@ -630,18 +630,18 @@ export default function LaporanMingguanPage() {
                 <button
                   type="button"
                   onClick={() => setActivePhotoTab('distribusi')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer active:scale-[0.98] ${
                     activePhotoTab === 'distribusi'
-                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40'
-                      : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                      ? 'bg-[#071e49] text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   <ImagePlus className="w-3.5 h-3.5" />
                   <span>Distribusi &amp; Dok. Distribusi</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold font-mono ${
                     customImages.distribusi.length + customImages.dokumentasiDistribusi.length > 0
-                      ? 'bg-white text-emerald-700'
-                      : 'bg-white/10 text-slate-400'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-slate-200 text-slate-700'
                   }`}>
                     {customImages.distribusi.length + customImages.dokumentasiDistribusi.length > 0 ? 'Custom' : 'Default'}
                   </span>
@@ -658,7 +658,7 @@ export default function LaporanMingguanPage() {
                       e.stopPropagation();
                       if (e.dataTransfer.files) handleBulkFiles('suratJalan', e.dataTransfer.files, 42);
                     }}
-                    className="border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/30 rounded-2xl p-6 text-center transition cursor-pointer relative"
+                    className="border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50/70 rounded-2xl p-6 text-center transition cursor-pointer relative"
                   >
                     <input
                       type="file"
@@ -671,29 +671,29 @@ export default function LaporanMingguanPage() {
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       title="Tarik &amp; lepas file foto surat jalan atau klik untuk memilih"
                     />
-                    <UploadCloud className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-                    <p className="text-sm font-bold text-white mb-1">
+                    <UploadCloud className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-slate-800 mb-1">
                       Tarik &amp; Lepas Bulk Foto Surat Jalan di Sini
                     </p>
-                    <p className="text-xs text-slate-300 max-w-lg mx-auto">
+                    <p className="text-xs text-slate-500 max-w-lg mx-auto">
                       Bisa pilih 10–42+ foto sekaligus. Foto otomatis dioptimasi dan menggantikan tabel Surat Jalan 5-kolom secara berurutan.
                     </p>
-                    <span className="inline-block mt-3 px-3 py-1 bg-emerald-600/30 border border-emerald-500/40 rounded-lg text-xs font-semibold text-emerald-300">
+                    <span className="inline-block mt-3 px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-xs">
                       Pilih Foto dari Perangkat
                     </span>
                   </div>
 
                   {customImages.suratJalan.length > 0 ? (
-                    <div className="mt-4 bg-slate-950/60 border border-white/10 rounded-xl p-3">
-                      <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
-                        <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                    <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-200">
+                        <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5 font-mono">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           {customImages.suratJalan.length} Foto Surat Jalan Custom Terpasang
                         </span>
                         <button
                           type="button"
                           onClick={() => handleResetCategory('suratJalan')}
-                          className="text-[11px] text-red-400 hover:text-red-300 underline font-medium cursor-pointer"
+                          className="text-[11px] text-rose-600 hover:text-rose-700 underline font-medium cursor-pointer"
                         >
                           Hapus Semua &amp; Kembali ke Default
                         </button>
@@ -701,15 +701,15 @@ export default function LaporanMingguanPage() {
 
                       <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 gap-2 max-h-56 overflow-y-auto pr-1">
                         {customImages.suratJalan.map((img, idx) => (
-                          <div key={idx} className="relative group rounded-lg overflow-hidden border border-white/15 bg-black aspect-[3/4]">
+                          <div key={idx} className="relative group rounded-lg overflow-hidden border border-slate-200 bg-slate-100 aspect-[3/4]">
                             <img src={img} alt={`SJ ${idx + 1}`} className="w-full h-full object-cover" />
-                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] text-center font-bold text-white py-0.5">
+                            <span className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-[9px] text-center font-bold text-white py-0.5 font-mono">
                               #{idx + 1}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleRemovePhoto('suratJalan', idx)}
-                              className="absolute top-1 right-1 p-0.5 rounded-full bg-red-600/90 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                              className="absolute top-1 right-1 p-0.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
                               title="Hapus foto ini"
                             >
                               <X className="w-3 h-3" />
@@ -730,14 +730,14 @@ export default function LaporanMingguanPage() {
               {activePhotoTab === 'proses' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Persiapan */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-white">1. Persiapan</span>
+                      <span className="text-xs font-bold text-slate-800">1. Persiapan</span>
                       {customImages.persiapan.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleResetCategory('persiapan')}
-                          className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                          className="text-[10px] text-rose-600 hover:underline cursor-pointer"
                         >
                           Reset
                         </button>
@@ -750,7 +750,7 @@ export default function LaporanMingguanPage() {
                         e.stopPropagation();
                         if (e.dataTransfer.files) handleBulkFiles('persiapan', e.dataTransfer.files, 5);
                       }}
-                      className="border border-dashed border-white/20 hover:border-emerald-400/60 rounded-xl p-3 text-center mb-2.5 transition relative cursor-pointer bg-white/5"
+                      className="border border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-3 text-center mb-2.5 transition relative cursor-pointer bg-white"
                     >
                       <input
                         type="file"
@@ -762,28 +762,28 @@ export default function LaporanMingguanPage() {
                         }}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
-                      <UploadCloud className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-                      <p className="text-[11px] text-slate-300">Drop foto Persiapan (1-5 foto)</p>
+                      <UploadCloud className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+                      <p className="text-[11px] text-slate-600">Drop foto Persiapan (1-5 foto)</p>
                     </div>
 
                     <div className="grid grid-cols-5 gap-1.5">
                       {Array.from({ length: 5 }).map((_, i) => {
                         const custom = customImages.persiapan[i];
                         return (
-                          <div key={i} className="relative group rounded border border-white/10 bg-black aspect-[3/4] overflow-hidden">
+                          <div key={i} className="relative group rounded border border-slate-200 bg-slate-100 aspect-[3/4] overflow-hidden">
                             <img
                               src={custom || `/images/laporan/image${2 + i}.jpeg`}
                               alt={`Persiapan ${i + 1}`}
-                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-50'}`}
+                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-60'}`}
                             />
-                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center font-bold text-white">
+                            <span className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-[8px] text-center font-bold text-white font-mono">
                               H{i + 1}
                             </span>
                             {custom && (
                               <button
                                 type="button"
                                 onClick={() => handleRemovePhoto('persiapan', i)}
-                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
                               >
                                 <X className="w-2.5 h-2.5" />
                               </button>
@@ -795,14 +795,14 @@ export default function LaporanMingguanPage() {
                   </div>
 
                   {/* Pengolahan */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-white">2. Pengolahan</span>
+                      <span className="text-xs font-bold text-slate-800">2. Pengolahan</span>
                       {customImages.pengolahan.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleResetCategory('pengolahan')}
-                          className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                          className="text-[10px] text-rose-600 hover:underline cursor-pointer"
                         >
                           Reset
                         </button>
@@ -815,7 +815,7 @@ export default function LaporanMingguanPage() {
                         e.stopPropagation();
                         if (e.dataTransfer.files) handleBulkFiles('pengolahan', e.dataTransfer.files, 5);
                       }}
-                      className="border border-dashed border-white/20 hover:border-emerald-400/60 rounded-xl p-3 text-center mb-2.5 transition relative cursor-pointer bg-white/5"
+                      className="border border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-3 text-center mb-2.5 transition relative cursor-pointer bg-white"
                     >
                       <input
                         type="file"
@@ -827,28 +827,28 @@ export default function LaporanMingguanPage() {
                         }}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
-                      <UploadCloud className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-                      <p className="text-[11px] text-slate-300">Drop foto Pengolahan (1-5 foto)</p>
+                      <UploadCloud className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+                      <p className="text-[11px] text-slate-600">Drop foto Pengolahan (1-5 foto)</p>
                     </div>
 
                     <div className="grid grid-cols-5 gap-1.5">
                       {Array.from({ length: 5 }).map((_, i) => {
                         const custom = customImages.pengolahan[i];
                         return (
-                          <div key={i} className="relative group rounded border border-white/10 bg-black aspect-[3/4] overflow-hidden">
+                          <div key={i} className="relative group rounded border border-slate-200 bg-slate-100 aspect-[3/4] overflow-hidden">
                             <img
                               src={custom || `/images/laporan/image${7 + i}.jpeg`}
                               alt={`Pengolahan ${i + 1}`}
-                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-50'}`}
+                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-60'}`}
                             />
-                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center font-bold text-white">
+                            <span className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-[8px] text-center font-bold text-white font-mono">
                               H{i + 1}
                             </span>
                             {custom && (
                               <button
                                 type="button"
                                 onClick={() => handleRemovePhoto('pengolahan', i)}
-                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
                               >
                                 <X className="w-2.5 h-2.5" />
                               </button>
@@ -860,14 +860,14 @@ export default function LaporanMingguanPage() {
                   </div>
 
                   {/* Pemorsian & Packing */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-white">3. Pemorsian &amp; Packing</span>
+                      <span className="text-xs font-bold text-slate-800">3. Pemorsian &amp; Packing</span>
                       {customImages.pemorsian.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleResetCategory('pemorsian')}
-                          className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                          className="text-[10px] text-rose-600 hover:underline cursor-pointer"
                         >
                           Reset
                         </button>
@@ -880,7 +880,7 @@ export default function LaporanMingguanPage() {
                         e.stopPropagation();
                         if (e.dataTransfer.files) handleBulkFiles('pemorsian', e.dataTransfer.files, 5);
                       }}
-                      className="border border-dashed border-white/20 hover:border-emerald-400/60 rounded-xl p-3 text-center mb-2.5 transition relative cursor-pointer bg-white/5"
+                      className="border border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-3 text-center mb-2.5 transition relative cursor-pointer bg-white"
                     >
                       <input
                         type="file"
@@ -892,28 +892,28 @@ export default function LaporanMingguanPage() {
                         }}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
-                      <UploadCloud className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-                      <p className="text-[11px] text-slate-300">Drop foto Pemorsian (1-5 foto)</p>
+                      <UploadCloud className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+                      <p className="text-[11px] text-slate-600">Drop foto Pemorsian (1-5 foto)</p>
                     </div>
 
                     <div className="grid grid-cols-5 gap-1.5">
                       {Array.from({ length: 5 }).map((_, i) => {
                         const custom = customImages.pemorsian[i];
                         return (
-                          <div key={i} className="relative group rounded border border-white/10 bg-black aspect-[3/4] overflow-hidden">
+                          <div key={i} className="relative group rounded border border-slate-200 bg-slate-100 aspect-[3/4] overflow-hidden">
                             <img
                               src={custom || `/images/laporan/image${12 + i}.jpeg`}
                               alt={`Pemorsian ${i + 1}`}
-                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-50'}`}
+                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-60'}`}
                             />
-                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center font-bold text-white">
+                            <span className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-[8px] text-center font-bold text-white font-mono">
                               H{i + 1}
                             </span>
                             {custom && (
                               <button
                                 type="button"
                                 onClick={() => handleRemovePhoto('pemorsian', i)}
-                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
                               >
                                 <X className="w-2.5 h-2.5" />
                               </button>
@@ -930,14 +930,14 @@ export default function LaporanMingguanPage() {
               {activePhotoTab === 'distribusi' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* 4. Distribusi (2 foto) */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-white">4. Distribusi (Sekolah &amp; Posyandu)</span>
+                      <span className="text-xs font-bold text-slate-800">4. Distribusi (Sekolah &amp; Posyandu)</span>
                       {customImages.distribusi.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleResetCategory('distribusi')}
-                          className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                          className="text-[10px] text-rose-600 hover:underline cursor-pointer"
                         >
                           Reset
                         </button>
@@ -950,7 +950,7 @@ export default function LaporanMingguanPage() {
                         e.stopPropagation();
                         if (e.dataTransfer.files) handleBulkFiles('distribusi', e.dataTransfer.files, 2);
                       }}
-                      className="border border-dashed border-white/20 hover:border-emerald-400/60 rounded-xl p-3 text-center mb-3 transition relative cursor-pointer bg-white/5"
+                      className="border border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-3 text-center mb-3 transition relative cursor-pointer bg-white"
                     >
                       <input
                         type="file"
@@ -962,28 +962,28 @@ export default function LaporanMingguanPage() {
                         }}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
-                      <UploadCloud className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-                      <p className="text-[11px] text-slate-300">Drop 2 foto Distribusi (Sekolah &amp; Posyandu)</p>
+                      <UploadCloud className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+                      <p className="text-[11px] text-slate-600">Drop 2 foto Distribusi (Sekolah &amp; Posyandu)</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       {['Sekolah', 'Posyandu'].map((label, idx) => {
                         const custom = customImages.distribusi[idx];
                         return (
-                          <div key={idx} className="relative group rounded-lg border border-white/10 bg-black aspect-video overflow-hidden">
+                          <div key={idx} className="relative group rounded-lg border border-slate-200 bg-slate-100 aspect-video overflow-hidden">
                             <img
                               src={custom || `/images/laporan/image${17 + idx}.jpeg`}
                               alt={`Distribusi ${label}`}
-                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-50'}`}
+                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-60'}`}
                             />
-                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[10px] text-center font-bold text-white py-0.5">
+                            <span className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-[10px] text-center font-bold text-white py-0.5">
                               {label}
                             </span>
                             {custom && (
                               <button
                                 type="button"
                                 onClick={() => handleRemovePhoto('distribusi', idx)}
-                                className="absolute top-1 right-1 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                className="absolute top-1 right-1 p-0.5 rounded-full bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -995,14 +995,14 @@ export default function LaporanMingguanPage() {
                   </div>
 
                   {/* Dokumentasi Distribusi (8 foto) */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-white">Dokumentasi Distribusi (8 Foto Grid)</span>
+                      <span className="text-xs font-bold text-slate-800">Dokumentasi Distribusi (8 Foto Grid)</span>
                       {customImages.dokumentasiDistribusi.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleResetCategory('dokumentasiDistribusi')}
-                          className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                          className="text-[10px] text-rose-600 hover:underline cursor-pointer"
                         >
                           Reset
                         </button>
@@ -1015,7 +1015,7 @@ export default function LaporanMingguanPage() {
                         e.stopPropagation();
                         if (e.dataTransfer.files) handleBulkFiles('dokumentasiDistribusi', e.dataTransfer.files, 8);
                       }}
-                      className="border border-dashed border-white/20 hover:border-emerald-400/60 rounded-xl p-3 text-center mb-3 transition relative cursor-pointer bg-white/5"
+                      className="border border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-3 text-center mb-3 transition relative cursor-pointer bg-white"
                     >
                       <input
                         type="file"
@@ -1027,28 +1027,28 @@ export default function LaporanMingguanPage() {
                         }}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
-                      <UploadCloud className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-                      <p className="text-[11px] text-slate-300">Drop bulk foto Dokumentasi Distribusi (hingga 8 foto)</p>
+                      <UploadCloud className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+                      <p className="text-[11px] text-slate-600">Drop bulk foto Dokumentasi Distribusi (hingga 8 foto)</p>
                     </div>
 
                     <div className="grid grid-cols-4 gap-1.5">
                       {Array.from({ length: 8 }).map((_, i) => {
                         const custom = customImages.dokumentasiDistribusi[i];
                         return (
-                          <div key={i} className="relative group rounded border border-white/10 bg-black aspect-video overflow-hidden">
+                          <div key={i} className="relative group rounded border border-slate-200 bg-slate-100 aspect-video overflow-hidden">
                             <img
                               src={custom || `/images/laporan/${DISTRIBUSI_PHOTOS[i]}`}
                               alt={`Dok. Distribusi ${i + 1}`}
-                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-50'}`}
+                              className={`w-full h-full object-cover ${custom ? '' : 'opacity-60'}`}
                             />
-                            <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] text-center font-bold text-white">
+                            <span className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-[9px] text-center font-bold text-white font-mono">
                               #{i + 1}
                             </span>
                             {custom && (
                               <button
                                 type="button"
                                 onClick={() => handleRemovePhoto('dokumentasiDistribusi', i)}
-                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
                               >
                                 <X className="w-2.5 h-2.5" />
                               </button>
@@ -1065,15 +1065,15 @@ export default function LaporanMingguanPage() {
         </div>
 
         {error && (
-          <div className="p-4 rounded-xl bg-red-950/50 border border-red-500/40 text-red-200 text-sm mb-6 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm mb-6 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>Gagal memuat data menu mingguan.</span>
           </div>
         )}
 
         {isLoading && (
-          <div className="py-2 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+          <div className="py-2 text-center text-xs text-slate-500 flex items-center justify-center gap-2 font-mono">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
             <span>Menyelaraskan data menu...</span>
           </div>
         )}
@@ -1084,7 +1084,7 @@ export default function LaporanMingguanPage() {
       {/* Exactly mirrors Laporan_Pelaksanaan_Program_MBG_Master   */}
       {/* ======================================================== */}
       <div
-        className="max-w-[210mm] mx-auto bg-white text-black shadow-2xl p-[20mm] border border-slate-300 print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none"
+        className="max-w-[210mm] mx-auto bg-white text-black shadow-sm p-[20mm] border border-slate-200 print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none"
         style={{ fontFamily: 'Calibri, "Segoe UI", Arial, sans-serif' }}
       >
         {/* ==================== COVER / HEADER ==================== */}

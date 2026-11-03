@@ -18,7 +18,7 @@ function KPICard({ title, value, icon, color, bgColor, trend }: KPICardProps) {
     <motion.div
       variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
       whileHover={{ y: -4, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
-      className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 flex flex-col justify-between"
+      className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 flex flex-col justify-between"
     >
       <div className="flex items-start justify-between mb-8">
         <div className={`w-12 h-12 rounded-2xl ${bgColor} flex items-center justify-center`}>
@@ -134,7 +134,7 @@ export default function DashboardClient({
         {/* Bar Chart */}
         <motion.div 
           variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
-          className="xl:col-span-2 bg-white rounded-[2.5rem] p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 flex flex-col min-h-[300px]"
+          className="xl:col-span-2 bg-white rounded-2xl p-8 shadow-sm border border-slate-200 flex flex-col min-h-[300px]"
         >
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-slate-800 font-bold text-lg tracking-tight">Tren 7 Hari</h2>
@@ -175,9 +175,9 @@ export default function DashboardClient({
         {/* Absensi Hari Ini Table */}
         <motion.div 
           variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1 } }}
-          className="xl:col-span-3 bg-white rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] border border-slate-200/50 overflow-hidden flex flex-col"
+          className="xl:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col"
         >
-          <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/50 backdrop-blur-xl">
+          <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
             <h2 className="text-slate-800 font-bold text-lg tracking-tight">Aktivitas Terkini</h2>
             <span className="text-slate-500 font-medium text-sm bg-slate-50 px-3 py-1 rounded-full border border-slate-100">{recentAbsensi.length} entri</span>
           </div>
@@ -215,7 +215,7 @@ export default function DashboardClient({
                     >
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 border border-slate-200/50">
+                          <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 border border-slate-200">
                             {row.namaLengkap?.charAt(0) || '?'}
                           </div>
                           <div>
