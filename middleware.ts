@@ -64,6 +64,9 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = pathname.startsWith('/admin') && !pathname.startsWith('/admin/login');
   const isRelawanRoute = ['/beranda', '/kamera', '/riwayat', '/cuti', '/profil'].some(route => pathname.startsWith(route));
 
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', pathname);
+
   // Handle Unauthenticated
   if (!session) {
       if (isAdminRoute) {
@@ -72,7 +75,11 @@ export async function middleware(request: NextRequest) {
       if (isRelawanRoute) {
           return NextResponse.redirect(new URL("/login", request.url));
       }
-      return NextResponse.next();
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
   }
 
   // Handle Authenticated trying to access login pages
@@ -93,9 +100,6 @@ export async function middleware(request: NextRequest) {
   if (isRelawanRoute && isAdminRoleCheck(session.user.role)) {
       return NextResponse.redirect(new URL("/admin/dashboard", request.url));
   }
-
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-pathname', pathname);
 
   return NextResponse.next({
     request: {

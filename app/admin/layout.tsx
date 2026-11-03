@@ -15,18 +15,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const pathname = headerList.get('x-pathname') || '';
 
   if (!isAdmin) {
-    if (pathname === '/admin/login' || pathname.startsWith('/admin/login')) {
-      return (
-        <AdminSoundProvider>
-          <div className="flex h-[100dvh] w-full overflow-hidden bg-[#f9fafb]">
-            <main className="flex-1 overflow-y-auto min-w-0">
-              {children}
-            </main>
-          </div>
-        </AdminSoundProvider>
-      );
+    // Only redirect if pathname is known to be a protected admin route (NOT /admin/login)
+    // Never redirect if pathname is empty, /admin/login, or unknown to prevent ERR_TOO_MANY_REDIRECTS
+    if (pathname && pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+      redirect('/admin/login');
     }
-    redirect('/admin/login');
+
+    return (
+      <AdminSoundProvider>
+        <div className="flex h-[100dvh] w-full overflow-hidden bg-[#f9fafb]">
+          <main className="flex-1 overflow-y-auto min-w-0">
+            {children}
+          </main>
+        </div>
+      </AdminSoundProvider>
+    );
   }
 
   return (
