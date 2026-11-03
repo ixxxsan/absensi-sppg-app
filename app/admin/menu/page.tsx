@@ -73,10 +73,17 @@ export default function AdminMenuPage() {
   });
 
   const selectedDate = watch("tanggal");
+  const lastLoadedDateRef = React.useRef<string | null>(null);
+  const isFetchingRef = React.useRef<boolean>(false);
 
   const loadMenuForDate = React.useCallback(async (dateStr: string) => {
     if (!dateStr) return;
     
+    // Prevent duplicate / looped loads for the exact same date
+    if (lastLoadedDateRef.current === dateStr || isFetchingRef.current) return;
+    lastLoadedDateRef.current = dateStr;
+    isFetchingRef.current = true;
+
     const day = dayjs(dateStr).day();
     if (day === 0 || day === 6) {
       goeyToast.error("Sabtu dan Minggu libur. Silakan pilih tanggal lain.");
@@ -88,6 +95,7 @@ export default function AdminMenuPage() {
         giziPorsiBesar: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
         giziBumil: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
       });
+      isFetchingRef.current = false;
       return;
     }
 
@@ -96,22 +104,33 @@ export default function AdminMenuPage() {
       const data = await getMenuByDate(dateStr);
       if (data) {
         setExistingMenu(data);
-        const giziKecil = data.giziPorsiKecil as unknown as MenuNutrition;
-        const giziBesar = data.giziPorsiBesar as unknown as MenuNutrition;
-        const giziBumil = data.giziBumil as unknown as MenuNutrition;
+        const giziKecil = (data.giziPorsiKecil as unknown as MenuNutrition) || { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 };
+        const giziBesar = (data.giziPorsiBesar as unknown as MenuNutrition) || { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 };
+        const giziBumil = (data.giziBumil as unknown as MenuNutrition) || { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 };
         reset({
           tanggal: dateStr,
-          namaMenu: data.namaMenu,
-          giziPorsiKecil: giziKecil,
-          giziPorsiBesar: giziBesar,
-          giziBumil: giziBumil,
-        });
-        setValue("namaMenu", data.namaMenu);
-        const nutrientKeys = ["energi", "protein", "lemak", "karbohidrat", "serat"] as const;
-        nutrientKeys.forEach((key) => {
-          setValue(`giziPorsiKecil.${key}`, Number(giziKecil?.[key]) || 0);
-          setValue(`giziPorsiBesar.${key}`, Number(giziBesar?.[key]) || 0);
-          setValue(`giziBumil.${key}`, Number(giziBumil?.[key]) || 0);
+          namaMenu: data.namaMenu || "",
+          giziPorsiKecil: {
+            energi: Number(giziKecil.energi) || 0,
+            protein: Number(giziKecil.protein) || 0,
+            lemak: Number(giziKecil.lemak) || 0,
+            karbohidrat: Number(giziKecil.karbohidrat) || 0,
+            serat: Number(giziKecil.serat) || 0,
+          },
+          giziPorsiBesar: {
+            energi: Number(giziBesar.energi) || 0,
+            protein: Number(giziBesar.protein) || 0,
+            lemak: Number(giziBesar.lemak) || 0,
+            karbohidrat: Number(giziBesar.karbohidrat) || 0,
+            serat: Number(giziBesar.serat) || 0,
+          },
+          giziBumil: {
+            energi: Number(giziBumil.energi) || 0,
+            protein: Number(giziBumil.protein) || 0,
+            lemak: Number(giziBumil.lemak) || 0,
+            karbohidrat: Number(giziBumil.karbohidrat) || 0,
+            serat: Number(giziBumil.serat) || 0,
+          },
         });
         goeyToast.success("Memuat menu yang sudah ada untuk tanggal ini.");
       } else {
@@ -123,25 +142,36 @@ export default function AdminMenuPage() {
           giziPorsiBesar: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
           giziBumil: { energi: 0, protein: 0, lemak: 0, karbohidrat: 0, serat: 0 },
         });
-        setValue("namaMenu", "");
-        const nutrientKeys = ["energi", "protein", "lemak", "karbohidrat", "serat"] as const;
-        nutrientKeys.forEach((key) => {
-          setValue(`giziPorsiKecil.${key}`, 0);
-          setValue(`giziPorsiBesar.${key}`, 0);
-          setValue(`giziBumil.${key}`, 0);
-        });
       }
     } catch (err) {
       console.error("Gagal mengambil menu:", err);
       goeyToast.error("Gagal memuat menu.");
     } finally {
       setFetchingMenu(false);
+      isFetchingRef.current = false;
     }
-  }, [reset, setValue]);
+  }, [reset]);
 
   React.useEffect(() => {
-    loadMenuForDate(selectedDate);
+    if (selectedDate) {
+      loadMenuForDate(selectedDate);
+    }
   }, [selectedDate, loadMenuForDate]);
+
+  const shiftDate = (delta: number) => {
+    const current = dayjs(selectedDate || getTodayWib());
+    let next = current.add(delta, 'day');
+    if (next.day() === 6) next = next.add(delta > 0 ? 2 : -1, 'day');
+    else if (next.day() === 0) next = next.add(delta > 0 ? 1 : -2, 'day');
+    setValue("tanggal", next.format('YYYY-MM-DD'));
+  };
+
+  const goToToday = () => {
+    let today = dayjs().tz("Asia/Jakarta");
+    if (today.day() === 6) today = today.add(2, 'day');
+    else if (today.day() === 0) today = today.add(1, 'day');
+    setValue("tanggal", today.format('YYYY-MM-DD'));
+  };
 
   const handleUpload = async (file: File) => {
     const fileExt = file.name.split(".").pop();
@@ -202,6 +232,7 @@ export default function AdminMenuPage() {
 
       await upsertMenu(input);
       setExistingMenu(input);
+      lastLoadedDateRef.current = input.tanggal;
       goeyToast.success("Berhasil menyimpan menu!");
     } catch (err: unknown) {
       goeyToast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
@@ -295,16 +326,43 @@ export default function AdminMenuPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block mb-2 font-semibold flex items-center gap-2">
-              <span>Tanggal Menu</span>
-              {fetchingMenu && <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />}
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="font-semibold flex items-center gap-2">
+                <span>Tanggal Menu</span>
+                {fetchingMenu && <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />}
+              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => shiftDate(-1)}
+                  title="Hari Kerja Sebelumnya"
+                  className="px-2 py-0.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                >
+                  &larr; Prev
+                </button>
+                <button
+                  type="button"
+                  onClick={() => goToToday()}
+                  title="Hari Kerja Ini"
+                  className="px-2 py-0.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium rounded transition-colors"
+                >
+                  Hari Ini
+                </button>
+                <button
+                  type="button"
+                  onClick={() => shiftDate(1)}
+                  title="Hari Kerja Berikutnya"
+                  className="px-2 py-0.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                >
+                  Next &rarr;
+                </button>
+              </div>
+            </div>
             <input 
               type="date" 
               {...register("tanggal")} 
               onChange={(e) => {
                 setValue("tanggal", e.target.value);
-                loadMenuForDate(e.target.value);
               }}
               className="w-full p-2 border rounded" 
             />
