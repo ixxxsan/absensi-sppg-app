@@ -16,7 +16,7 @@ dayjs.locale('id');
 
 // Allow large base64 image payloads (48 surat jalan + 15 process photos)
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 const DEFAULT_MENU_DOCX = [
   'Nasi Putih, Chicken Teriyaki, Tahu Cabai Garam, Capcay, Semangka',
@@ -288,9 +288,20 @@ export async function POST(req: NextRequest) {
 
     const activeCount = activeDaysData.length;
 
-    // Read template
+    // Read template (bundled via outputFileTracingIncludes in next.config.ts)
     const templatePath = path.join(process.cwd(), 'templates', 'Laporan_Pelaksanaan_Program_MBG_Master.docx');
-    const templateBytes = await fs.readFile(templatePath);
+    let templateBytes: Buffer;
+    try {
+      templateBytes = await fs.readFile(templatePath);
+    } catch (readErr) {
+      console.error('[Export DOCX] Template read error at:', templatePath, readErr);
+      return NextResponse.json(
+        {
+          error: `Template Word tidak dapat dibaca di ${templatePath}: ${readErr instanceof Error ? readErr.message : String(readErr)}`,
+        },
+        { status: 500 }
+      );
+    }
     const zip = await JSZip.loadAsync(templateBytes);
 
     const docXmlStr = await zip.file('word/document.xml')?.async('string');

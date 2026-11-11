@@ -78,8 +78,40 @@ export default function LaporanMingguanPage() {
   const [activePhotoTab, setActivePhotoTab] = useState<'suratJalan' | 'proses' | 'distribusi'>('suratJalan');
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
 
-  // Client-side image compressor: scales images to keep total export payload small & avoid 413 payload limit
-  const compressImageFile = async (file: File, maxDim = 640, quality = 0.70): Promise<string> => {
+  // Downscale data URL helper for pre-flight Vercel payload optimization (<4.5MB limit)
+  const downscaleDataUrl = (dataUrl: string, maxDim = 420, quality = 0.60): Promise<string> => {
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) return Promise.resolve(dataUrl);
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, width);
+        canvas.height = Math.max(1, height);
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } else {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
+  // Client-side image compressor: scales images to keep total export payload small & avoid Vercel 413 limit
+  const compressImageFile = async (file: File, maxDim = 540, quality = 0.65): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -124,9 +156,9 @@ export default function LaporanMingguanPage() {
     if (files.length === 0) return;
     setIsCompressing(true);
     try {
-      // Tailor compression per category: Surat Jalan is small thumbnail grid (480px, 0.65), others 640px 0.70
-      const maxDim = category === 'suratJalan' ? 480 : 640;
-      const quality = category === 'suratJalan' ? 0.65 : 0.70;
+      // Surat Jalan is 42-item thumbnail grid (420px, 0.60), others 540px 0.65
+      const maxDim = category === 'suratJalan' ? 420 : 540;
+      const quality = category === 'suratJalan' ? 0.60 : 0.65;
       const compressedList: string[] = [];
       for (const file of files) {
         const dataUrl = await compressImageFile(file, maxDim, quality);
@@ -281,9 +313,47 @@ export default function LaporanMingguanPage() {
     setExportingDocx(true);
     try {
       const activeDates = activeReportDays.map(d => d.dateStr);
-      const payload = JSON.stringify({ dates, activeDates, customImages });
-      const payloadMB = (new Blob([payload]).size / 1024 / 1024).toFixed(1);
-      console.log(`[Export DOCX] Payload size: ${payloadMB} MB`);
+
+      // Pre-check payload size against Vercel Serverless Function 4.5MB limit
+      let sendImages = { ...customImages };
+      let payload = JSON.stringify({ dates, activeDates, customImages: sendImages });
+      let payloadBytes = new Blob([payload]).size;
+
+      if (payloadBytes > 3.8 * 1024 * 1024) {
+        console.warn(`[Export DOCX] Payload (${(payloadBytes / 1024 / 1024).toFixed(2)} MB) mendekati batas Vercel (4.5MB). Mengompres foto otomatis...`);
+        const downscaledSurat = await Promise.all(
+          (sendImages.suratJalan || []).map(img => downscaleDataUrl(img, 360, 0.55))
+        );
+        const downscaledPersiapan = await Promise.all(
+          (sendImages.persiapan || []).map(img => downscaleDataUrl(img, 450, 0.60))
+        );
+        const downscaledPengolahan = await Promise.all(
+          (sendImages.pengolahan || []).map(img => downscaleDataUrl(img, 450, 0.60))
+        );
+        const downscaledPemorsian = await Promise.all(
+          (sendImages.pemorsian || []).map(img => downscaleDataUrl(img, 450, 0.60))
+        );
+        sendImages = {
+          ...sendImages,
+          suratJalan: downscaledSurat,
+          persiapan: downscaledPersiapan,
+          pengolahan: downscaledPengolahan,
+          pemorsian: downscaledPemorsian,
+        };
+        payload = JSON.stringify({ dates, activeDates, customImages: sendImages });
+        payloadBytes = new Blob([payload]).size;
+      }
+
+      const payloadMB = (payloadBytes / (1024 * 1024)).toFixed(2);
+      console.log(`[Export DOCX] Payload size: ${payloadMB} MB (${payloadBytes} bytes)`);
+
+      if (payloadBytes > 4.4 * 1024 * 1024) {
+        throw new Error(
+          `Ukuran foto (${payloadMB} MB) melebihi batas request server Vercel (maks 4.5 MB). ` +
+          `Silakan kurangi atau reset foto sebelum ekspor.`
+        );
+      }
+
       const res = await fetch('/api/laporan-mingguan/export-docx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

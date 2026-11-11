@@ -24,6 +24,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Explicitly enable compression (fixes Site Features warning)
   compress: true,
+  outputFileTracingIncludes: {
+    '/api/laporan-mingguan/export-docx': ['./templates/**/*'],
+  },
   // PWA will be added once next-pwa is confirmed installed
   async headers() {
     return [
