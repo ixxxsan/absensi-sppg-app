@@ -741,6 +741,7 @@ export async function POST(req: NextRequest) {
         }
       };
 
+      ensurePageBreakBefore('BAB 1 PENDAHULUAN');
       ensurePageBreakBefore('BAB II PELAKSANAAN KEGIATAN');
       ensurePageBreakBefore('C. Pelaksaan');
       ensurePageBreakBefore('Tabel 2.3');

@@ -1088,7 +1088,7 @@ export default function LaporanMingguanPage() {
         style={{ fontFamily: 'Calibri, "Segoe UI", Arial, sans-serif' }}
       >
         {/* ==================== COVER / HEADER ==================== */}
-        <div className="text-center mb-10">
+        <div className="text-center min-h-[220mm] flex flex-col justify-center print:min-h-screen">
           <p className="font-bold text-[14pt] leading-snug uppercase">
             LAPORAN PELAKSANAAN PROGRAM MAKAN BERGIZI GRATIS
           </p>
@@ -1115,6 +1115,9 @@ export default function LaporanMingguanPage() {
             LAPORAN MINGGUAN {fullDateRangeStr}
           </p>
         </div>
+
+        {/* Page break before BAB 1 */}
+        <div className="hidden print:block" style={{ pageBreakAfter: 'always', breakAfter: 'page' }} />
 
         {/* ==================== BAB 1 PENDAHULUAN ==================== */}
         <div className="mb-6">
