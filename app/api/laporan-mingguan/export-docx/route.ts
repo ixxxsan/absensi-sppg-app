@@ -14,6 +14,10 @@ import 'dayjs/locale/id';
 
 dayjs.locale('id');
 
+// Allow large base64 image payloads (48 surat jalan + 15 process photos)
+export const dynamic = 'force-dynamic';
+export const maxDuration = 120;
+
 const DEFAULT_MENU_DOCX = [
   'Nasi Putih, Chicken Teriyaki, Tahu Cabai Garam, Capcay, Semangka',
   'Nasi Putih, Sate Taichan, Tahu Crispy, Tumis Wortel & Jagung, Kelengkeng',
@@ -773,6 +777,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error generating weekly report docx:', error);
-    return NextResponse.json({ error: 'Gagal membuat file laporan Word.' }, { status: 500 });
+    const detail = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: `Gagal membuat file laporan Word. Detail: ${detail}` }, { status: 500 });
   }
 }
