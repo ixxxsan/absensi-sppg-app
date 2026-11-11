@@ -78,8 +78,8 @@ export default function LaporanMingguanPage() {
   const [activePhotoTab, setActivePhotoTab] = useState<'suratJalan' | 'proses' | 'distribusi'>('suratJalan');
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
 
-  // Client-side image compressor: scales images so max dimension <= 850px, quality 0.76 (~35-60KB JPEG)
-  const compressImageFile = async (file: File, maxDim = 850, quality = 0.76): Promise<string> => {
+  // Client-side image compressor: scales images to keep total export payload small & avoid 413 payload limit
+  const compressImageFile = async (file: File, maxDim = 640, quality = 0.70): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -96,8 +96,8 @@ export default function LaporanMingguanPage() {
             }
           }
           const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
+          canvas.width = Math.max(1, width);
+          canvas.height = Math.max(1, height);
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
@@ -124,9 +124,12 @@ export default function LaporanMingguanPage() {
     if (files.length === 0) return;
     setIsCompressing(true);
     try {
+      // Tailor compression per category: Surat Jalan is small thumbnail grid (480px, 0.65), others 640px 0.70
+      const maxDim = category === 'suratJalan' ? 480 : 640;
+      const quality = category === 'suratJalan' ? 0.65 : 0.70;
       const compressedList: string[] = [];
       for (const file of files) {
-        const dataUrl = await compressImageFile(file);
+        const dataUrl = await compressImageFile(file, maxDim, quality);
         if (dataUrl) compressedList.push(dataUrl);
       }
       setCustomImages(prev => {
@@ -285,8 +288,21 @@ export default function LaporanMingguanPage() {
       });
 
       if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Gagal mengekspor dokumen Word.');
+        let errorMsg = '';
+        try {
+          const errJson = await res.json();
+          errorMsg = errJson.error;
+        } catch {
+          const rawText = await res.text().catch(() => '');
+          if (res.status === 413) {
+            errorMsg = 'Ukuran foto terlalu besar untuk server (413 Request Entity Too Large). Silakan kurangi foto atau hapus foto berukuran besar.';
+          } else if (res.status === 504) {
+            errorMsg = 'Waktu pembuatan dokumen habis (504 Gateway Timeout). Silakan coba lagi.';
+          } else {
+            errorMsg = `Gagal ekspor (${res.status}): ${rawText.slice(0, 120) || 'Server error'}`;
+          }
+        }
+        throw new Error(errorMsg || `Gagal mengekspor dokumen Word (Status ${res.status}).`);
       }
 
       const blob = await res.blob();
