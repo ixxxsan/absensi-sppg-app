@@ -281,10 +281,13 @@ export default function LaporanMingguanPage() {
     setExportingDocx(true);
     try {
       const activeDates = activeReportDays.map(d => d.dateStr);
+      const payload = JSON.stringify({ dates, activeDates, customImages });
+      const payloadMB = (new Blob([payload]).size / 1024 / 1024).toFixed(1);
+      console.log(`[Export DOCX] Payload size: ${payloadMB} MB`);
       const res = await fetch('/api/laporan-mingguan/export-docx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dates, activeDates, customImages }),
+        body: payload,
       });
 
       if (!res.ok) {
