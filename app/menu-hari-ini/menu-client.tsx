@@ -68,7 +68,7 @@ export default function MenuClient({ data }: { data: MenuData }) {
     <div className="min-h-screen flex flex-col bg-[#071e49] text-white bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#071e49] via-[#051636] to-[#020a1f] font-sans pb-16">
       {/* Header */}
       <header className="fixed top-0 w-full z-50 bg-[#071e49]/70 backdrop-blur-md border-b border-white/10 pt-[env(safe-area-inset-top)]">
-        <div className="h-16 px-4 flex items-center justify-between">
+        <div className="h-16 px-4 max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 flex-shrink-0 flex items-center justify-center">
               <div className="absolute inset-2 bg-white/40 blur-md rounded-full" />
@@ -91,123 +91,131 @@ export default function MenuClient({ data }: { data: MenuData }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="flex flex-col w-full max-w-md mx-auto relative px-4 pb-6"
+          className="w-full max-w-md md:max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-6 pb-6"
         >
-          {/* Warning Banner */}
-          <div className="bg-[#fea619]/10 backdrop-blur-md border border-[#fea619]/50 rounded-xl p-4 mb-6 mt-6 relative overflow-hidden shadow-[0_4px_24px_rgba(254,166,25,0.1)]">
-            <div className="flex flex-col gap-2 relative z-10">
-              <div className="flex items-center gap-2 text-[#fea619] font-bold">
-                <AlertTriangle size={20} className="fill-[#fea619] text-[#fea619]/20" />
-                WAJIB DIKONSUMSI DI TEMPAT!
+          {/* Responsive 2-column on md/lg (PC), single column on mobile */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-10 mt-6 items-start">
+            {/* Left Column: Warning Banner & Photo & Title */}
+            <div className="flex flex-col">
+              {/* Warning Banner */}
+              <div className="bg-[#fea619]/10 backdrop-blur-md border border-[#fea619]/50 rounded-xl p-4 mb-6 relative overflow-hidden shadow-[0_4px_24px_rgba(254,166,25,0.1)]">
+                <div className="flex flex-col gap-2 relative z-10">
+                  <div className="flex items-center gap-2 text-[#fea619] font-bold">
+                    <AlertTriangle size={20} className="fill-[#fea619] text-[#fea619]/20 flex-shrink-0" />
+                    WAJIB DIKONSUMSI DI TEMPAT!
+                  </div>
+                  <div className="flex items-center gap-2 text-white/80 text-sm">
+                    <Ban size={18} className="flex-shrink-0" />
+                    Dilarang dibawa pulang.
+                  </div>
+                  <div className="flex items-start gap-2 text-white/80 text-sm">
+                    <Hourglass size={18} className="mt-0.5 flex-shrink-0" />
+                    <span>
+                      Batas aman konsumsi:{" "}
+                      <strong className="font-bold text-[#ff8a8a]">
+                        MAKSIMAL 2 JAM SETELAH DISAJIKAN.
+                      </strong>
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-white/80 text-sm">
-                <Ban size={18} />
-                Dilarang dibawa pulang.
-              </div>
-              <div className="flex items-start gap-2 text-white/80 text-sm">
-                <Hourglass size={18} className="mt-0.5" />
-                <span>
-                  Batas aman konsumsi:{" "}
-                  <strong className="font-bold text-[#ff8a8a]">
-                    MAKSIMAL 2 JAM SETELAH DISAJIKAN.
-                  </strong>
-                </span>
-              </div>
+
+              <section className="mb-6 md:mb-0">
+                <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-xl mb-4 border border-white/10 group bg-[#0c2860]">
+                  <img
+                    className="w-full h-full object-cover transition-opacity duration-200 ease-in-out"
+                    alt={data.namaMenu}
+                    src={currentImg}
+                    style={{ opacity: imgOpacity }}
+                  />
+                </div>
+                <div className="flex flex-col gap-1 px-1">
+                  <h1 className="font-bold text-xl sm:text-2xl text-white">{data.namaMenu}</h1>
+                  <p className="text-sm text-[#b5e0ea] flex items-center gap-1.5 font-mono">
+                    <Calendar size={16} />
+                    {data.tanggal}
+                  </p>
+                </div>
+              </section>
+            </div>
+
+            {/* Right Column: Nutrition Section */}
+            <div className="flex flex-col">
+              <section className="mb-4">
+                <h2 className="font-bold text-lg text-white mb-4 px-1">
+                  Kandungan Gizi
+                </h2>
+                <div className="flex bg-white/5 backdrop-blur-md p-1 mb-6 relative rounded-2xl border border-white/10">
+                  {/* Animated Slider */}
+                  <motion.div
+                    className="absolute top-1 bottom-1 bg-[#b5e0ea] rounded-xl shadow-md"
+                    style={{ width: "calc(33.333% - 2px)" }}
+                    initial={false}
+                    animate={{ left: `calc(${activeTab * 33.333}% + 1px)` }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                  
+                  {data.porsi.map((tab, idx) => {
+                    const isActive = activeTab === idx;
+                    return (
+                      <button
+                        key={idx}
+                        className={`flex-1 relative z-10 flex flex-col items-center justify-center py-2.5 gap-1 rounded-xl transition-colors duration-200 cursor-pointer ${
+                          isActive
+                            ? "text-[#071e49]"
+                            : "text-white/60 hover:text-white/80"
+                        }`}
+                        onClick={() => handleTabChange(idx)}
+                      >
+                        {tab.icon}
+                        <span className="text-[10px] sm:text-xs font-semibold tracking-wide whitespace-nowrap uppercase">
+                          {tab.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Nutrition List */}
+                <div className="flex flex-col gap-3">
+                  <NutritionRow
+                    icon={<Zap size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
+                    label="Energi"
+                    value={data.porsi[activeTab].nutrition.energi}
+                    unit="kkal"
+                  />
+                  <NutritionRow
+                    icon={<Drumstick size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
+                    label="Protein"
+                    value={data.porsi[activeTab].nutrition.protein}
+                    unit="g"
+                  />
+                  <NutritionRow
+                    icon={<Droplet size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
+                    label="Lemak"
+                    value={data.porsi[activeTab].nutrition.lemak}
+                    unit="g"
+                  />
+                  <NutritionRow
+                    icon={<Wheat size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
+                    label="Karbohidrat"
+                    value={data.porsi[activeTab].nutrition.karbohidrat}
+                    unit="g"
+                  />
+                  <NutritionRow
+                    icon={<Leaf size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
+                    label="Serat"
+                    value={data.porsi[activeTab].nutrition.serat}
+                    unit="g"
+                  />
+                </div>
+              </section>
             </div>
           </div>
 
-          <section className="mb-8">
-            <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-lg mb-4 border border-white/10 group bg-[#0c2860]">
-              <img
-                className="w-full h-full object-cover transition-opacity duration-200 ease-in-out"
-                alt={data.namaMenu}
-                src={currentImg}
-                style={{ opacity: imgOpacity }}
-              />
-            </div>
-            <div className="flex flex-col gap-1 px-1">
-              <h1 className="font-bold text-2xl text-white">{data.namaMenu}</h1>
-              <p className="text-sm text-[#b5e0ea] flex items-center gap-1.5 font-mono">
-                <Calendar size={16} />
-                {data.tanggal}
-              </p>
-            </div>
-          </section>
-
-          {/* Nutrition Section */}
-          <section className="mb-4">
-            <h2 className="font-bold text-lg text-white mb-4 px-1">
-              Kandungan Gizi
-            </h2>
-            <div className="flex bg-white/5 backdrop-blur-md p-1 mb-6 relative rounded-2xl border border-white/10">
-              {/* Animated Slider */}
-              <motion.div
-                className="absolute top-1 bottom-1 bg-[#b5e0ea] rounded-xl shadow-md"
-                style={{ width: "calc(33.333% - 2px)" }}
-                initial={false}
-                animate={{ left: `calc(${activeTab * 33.333}% + 1px)` }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              />
-              
-              {data.porsi.map((tab, idx) => {
-                const isActive = activeTab === idx;
-                return (
-                  <button
-                    key={idx}
-                    className={`flex-1 relative z-10 flex flex-col items-center justify-center py-2.5 gap-1 rounded-xl transition-colors duration-200 ${
-                      isActive
-                        ? "text-[#071e49]"
-                        : "text-white/60 hover:text-white/80"
-                    }`}
-                    onClick={() => handleTabChange(idx)}
-                  >
-                    {tab.icon}
-                    <span className="text-[10px] font-semibold tracking-wide whitespace-nowrap uppercase">
-                      {tab.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Nutrition List */}
-            <div className="flex flex-col gap-3">
-              <NutritionRow
-                icon={<Zap size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
-                label="Energi"
-                value={data.porsi[activeTab].nutrition.energi}
-                unit="kkal"
-              />
-              <NutritionRow
-                icon={<Drumstick size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
-                label="Protein"
-                value={data.porsi[activeTab].nutrition.protein}
-                unit="g"
-              />
-              <NutritionRow
-                icon={<Droplet size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
-                label="Lemak"
-                value={data.porsi[activeTab].nutrition.lemak}
-                unit="g"
-              />
-              <NutritionRow
-                icon={<Wheat size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
-                label="Karbohidrat"
-                value={data.porsi[activeTab].nutrition.karbohidrat}
-                unit="g"
-              />
-              <NutritionRow
-                icon={<Leaf size={24} className="fill-[#b5e0ea] text-[#b5e0ea]/20" />}
-                label="Serat"
-                value={data.porsi[activeTab].nutrition.serat}
-                unit="g"
-              />
-            </div>
-          </section>
-
           {/* Footer */}
-          <footer className="py-8 text-center">
-            <p className="text-[10px] text-white/40 font-mono">
+          <footer className="py-8 text-center border-t border-white/5 mt-8">
+            <p className="text-[10px] sm:text-xs text-white/40 font-mono">
               © 2026 SPPG TELUKNAGA 03. All rights reserved.
             </p>
           </footer>

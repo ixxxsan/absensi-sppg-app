@@ -258,33 +258,36 @@ export default function AdminMenuPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto text-slate-800">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold">Manajemen Menu Hari Ini</h1>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto text-slate-800 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Manajemen Menu Hari Ini</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">Atur jadwal menu harian, foto porsi, dan informasi kandungan gizi</p>
+        </div>
         <button 
           onClick={() => setShowQR(true)}
-          className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border border-slate-300 text-slate-700 px-4 py-2.5 rounded-xl font-semibold hover:bg-slate-50 active:scale-95 transition-all shadow-sm text-sm"
         >
-          <QrCode className="w-5 h-5" />
-          Lihat QR Code
+          <QrCode className="w-4 h-4 text-emerald-600" />
+          <span>Lihat QR Code</span>
         </button>
       </div>
 
       {showQR && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50  p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center relative">
             <button 
               onClick={() => setShowQR(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors p-1"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-bold text-center mb-2 mt-2">QR Code Menu</h2>
-            <p className="text-sm text-slate-500 text-center mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-center mb-1 mt-1 text-slate-900">QR Code Menu</h2>
+            <p className="text-xs sm:text-sm text-slate-500 text-center mb-5">
               Satu QR Code ini berlaku selamanya untuk mengakses halaman <span className="font-semibold text-emerald-600">/menu-hari-ini</span>
             </p>
             
-            <div className="p-4 bg-white border-2 border-slate-100 rounded-xl mb-6 shadow-sm flex items-center justify-center">
+            <div className="p-4 bg-white border-2 border-slate-100 rounded-xl mb-5 shadow-sm flex items-center justify-center">
               {qrUrl ? (
                 <QRCodeCanvas 
                   id="qr-canvas"
@@ -300,16 +303,16 @@ export default function AdminMenuPage() {
 
             <button 
               onClick={handleDownloadQR}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-emerald-700 active:scale-95 transition-all text-sm shadow-sm"
             >
-              <Download className="w-5 h-5" />
+              <Download className="w-4 h-4" />
               Unduh QR Code
             </button>
           </div>
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs gap-2 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border border-slate-200 rounded-xl p-3 sm:px-4 text-xs gap-2 shadow-sm">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold text-slate-700">Tanggal Terpilih: {dayjs(selectedDate).format("dddd, DD MMMM YYYY")}</span>
           {existingMenu ? (
@@ -319,15 +322,16 @@ export default function AdminMenuPage() {
           )}
         </div>
         {existingMenu && existingMenu.id && (
-          <span className="text-slate-400 font-mono text-[11px]">ID: {existingMenu.id}</span>
+          <span className="text-slate-400 font-mono text-[11px] truncate">ID: {existingMenu.id}</span>
         )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="font-semibold flex items-center gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Card Tanggal Menu */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="font-semibold text-sm text-slate-800 flex items-center gap-2">
                 <span>Tanggal Menu</span>
                 {fetchingMenu && <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />}
               </label>
@@ -336,7 +340,7 @@ export default function AdminMenuPage() {
                   type="button"
                   onClick={() => shiftDate(-1)}
                   title="Hari Kerja Sebelumnya"
-                  className="px-2 py-0.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                  className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md transition-colors"
                 >
                   &larr; Prev
                 </button>
@@ -344,7 +348,7 @@ export default function AdminMenuPage() {
                   type="button"
                   onClick={() => goToToday()}
                   title="Hari Kerja Ini"
-                  className="px-2 py-0.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium rounded transition-colors"
+                  className="px-2.5 py-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold rounded-md transition-colors"
                 >
                   Hari Ini
                 </button>
@@ -352,7 +356,7 @@ export default function AdminMenuPage() {
                   type="button"
                   onClick={() => shiftDate(1)}
                   title="Hari Kerja Berikutnya"
-                  className="px-2 py-0.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                  className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md transition-colors"
                 >
                   Next &rarr;
                 </button>
@@ -364,30 +368,68 @@ export default function AdminMenuPage() {
               onChange={(e) => {
                 setValue("tanggal", e.target.value);
               }}
-              className="w-full p-2 border rounded" 
+              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" 
             />
           </div>
-          <div>
-            <label className="block mb-2 font-semibold">Nama Menu</label>
+
+          {/* Card Nama Menu */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 flex flex-col justify-between">
+            <label className="font-semibold text-sm text-slate-800 block">Nama Menu</label>
             <input 
               type="text" 
               {...register("namaMenu")} 
               value={watch("namaMenu") || ""}
               onChange={(e) => setValue("namaMenu", e.target.value, { shouldDirty: true, shouldValidate: true })}
-              className="w-full p-2 border rounded" 
-              placeholder="Contoh: Nasi Ayam Bakar" 
+              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" 
+              placeholder="Contoh: Nasi Ayam Bakar, Sup Jagung, Buah Semangka" 
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <NutritionCard title="Porsi Kecil" namePrefix="giziPorsiKecil" filePrefix="fotoPorsiKecil" register={register} setValue={setValue} existingPhoto={existingMenu?.fotoPorsiKecilUrl} watch={watch} />
-          <NutritionCard title="Porsi Besar" namePrefix="giziPorsiBesar" filePrefix="fotoPorsiBesar" register={register} setValue={setValue} existingPhoto={existingMenu?.fotoPorsiBesarUrl} watch={watch} />
-          <NutritionCard title="Bumil / Busui" namePrefix="giziBumil" filePrefix="fotoBumil" register={register} setValue={setValue} existingPhoto={existingMenu?.fotoBumilUrl} watch={watch} />
+        {/* Nutrition Cards: 1 column on mobile/tablet, 3 columns on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <NutritionCard 
+            title="Porsi Kecil" 
+            namePrefix="giziPorsiKecil" 
+            filePrefix="fotoPorsiKecil" 
+            register={register} 
+            setValue={setValue} 
+            existingPhoto={existingMenu?.fotoPorsiKecilUrl} 
+            watch={watch} 
+          />
+          <NutritionCard 
+            title="Porsi Besar" 
+            namePrefix="giziPorsiBesar" 
+            filePrefix="fotoPorsiBesar" 
+            register={register} 
+            setValue={setValue} 
+            existingPhoto={existingMenu?.fotoPorsiBesarUrl} 
+            watch={watch} 
+          />
+          <NutritionCard 
+            title="Bumil / Busui" 
+            namePrefix="giziBumil" 
+            filePrefix="fotoBumil" 
+            register={register} 
+            setValue={setValue} 
+            existingPhoto={existingMenu?.fotoBumilUrl} 
+            watch={watch} 
+          />
         </div>
 
-        <button disabled={loading} type="submit" className="w-full bg-emerald-600 text-white p-3 rounded-lg font-bold hover:bg-emerald-700">
-          {loading ? "Menyimpan..." : "Simpan Menu"}
+        <button 
+          disabled={loading} 
+          type="submit" 
+          className="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-sm text-base flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Menyimpan Menu...</span>
+            </>
+          ) : (
+            "Simpan Menu"
+          )}
         </button>
       </form>
     </div>
@@ -410,41 +452,46 @@ function NutritionCard({ title, namePrefix, filePrefix, register, setValue, exis
   const previewUrl = selectedFile ? URL.createObjectURL(selectedFile) : existingPhoto;
 
   return (
-    <div className="bg-white p-5 border rounded-2xl shadow-sm space-y-5">
-      <h3 className="font-bold text-lg text-emerald-700 border-b pb-3">{title}</h3>
-      
+    <div className="bg-white p-4 sm:p-5 border border-slate-200 rounded-2xl shadow-sm space-y-4 sm:space-y-5 flex flex-col justify-between">
       <div>
-        <label className="block text-sm font-semibold mb-2">Foto Menu</label>
-        <input 
-          type="file" 
-          accept="image/*" 
-          {...register(filePrefix)} 
-          className="block w-full text-sm text-slate-500
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-full file:border-0
-            file:text-sm file:font-semibold
-            file:bg-emerald-50 file:text-emerald-700
-            hover:file:bg-emerald-100
-            cursor-pointer" 
-        />
-        {previewUrl && (
-          <div className="mt-4">
-            <p className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wider">
-              {selectedFile ? "Pratinjau Foto Baru:" : "Foto Tersimpan:"}
-            </p>
-            <img src={previewUrl} alt="Preview" className="w-full h-36 object-cover rounded-xl border border-slate-200 shadow-sm" />
-          </div>
-        )}
+        <h3 className="font-bold text-base sm:text-lg text-emerald-700 border-b border-slate-100 pb-3 mb-3">{title}</h3>
+        
+        <div>
+          <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-2">Foto Menu</label>
+          <input 
+            type="file" 
+            accept="image/*" 
+            {...register(filePrefix)} 
+            className="block w-full text-xs text-slate-500
+              file:mr-3 file:py-2 file:px-3 sm:file:px-4
+              file:rounded-full file:border-0
+              file:text-xs file:font-semibold
+              file:bg-emerald-50 file:text-emerald-700
+              hover:file:bg-emerald-100
+              cursor-pointer" 
+          />
+          {previewUrl && (
+            <div className="mt-3">
+              <p className="text-[11px] text-slate-400 mb-1.5 font-medium uppercase tracking-wider">
+                {selectedFile ? "Pratinjau Foto Baru:" : "Foto Tersimpan:"}
+              </p>
+              <div className="relative w-full h-44 sm:h-40 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-inner">
+                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="space-y-3 pt-2">
+      <div className="space-y-2 pt-3 border-t border-slate-100">
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Informasi Nilai Gizi</p>
         {["energi", "protein", "lemak", "karbohidrat", "serat"].map((field) => {
           const fieldName = `${namePrefix}.${field}` as FieldPath<MenuForm>;
           const val = watch(fieldName);
           return (
-            <div key={field} className="flex items-center justify-between">
-              <span className="text-sm font-medium capitalize text-slate-700">{field}</span>
-              <div className="flex items-center gap-2">
+            <div key={field} className="flex items-center justify-between gap-2 py-0.5">
+              <span className="text-xs sm:text-sm font-medium capitalize text-slate-600">{field}</span>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <input 
                   type="number" 
                   step="any" 
@@ -454,7 +501,7 @@ function NutritionCard({ title, namePrefix, filePrefix, register, setValue, exis
                     const parsed = e.target.value === "" ? 0 : parseFloat(e.target.value);
                     setValue(fieldName, isNaN(parsed) ? 0 : parsed, { shouldDirty: true, shouldValidate: true });
                   }}
-                  className="w-24 p-2 border rounded-lg text-right text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all" 
+                  className="w-20 sm:w-24 p-1.5 sm:p-2 border border-slate-300 rounded-lg text-right text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" 
                 />
                 <span className="text-xs text-slate-400 w-8">{field === 'energi' ? 'kkal' : 'g'}</span>
               </div>
